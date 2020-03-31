@@ -1,5 +1,5 @@
 import { Combinator } from "./combinators";
-import { Snippet, ok, err } from "./snippet";
+import { Snippet, ok, err } from "../snippet";
 
 export function many(source: Combinator<Snippet>): Combinator<Snippet[]> {
   return input => {
@@ -33,6 +33,31 @@ export function present<T>(source: Combinator<T>): Combinator<T> {
       }
     } else {
       return result;
+    }
+  };
+}
+
+export function alt<T, U>(
+  a: Combinator<T>,
+  b: Combinator<U>
+): Combinator<T | U> {
+  return input => {
+    let resultA = a(input);
+
+    if (resultA.kind === "ok") {
+      return resultA;
+    }
+
+    let resultB = b(input);
+
+    if (resultB.kind === "ok") {
+      return resultB;
+    } else {
+      return {
+        kind: "err",
+        snippet: input,
+        reason: "multi"
+      };
     }
   };
 }

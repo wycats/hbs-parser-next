@@ -1,7 +1,7 @@
-import * as combinators from "./combinators";
+import * as combinators from "./read/combinators";
 export { combinators };
 
-import * as multi from "./multi";
+import * as multi from "./read/multi";
 export { multi };
 
 export * from "./snippet";
@@ -9,13 +9,13 @@ export * from "./snippet";
 import * as ast from "./ast";
 export { ast };
 
-export * from "./read";
-import * as tokens from "./read";
+export * from "./read/read";
+import * as tokens from "./read/read";
 export { tokens };
 
 export * from "./span";
 
-import * as b from "./token-builder";
+import * as b from "./read/token-builder";
 export { b };
 
 export function parse(input: string): ast.Root {

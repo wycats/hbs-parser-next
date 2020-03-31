@@ -1,11 +1,13 @@
 import * as read from "./read";
-import { SourceSpan, range, span } from "./span";
+import { SourceSpan, range, span } from "../span";
 
 export type CurriedToken = (builder: TokenBuilder) => read.Token;
 
 export function id(name: string): CurriedToken {
   return builder => read.id(builder.consume(name));
 }
+
+export const dot: CurriedToken = builder => read.dot(builder.consume("."));
 
 export function interpolate(children: CurriedToken[]): CurriedToken {
   return builder => {

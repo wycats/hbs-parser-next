@@ -1,4 +1,4 @@
-import { Result, Snippet, ok, err } from "./snippet";
+import { Result, Snippet, ok, err } from "../snippet";
 
 export type Combinator<T> = (input: Snippet) => Result<[Snippet, T]>;
 export type Pattern = string | RegExp;
@@ -72,15 +72,15 @@ export function takeWhile(pattern: Pattern): Combinator<Snippet> {
   }
 }
 
-export function seq<T, U>(
-  a: Combinator<T>,
-  b: Combinator<U>
-): Combinator<[T, U]>;
 export function seq<T, U, V>(
   a: Combinator<T>,
   b: Combinator<U>,
   c: Combinator<V>
 ): Combinator<[T, U, V]>;
+export function seq<T, U>(
+  a: Combinator<T>,
+  b: Combinator<U>
+): Combinator<[T, U]>;
 export function seq(
   ...combinators: Combinator<unknown>[]
 ): Combinator<unknown[]> {
