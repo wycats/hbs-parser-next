@@ -207,6 +207,55 @@ test("named arguments", assert => {
   );
 });
 
+test("using all the features", assert => {
+  assert.tree(
+    "{{  (id.with.path some @arg named=args other=@named.args) @some.arg another.arg named=@arg other=named.arg  }}",
+    b.interpolate([
+      b.ws("  "),
+      b.sexp([
+        b.id("id"),
+        b.dot,
+        b.id("with"),
+        b.dot,
+        b.id("path"),
+        b.sp,
+        b.id("some"),
+        b.sp,
+        b.arg("@arg"),
+        b.sp,
+        b.id("named"),
+        b.eq,
+        b.id("args"),
+        b.sp,
+        b.id("other"),
+        b.eq,
+        b.arg("@named"),
+        b.dot,
+        b.id("args")
+      ]),
+      b.sp,
+      b.arg("@some"),
+      b.dot,
+      b.id("arg"),
+      b.sp,
+      b.id("another"),
+      b.dot,
+      b.id("arg"),
+      b.sp,
+      b.id("named"),
+      b.eq,
+      b.arg("@arg"),
+      b.sp,
+      b.id("other"),
+      b.eq,
+      b.id("named"),
+      b.dot,
+      b.id("arg"),
+      b.ws("  ")
+    ])
+  );
+});
+
 test("two interpolations next to each other", assert => {
   assert.tree(
     "{{id.with.path some named=args other=named.args}}{{some.stuff}}",
