@@ -1,4 +1,6 @@
 declare module "qunit" {
+  import { b } from "hbs-parser-next";
+
   // Type definitions for QUnit v2.9.2
   // Project: http://qunitjs.com/
   // Definitions by: James Bracy <https://github.com/waratuman>
@@ -20,6 +22,8 @@ declare module "qunit" {
      * @param {number} [acceptCallCount=1] Number of expected callbacks before the test is done.
      */
     async(acceptCallCount?: number): () => void;
+
+    tree(this: Assert, source: string, ...expected: b.CurriedToken[]): void;
 
     /**
      * A deep recursive comparison, working on primitive types, arrays, objects,
@@ -710,6 +714,8 @@ declare module "qunit" {
   /* QUnit */
   export const module: QUnit["module"];
   export const test: QUnit["test"];
+  export const todo: QUnit["todo"];
+  export const equiv: QUnit["equiv"];
   export const config: QUnit["config"];
   export const assert: QUnit["assert"];
   export const dump: QUnit["dump"];

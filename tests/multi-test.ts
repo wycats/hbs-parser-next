@@ -7,7 +7,8 @@ import {
   ok,
   err,
   Err,
-  multi
+  multi,
+  utils
 } from "hbs-parser-next";
 import { eqSnippet, unwrap, eqError, eqSnippets } from "./helpers";
 
@@ -45,7 +46,7 @@ module("[combinators] present(many) (at least one match)");
 
 test("zero times", assert => {
   let input = Snippet.input("abcabcabc");
-  let mismatch = multi.present(multi.many(combinators.tag("def")))(input);
+  let mismatch = utils.present(multi.many(combinators.tag("def")))(input);
 
   eqError(mismatch, err(input, "empty"));
 });
@@ -53,7 +54,7 @@ test("zero times", assert => {
 test("one time", assert => {
   let input = Snippet.input("hello world");
   let [next, match] = unwrap(
-    multi.present(multi.many(combinators.tag("hello")))(input)
+    utils.present(multi.many(combinators.tag("hello")))(input)
   );
 
   eqSnippet(next, input.slice(5).rest);
@@ -63,7 +64,7 @@ test("one time", assert => {
 test("several times", assert => {
   let input = Snippet.input("abcabcabc");
   let [next, match] = unwrap(
-    multi.present(multi.many(combinators.tag("abc")))(input)
+    utils.present(multi.many(combinators.tag("abc")))(input)
   );
 
   eqSnippet(next, input.slice(9).rest);

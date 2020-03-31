@@ -72,6 +72,12 @@ export function takeWhile(pattern: Pattern): Combinator<Snippet> {
   }
 }
 
+export function seq<T, U, V, W>(
+  a: Combinator<T>,
+  b: Combinator<U>,
+  c: Combinator<V>,
+  d: Combinator<W>
+): Combinator<[T, U, V, W]>;
 export function seq<T, U, V>(
   a: Combinator<T>,
   b: Combinator<U>,
@@ -101,5 +107,45 @@ export function seq(
     }
 
     return ok([current.rest, out]);
+  };
+}
+
+export function any<T, U, V, W, X>(
+  a: Combinator<T>,
+  b: Combinator<U>,
+  c: Combinator<V>,
+  d: Combinator<W>,
+  e: Combinator<X>
+): Combinator<T | U | V | W | X>;
+export function any<T, U, V, W>(
+  a: Combinator<T>,
+  b: Combinator<U>,
+  c: Combinator<V>,
+  d: Combinator<W>
+): Combinator<T | U | V | W>;
+export function any<T, U, V>(
+  a: Combinator<T>,
+  b: Combinator<U>,
+  c: Combinator<V>
+): Combinator<T | U | V>;
+export function any<T, U>(
+  a: Combinator<T>,
+  b: Combinator<U>
+): Combinator<T | U>;
+export function any(
+  ...combinators: Combinator<unknown>[]
+): Combinator<unknown> {
+  return input => {
+    let current = input;
+
+    for (let item of combinators) {
+      let result = item(current);
+
+      if (result.kind === "ok") {
+        return result;
+      }
+    }
+
+    return err(input, "any");
   };
 }

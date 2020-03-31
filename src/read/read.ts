@@ -1,35 +1,77 @@
 import { SourceSpan, span, range } from "../span";
-import { tag, seq, Combinator, pattern } from "./combinators";
-import { Snippet, Result, ok } from "../snippet";
+import { tag, seq, Combinator, pattern, any } from "./combinators";
+import { Snippet, Result, ok, err } from "../snippet";
 import { Identifier } from "src/ast";
+import {
+  RootToken,
+  root,
+  interpolate,
+  TokenType,
+  Token,
+  AnyLeafToken,
+  LeafTokenType,
+  LeafToken,
+  ArgumentToken
+} from "./tokens";
+import { map, present, then, mapResult } from "./utils";
+import { many } from "./multi";
 
 export function read(source: string): Result<RootToken> {
   let input = Snippet.input(source);
-  let result = seq(tag("{{"), PATH, tag("}}"))(input);
 
-  if (result.kind === "err") {
-    return result;
-  }
+  let result = map(many(INTERPOLATE), tokens => {
+    return ok(root(tokens, range(...tokens)));
+  })(input);
 
-  let [next, [open, path, close]] = result.value;
+  return mapResult(result, ([, token]) => ok(token));
+}
 
-  return ok(
-    root([interpolate(path, range(open, close))], range(open.span, close.span))
-  );
+export function INTERPOLATE(input: Snippet): Result<[Snippet, Token]> {
+  return map(
+    present(seq(tag("{{"), SPACED_TOKENS, tag("}}"))),
+    ([open, path, close], next) => {
+      if (next.length > 0) {
+        return {
+          kind: "err",
+          reason: "remaining",
+          snippet: next
+        };
+      }
+
+      return ok(interpolate(path, range(open, close)));
+    }
+  )(input);
 }
 
 const ID_SNIPPET: Combinator<Snippet> = pattern(
   /^\p{ID_Start}[\p{ID_Continue}-]*/u
 );
-const DOT_SNIPPET: Combinator<Snippet> = tag(".");
 
-const ID = token(ID_SNIPPET, LeafTokenType.Identifier);
-const DOT = token(DOT_SNIPPET, LeafTokenType.Dot);
+const ID = token(ID_SNIPPET, TokenType.Identifier);
+const DOT = token(tag("."), TokenType.Dot);
+const WS = token(pattern(/^[ ]+/), TokenType.WS);
+const EQ = token(tag("="), TokenType.Eq);
 
-export function token(
+const ARG: Combinator<Token> = map(seq(tag("@"), ID_SNIPPET), ([at, id]) =>
+  ok(arg(range(at, id)))
+);
+
+export function wrap<T>(combinator: Combinator<T>): Combinator<T[]> {
+  return input => {
+    let result = combinator(input);
+
+    if (result.kind === "err") {
+      return result;
+    } else {
+      return ok([result.value[0], [result.value[1]]]);
+    }
+  };
+}
+
+export function token<T extends LeafTokenType>(
   combinator: Combinator<Snippet>,
-  type: LeafTokenType
-): Combinator<LeafToken> {
+  type: T
+): Combinator<LeafToken<T>> {
   return input => {
     let result = combinator(input);
 
@@ -47,8 +89,57 @@ export function token(
   };
 }
 
+export function SPACED_TOKENS(
+  input: Snippet
+): Result<[Snippet, [Token, ...Token[]]]> {
+  let out: Token[] = [];
+  let tk = any(NAMED, PATH, wrap(WS));
+  let current = input;
+
+  while (true) {
+    if (current.isEOF()) {
+      break;
+    }
+
+    let result = tk(current);
+
+    if (result.kind === "err") {
+      break;
+    }
+
+    let [next, tokens] = result.value;
+
+    for (let token of tokens) {
+      if (Array.isArray(token)) {
+        out.push(...token);
+      } else {
+        out.push(token);
+      }
+    }
+
+    current = next;
+  }
+
+  if (out.length === 0) {
+    return {
+      kind: "err",
+      reason: "present",
+      snippet: input
+    };
+  }
+
+  return ok([current, out as [Token, ...Token[]]]);
+}
+
+export const NAMED = seq(ID, EQ, PATH);
+
+export const HEAD = any(ARG, ID);
+
+// TODO: Allow `[]` or string members
+export const MEMBER = ID;
+
 export function PATH(input: Snippet): Result<[Snippet, [Token, ...Token[]]]> {
-  let result = ID(input);
+  let result = HEAD(input);
 
   if (result.kind === "err") {
     return result;
@@ -67,16 +158,16 @@ export function PATH(input: Snippet): Result<[Snippet, [Token, ...Token[]]]> {
     current = resultDot.value[0];
     let nextDot = resultDot.value[1];
 
-    let resultId = ID(current);
+    let resultMember = MEMBER(current);
 
-    if (resultId.kind === "err") {
-      return resultId;
+    if (resultMember.kind === "err") {
+      return resultMember;
     }
 
-    current = resultId.value[0];
-    let nextId = resultId.value[1];
+    current = resultMember.value[0];
+    let nextMember = resultMember.value[1];
 
-    out.push(nextDot, nextId);
+    out.push(nextDot, nextMember);
   }
 }
 
@@ -84,68 +175,22 @@ export interface BaseToken {
   span: SourceSpan;
 }
 
-export interface LeafToken extends BaseToken {
-  type: LeafTokenType;
-}
-
-export function leaf<T extends LeafToken>(
+export function leaf<T extends Token>(
   type: T["type"]
 ): (span: SourceSpan) => T {
   return span => ({ type, span } as T);
 }
 
-export const id = leaf(LeafTokenType.Identifier);
-export const dot = leaf(LeafTokenType.Dot);
+export const id = leaf(TokenType.Identifier);
+export const dot = leaf(TokenType.Dot);
+export const eq = leaf(TokenType.Eq);
 
-export const enum LeafTokenType {
-  Identifier = "Identifier",
-  Dot = "Dot"
-}
+export const ws = leaf(TokenType.WS);
 
-export const enum ParentTokenType {
-  Root = "Root",
-  Interpolate = "Interpolate",
-  TrustedInterpolate = "TrustedInterpolate"
-}
-
-export interface InterpolateToken extends BaseToken {
-  type: ParentTokenType.Interpolate | ParentTokenType.TrustedInterpolate;
-  children: readonly Token[];
-}
-
-export function interpolate(
-  children: readonly Token[],
-  span: SourceSpan
-): InterpolateToken {
+export function arg(span: SourceSpan): ArgumentToken {
   return {
-    type: ParentTokenType.Interpolate,
-    span,
-    children
+    type: TokenType.Argument,
+    name: { start: span.start + 1, end: span.end },
+    span
   };
 }
-
-export function trustedInterpolate(
-  children: readonly Token[],
-  span: SourceSpan
-): InterpolateToken {
-  return {
-    type: ParentTokenType.TrustedInterpolate,
-    span,
-    children
-  };
-}
-
-export interface RootToken extends BaseToken {
-  type: ParentTokenType.Root;
-  children: readonly Token[];
-}
-
-export function root(children: readonly Token[], span: SourceSpan): RootToken {
-  return {
-    type: ParentTokenType.Root,
-    span,
-    children
-  };
-}
-
-export type Token = LeafToken | InterpolateToken;
