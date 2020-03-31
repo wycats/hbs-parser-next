@@ -14,7 +14,6 @@ export function arg(name: string): CurriedToken {
 
 export const dot: CurriedToken = builder => read.dot(builder.consume("."));
 export const eq: CurriedToken = builder => read.eq(builder.consume("="));
-
 export const sp: CurriedToken = builder => read.ws(builder.consume(" "));
 
 export function ws(space: string): CurriedToken {
@@ -27,6 +26,15 @@ export function interpolate(children: CurriedToken[]): CurriedToken {
     let out = children.map(child => child(builder));
     let close = builder.consume("}}");
     return tokens.interpolate(out, range(open, close));
+  };
+}
+
+export function sexp(children: CurriedToken[]): CurriedToken {
+  return builder => {
+    let open = builder.consume("(");
+    let out = children.map(child => child(builder));
+    let close = builder.consume(")");
+    return tokens.sexp(out, range(open, close));
   };
 }
 

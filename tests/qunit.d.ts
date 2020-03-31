@@ -23,8 +23,6 @@ declare module "qunit" {
      */
     async(acceptCallCount?: number): () => void;
 
-    tree(this: Assert, source: string, ...expected: b.CurriedToken[]): void;
-
     /**
      * A deep recursive comparison, working on primitive types, arrays, objects,
      * regular expressions, dates and functions.

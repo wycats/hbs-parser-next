@@ -20,8 +20,16 @@ import { CurriedToken } from "src/read/token-builder";
 
 module("[READER] simple interpolation");
 
+// Patch QUnit.assert with assert.tree
+declare module "qunit" {
+  interface Assert {
+    tree(this: Assert, source: string, ...expected: b.CurriedToken[]): void;
+  }
+}
+
 assert.tree = function(source: string, ...expected: CurriedToken[]) {
-  this.step(source);
+  let step = source || "(empty)";
+  this.step(step);
   let tree = read(source);
 
   let expectedString = serializeRoot(b.root(expected), source);
@@ -40,13 +48,27 @@ assert.tree = function(source: string, ...expected: CurriedToken[]) {
     );
     this.deepEqual(tree.value, b.root(expected), "token trees match");
   }
-  this.verifySteps([source], "verified steps");
+  this.verifySteps([step], "verified steps");
 };
+
+test("empty", assert => {
+  assert.tree("" /* no body */);
+});
 
 test("{{id}} interpolating an id", assert => {
   assert.tree("{{identifier}}", b.interpolate([b.id("identifier")]));
   assert.tree("{{id}}", b.interpolate([b.id("id")]));
   assert.tree("{{id-with-dash}}", b.interpolate([b.id("id-with-dash")]));
+});
+
+test("{{(id)}} interpolating an expression", assert => {
+  assert.tree("{{(id)}}", b.interpolate([b.sexp([b.id("id")])]));
+  assert.tree("{{ (id) }}", b.interpolate([b.sp, b.sexp([b.id("id")]), b.sp]));
+  assert.tree("{{( id )}}", b.interpolate([b.sexp([b.sp, b.id("id"), b.sp])]));
+  assert.tree(
+    "{{ ( id ) }}",
+    b.interpolate([b.sp, b.sexp([b.sp, b.id("id"), b.sp]), b.sp])
+  );
 });
 
 test("{{@id}} interpolating an argument", assert => {

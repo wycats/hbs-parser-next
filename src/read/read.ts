@@ -1,46 +1,47 @@
-import { SourceSpan, span, range } from "../span";
-import { tag, seq, Combinator, pattern, any } from "./combinators";
-import { Snippet, Result, ok, err } from "../snippet";
-import { Identifier } from "src/ast";
-import {
-  RootToken,
-  root,
-  interpolate,
-  TokenType,
-  Token,
-  AnyLeafToken,
-  LeafTokenType,
-  LeafToken,
-  ArgumentToken
-} from "./tokens";
-import { map, present, then, mapResult } from "./utils";
+import { ok, Result, Snippet } from "../snippet";
+import { range, SourceSpan } from "../span";
+import { any, Combinator, pattern, seq, tag } from "./combinators";
 import { many } from "./multi";
+import {
+  ArgumentToken,
+  interpolate,
+  LeafToken,
+  LeafTokenType,
+  root,
+  RootToken,
+  sexp,
+  Token,
+  TokenType
+} from "./tokens";
+import { complete, map, mapResult } from "./utils";
 
 export function read(source: string): Result<RootToken> {
   let input = Snippet.input(source);
 
-  let result = map(many(INTERPOLATE), tokens => {
-    return ok(root(tokens, range(...tokens)));
-  })(input);
+  let result = complete(
+    map(many(INTERPOLATE), tokens => {
+      return ok(root(tokens, range(...tokens)));
+    })
+  )(input);
+
+  debugger;
 
   return mapResult(result, ([, token]) => ok(token));
 }
 
 export function INTERPOLATE(input: Snippet): Result<[Snippet, Token]> {
   return map(
-    present(seq(tag("{{"), SPACED_TOKENS, tag("}}"))),
-    ([open, path, close], next) => {
-      if (next.length > 0) {
-        return {
-          kind: "err",
-          reason: "remaining",
-          snippet: next
-        };
-      }
-
+    seq(tag("{{"), SPACED_TOKENS, tag("}}")),
+    ([open, path, close]) => {
       return ok(interpolate(path, range(open, close)));
     }
   )(input);
+}
+
+export function SEXP(input: Snippet): Result<[Snippet, Token]> {
+  return map(seq(tag("("), SPACED_TOKENS, tag(")")), ([open, path, close]) => {
+    return ok(sexp(path, range(open, close)));
+  })(input);
 }
 
 const ID_SNIPPET: Combinator<Snippet> = pattern(
@@ -93,7 +94,7 @@ export function SPACED_TOKENS(
   input: Snippet
 ): Result<[Snippet, [Token, ...Token[]]]> {
   let out: Token[] = [];
-  let tk = any(NAMED, PATH, wrap(WS));
+  let tk = any(wrap(SEXP), NAMED, PATH, wrap(WS));
   let current = input;
 
   while (true) {

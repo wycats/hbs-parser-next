@@ -23,6 +23,8 @@ export function serializeNode(token: Token, source: string): string[] {
     case TokenType.Identifier:
     case TokenType.WS:
       return [slice(token.span, source)];
+    case TokenType.Sexp:
+      return ["(", ...serializeList(token.children, source), ")"];
     case TokenType.Interpolate:
       return ["{{", ...serializeList(token.children, source), "}}"];
     case TokenType.TrustedInterpolate:

@@ -4,6 +4,7 @@ export const enum TokenType {
   Root = "Root",
   Interpolate = "Interpolate",
   TrustedInterpolate = "TrustedInterpolate",
+  Sexp = "Sexp",
   Identifier = "Identifier",
   Argument = "Argument",
   Dot = "Dot",
@@ -41,6 +42,11 @@ export interface ArgumentToken extends BaseToken {
   name: SourceSpan;
 }
 
+export interface SexpToken extends BaseToken {
+  type: TokenType.Sexp;
+  children: readonly Token[];
+}
+
 export interface InterpolateToken extends BaseToken {
   type: TokenType.Interpolate;
   children: readonly Token[];
@@ -51,6 +57,13 @@ export interface TrustedInterpolateToken extends BaseToken {
   children: readonly Token[];
 }
 
+export function sexp(children: readonly Token[], span: SourceSpan): Token {
+  return {
+    type: TokenType.Sexp,
+    span,
+    children
+  };
+}
 export function interpolate(
   children: readonly Token[],
   span: SourceSpan
@@ -61,6 +74,7 @@ export function interpolate(
     children
   };
 }
+
 export function trustedInterpolate(
   children: readonly Token[],
   span: SourceSpan
@@ -87,5 +101,6 @@ export function root(children: readonly Token[], span: SourceSpan): RootToken {
 export type Token =
   | AnyLeafToken
   | ArgumentToken
+  | SexpToken
   | InterpolateToken
   | TrustedInterpolateToken;

@@ -60,6 +60,17 @@ export function map<T, U>(
   };
 }
 
+export function complete<T>(source: Combinator<T>): Combinator<T> {
+  return input =>
+    map(source, (value, next) => {
+      if (next.length !== 0) {
+        return err(input, "incomplete") as Result<T>;
+      } else {
+        return ok(value);
+      }
+    })(input);
+}
+
 export function present<T>(source: Combinator<T>): Combinator<T> {
   return input => {
     let result = source(input);
