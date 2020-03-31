@@ -711,4 +711,6 @@ declare module "qunit" {
   export const module: QUnit["module"];
   export const test: QUnit["test"];
   export const config: QUnit["config"];
+  export const assert: QUnit["assert"];
+  export const dump: QUnit["dump"];
 }
