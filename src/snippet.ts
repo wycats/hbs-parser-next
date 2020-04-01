@@ -62,7 +62,7 @@ export class Snippet {
     return this.source.slice(this.offset, this.offset + this.length);
   }
 
-  private get restLength(): number {
+  get restLength(): number {
     return this.source.length - this.offset - this.length;
   }
 }

@@ -1,6 +1,3 @@
-import { BaseToken } from "./read/read";
-import { Snippet } from "./snippet";
-
 export interface SourceSpan {
   start: number;
   end: number;

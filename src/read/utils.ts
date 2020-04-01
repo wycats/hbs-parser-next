@@ -63,7 +63,7 @@ export function map<T, U>(
 export function complete<T>(source: Combinator<T>): Combinator<T> {
   return input =>
     map(source, (value, next) => {
-      if (next.length !== 0) {
+      if (next.restLength !== 0) {
         return err(input, "incomplete") as Result<T>;
       } else {
         return ok(value);

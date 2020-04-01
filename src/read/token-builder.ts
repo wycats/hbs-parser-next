@@ -3,21 +3,24 @@ import * as tokens from "./tokens";
 import { SourceSpan, range, span } from "../span";
 
 export type CurriedToken = (builder: TokenBuilder) => tokens.Token;
+export type CurriedAttributeToken = (
+  builder: TokenBuilder
+) => tokens.AttributeToken;
 
 export function id(name: string): CurriedToken {
-  return builder => read.id(builder.consume(name));
+  return builder => tokens.id(builder.consume(name));
 }
 
 export function arg(name: string): CurriedToken {
-  return builder => read.arg(builder.consume(name));
+  return builder => tokens.arg(builder.consume(name));
 }
 
-export const dot: CurriedToken = builder => read.dot(builder.consume("."));
-export const eq: CurriedToken = builder => read.eq(builder.consume("="));
-export const sp: CurriedToken = builder => read.ws(builder.consume(" "));
+export const dot: CurriedToken = builder => tokens.dot(builder.consume("."));
+export const eq: CurriedToken = builder => tokens.eq(builder.consume("="));
+export const sp: CurriedToken = builder => tokens.ws(builder.consume(" "));
 
-export function ws(space: string): CurriedToken {
-  return builder => read.ws(builder.consume(space));
+export function ws(space: string): CurriedAttributeToken {
+  return builder => tokens.ws(builder.consume(space));
 }
 
 export function interpolate(children: CurriedToken[]): CurriedToken {
@@ -35,6 +38,55 @@ export function sexp(children: CurriedToken[]): CurriedToken {
     let out = children.map(child => child(builder));
     let close = builder.consume(")");
     return tokens.sexp(out, range(open, close));
+  };
+}
+
+export function text(chars: string): CurriedToken {
+  return builder => {
+    let out = builder.consume(chars);
+    return tokens.text(out);
+  };
+}
+
+export function startTag(name: string): CurriedToken;
+export function startTag(options: {
+  name: string;
+  attrs: CurriedAttributeToken[];
+}): CurriedToken;
+export function startTag(
+  options: string | { name: string; attrs: CurriedAttributeToken[] }
+): CurriedToken {
+  if (typeof options === "string") {
+    return builder => {
+      let start = builder.consume("<");
+      let nameSpan = builder.consume(options);
+      let end = builder.consume(">");
+
+      return tokens.startTag({ name: nameSpan }, range(start, end));
+    };
+  } else {
+    return builder => {
+      let { name, attrs } = options;
+
+      let start = builder.consume("<");
+      let nameSpan = builder.consume(name);
+      let children = attrs.map(attr => attr(builder));
+      let end = builder.consume(">");
+      return tokens.startTag(
+        { name: nameSpan, attrs: children },
+        range(start, end)
+      );
+    };
+  }
+}
+
+export function endTag(name: string): CurriedToken {
+  return builder => {
+    let start = builder.consume("</");
+    let tagName = builder.consume(name);
+    let end = builder.consume(">");
+
+    return tokens.endTag(tagName, range(start, end));
   };
 }
 

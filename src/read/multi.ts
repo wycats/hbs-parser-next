@@ -7,6 +7,10 @@ export function many<T>(source: Combinator<T>): Combinator<T[]> {
     let out: T[] = [];
 
     while (true) {
+      if (current.isEOF()) {
+        return ok([current.rest, out]);
+      }
+
       let iterate = source(current);
 
       if (iterate.kind === "err") {

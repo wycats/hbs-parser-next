@@ -8,4 +8,5 @@ dump.maxDepth = 25;
 
 import "./combinators-test";
 import "./multi-test";
-import "./hbs-reader-test";
+import "./reader/interpolation";
+import "./reader/html";

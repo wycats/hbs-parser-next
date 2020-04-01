@@ -80,9 +80,10 @@ test("match: skipping until the last characters", assert => {
 
 test("mismatch: no match before the end", assert => {
   let input = Snippet.input("hello world");
-  let mismatch = combinators.takeUntil("cruel")(input);
+  let [next, match] = unwrap(combinators.takeUntil("cruel")(input));
 
-  eqError(mismatch, err(input, "takeUntil"));
+  eqSnippet(next, input.slice(11).rest);
+  eqSnippet(match, input.slice(11));
 });
 
 module("[combinators] takeWhile");
@@ -98,31 +99,24 @@ test("match: at non-zero offset", assert => {
 
 test("match: skipping zero characters", assert => {
   let input = Snippet.input("hello world");
-  let [next, match] = unwrap(combinators.takeUntil("hello")(input));
+  let [next, match] = unwrap(combinators.takeWhile("hello")(input));
 
-  eqSnippet(next, input);
-  eqSnippet(match, input);
-});
-
-test("match: skipping until the last character", assert => {
-  let input = Snippet.input("hello world");
-  let [next, match] = unwrap(combinators.takeUntil("d")(input));
-
-  eqSnippet(next, input.slice(10).rest);
-  eqSnippet(match, input.slice(10));
+  eqSnippet(next, input.slice(5).rest);
+  eqSnippet(match, input.slice(5));
 });
 
 test("match: skipping until the last characters", assert => {
   let input = Snippet.input("hello world");
-  let [next, match] = unwrap(combinators.takeUntil("world")(input));
+  let [next, match] = unwrap(combinators.takeWhile("hello world")(input));
 
-  eqSnippet(next, input.slice(6).rest);
-  eqSnippet(match, input.slice(6));
+  eqSnippet(next, input.slice(11).rest);
+  eqSnippet(match, input.slice(11));
 });
 
 test("mismatch: no match before the end", assert => {
-  let input = Snippet.input("hello world");
-  let mismatch = combinators.takeUntil("cruel")(input);
+  let input = Snippet.input("hellohello");
+  let [next, match] = unwrap(combinators.takeWhile("hellohello")(input));
 
-  eqError(mismatch, err(input, "takeUntil"));
+  eqSnippet(next, input.slice(10).rest);
+  eqSnippet(match, input.slice(10));
 });

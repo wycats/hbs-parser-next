@@ -15,10 +15,10 @@ import {
   b,
   serializeRoot
 } from "hbs-parser-next";
-import { eqSnippet, unwrap, eqError, eqSnippets } from "./helpers";
+import { eqSnippet, unwrap, eqError, eqSnippets } from "../helpers";
 import { CurriedToken } from "src/read/token-builder";
 
-module("[READER] simple interpolation");
+module("[READER] interpolation");
 
 // Patch QUnit.assert with assert.tree
 declare module "qunit" {

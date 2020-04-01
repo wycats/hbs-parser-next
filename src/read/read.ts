@@ -11,23 +11,25 @@ import {
   RootToken,
   sexp,
   Token,
-  TokenType
+  TokenType,
+  arg
 } from "./tokens";
 import { complete, map, mapResult } from "./utils";
+import { TEXT, START_TAG, END_TAG } from "./html";
 
 export function read(source: string): Result<RootToken> {
   let input = Snippet.input(source);
 
   let result = complete(
-    map(many(INTERPOLATE), tokens => {
+    map(many(any(INTERPOLATE, CONTENT)), tokens => {
       return ok(root(tokens, range(...tokens)));
     })
   )(input);
 
-  debugger;
-
   return mapResult(result, ([, token]) => ok(token));
 }
+
+export const CONTENT = any(END_TAG, START_TAG, TEXT);
 
 export function INTERPOLATE(input: Snippet): Result<[Snippet, Token]> {
   return map(
@@ -48,10 +50,10 @@ const ID_SNIPPET: Combinator<Snippet> = pattern(
   /^\p{ID_Start}[\p{ID_Continue}-]*/u
 );
 
-const ID = token(ID_SNIPPET, TokenType.Identifier);
-const DOT = token(tag("."), TokenType.Dot);
-const WS = token(pattern(/^[ ]+/), TokenType.WS);
-const EQ = token(tag("="), TokenType.Eq);
+export const ID = token(ID_SNIPPET, TokenType.Identifier);
+export const DOT = token(tag("."), TokenType.Dot);
+export const WS = token(pattern(/^[\u0009\u000A\u000C\u0020]+/u), TokenType.WS);
+export const EQ = token(tag("="), TokenType.Eq);
 
 const ARG: Combinator<Token> = map(seq(tag("@"), ID_SNIPPET), ([at, id]) =>
   ok(arg(range(at, id)))
@@ -150,6 +152,10 @@ export function PATH(input: Snippet): Result<[Snippet, [Token, ...Token[]]]> {
   let out: Token[] & [Token, ...Token[]] = [head];
 
   while (true) {
+    if (current.isEOF()) {
+      return ok([current, out]);
+    }
+
     let resultDot = DOT(current);
 
     if (resultDot.kind === "err") {
@@ -170,28 +176,4 @@ export function PATH(input: Snippet): Result<[Snippet, [Token, ...Token[]]]> {
 
     out.push(nextDot, nextMember);
   }
-}
-
-export interface BaseToken {
-  span: SourceSpan;
-}
-
-export function leaf<T extends Token>(
-  type: T["type"]
-): (span: SourceSpan) => T {
-  return span => ({ type, span } as T);
-}
-
-export const id = leaf(TokenType.Identifier);
-export const dot = leaf(TokenType.Dot);
-export const eq = leaf(TokenType.Eq);
-
-export const ws = leaf(TokenType.WS);
-
-export function arg(span: SourceSpan): ArgumentToken {
-  return {
-    type: TokenType.Argument,
-    name: { start: span.start + 1, end: span.end },
-    span
-  };
 }

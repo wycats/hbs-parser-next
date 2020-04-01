@@ -36,9 +36,7 @@ export function takeUntil(pattern: Pattern): Combinator<Snippet> {
       let next = input;
 
       while (true) {
-        if (next.isEOF()) {
-          return err(input, "takeUntil");
-        } else if (next.isMatch(pattern)) {
+        if (next.isEOF() || next.isMatch(pattern)) {
           return ok([next.rest, next]);
         } else {
           next = next.extend(1);
@@ -72,24 +70,13 @@ export function takeWhile(pattern: Pattern): Combinator<Snippet> {
   }
 }
 
-export function seq<T, U, V, W>(
-  a: Combinator<T>,
-  b: Combinator<U>,
-  c: Combinator<V>,
-  d: Combinator<W>
-): Combinator<[T, U, V, W]>;
-export function seq<T, U, V>(
-  a: Combinator<T>,
-  b: Combinator<U>,
-  c: Combinator<V>
-): Combinator<[T, U, V]>;
-export function seq<T, U>(
-  a: Combinator<T>,
-  b: Combinator<U>
-): Combinator<[T, U]>;
-export function seq(
-  ...combinators: Combinator<unknown>[]
-): Combinator<unknown[]> {
+type Combinators<T> = {
+  [K in keyof T]: Combinator<T[K]>;
+};
+
+export function seq<T extends [unknown, ...unknown[]]>(
+  ...combinators: Combinators<T>
+): Combinator<T> {
   return input => {
     let out: unknown[] = [];
     let current = input;
@@ -102,7 +89,7 @@ export function seq(
         out.push(value);
         current = next.rest;
       } else {
-        return result;
+        return result as any;
       }
     }
 
@@ -110,31 +97,9 @@ export function seq(
   };
 }
 
-export function any<T, U, V, W, X>(
-  a: Combinator<T>,
-  b: Combinator<U>,
-  c: Combinator<V>,
-  d: Combinator<W>,
-  e: Combinator<X>
-): Combinator<T | U | V | W | X>;
-export function any<T, U, V, W>(
-  a: Combinator<T>,
-  b: Combinator<U>,
-  c: Combinator<V>,
-  d: Combinator<W>
-): Combinator<T | U | V | W>;
-export function any<T, U, V>(
-  a: Combinator<T>,
-  b: Combinator<U>,
-  c: Combinator<V>
-): Combinator<T | U | V>;
-export function any<T, U>(
-  a: Combinator<T>,
-  b: Combinator<U>
-): Combinator<T | U>;
-export function any(
-  ...combinators: Combinator<unknown>[]
-): Combinator<unknown> {
+export function any<T extends [unknown, ...unknown[]]>(
+  ...combinators: Combinators<T>
+): Combinator<T[number]> {
   return input => {
     let current = input;
 
@@ -147,5 +112,17 @@ export function any(
     }
 
     return err(input, "any");
+  };
+}
+
+export function maybe<T>(combinator: Combinator<T>): Combinator<T | null> {
+  return input => {
+    let result = combinator(input);
+
+    if (result.kind === "err") {
+      return ok([input, null]);
+    } else {
+      return result;
+    }
   };
 }
