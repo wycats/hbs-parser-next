@@ -42,12 +42,12 @@ export const TEXT: Combinator<Token> = {
 };
 
 // https://www.w3.org/TR/2011/WD-html5-20110113/tokenization.html#tag-name-state
-export const TAG_NAME = pattern(/^[A-Za-z][^/>\0\s]+/, "TAG_NAME");
+export const TAG_NAME = pattern(/^[A-Za-z][^/>\0\s]+/u, "TAG_NAME");
 
 // https://www.w3.org/TR/2011/WD-html5-20110113/tokenization.html#before-attribute-name-state
 export const ATTRIBUTE_NAME: Combinator<AttributeNameToken> = map(
   pattern(
-    /^[^/>\o"'<=].*?(?=[\u0009\u000a\u000C\u0020/=>\0"'<])/,
+    /^[^\u0009\u000A\u000C\u0020/>\u0000"'<=].*?(?=[\u0009\u000A\u000C\u0020/=>\u0000"'<])/u,
     "ATTRIBUTE_NAME"
   ),
   name => ok(attrName(name.span))
@@ -57,7 +57,10 @@ export const ATTRIBUTE_VALUE: Combinator<AttributeValueToken> = pick(
   {
     dq: seq(tag(`"`), pattern(/^[^"]*/, `dq contents`), tag(`"`)),
     sq: seq(tag(`'`), pattern(/^[^']*/, `sq contents`), tag(`'`)),
-    unquoted: pattern(/^[^\0009\000A\000C\0020>\0"'<=`]+/, `unquoted contents`)
+    unquoted: pattern(
+      /^[^\u0009\u000A\u000C\u0020>\0"'<=`]+/u,
+      `unquoted contents`
+    )
   },
   {
     dq: ([open, string, close]) =>
@@ -98,7 +101,7 @@ export const ATTRIBUTE = pick(
 );
 
 export const ATTRIBUTES: Combinator<AttributeToken[]> = map(
-  seq(WS, many(any(ATTRIBUTE, WS))),
+  seq(WS, many(any(WS, ATTRIBUTE))),
   ([ws, attrs]) => {
     return ok([ws, ...attrs]);
   }

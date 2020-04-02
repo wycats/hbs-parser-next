@@ -55,3 +55,60 @@ test("A tag with a single-quoted attribute", assert => {
     })
   );
 });
+
+test("A tag with a double-quoted attribute", assert => {
+  assert.tree(
+    `<div id="foo">`,
+    b.startTag({
+      name: "div",
+      attrs: [b.sp, b.attr({ name: "id", value: `"foo"` })]
+    })
+  );
+});
+
+test("A tag with a double-quoted empty", assert => {
+  assert.tree(
+    `<div id="">`,
+    b.startTag({
+      name: "div",
+      attrs: [b.sp, b.attr({ name: "id", value: `""` })]
+    })
+  );
+});
+
+test("A tag with unquoted attribute", assert => {
+  assert.tree(
+    `<div id=foo>`,
+    b.startTag({
+      name: "div",
+      attrs: [b.sp, b.attr({ name: "id", value: `foo` })]
+    })
+  );
+});
+
+test("A tag with valueless attributes", assert => {
+  assert.tree(
+    `<div foo bar>`,
+    b.startTag({
+      name: "div",
+      attrs: [b.sp, b.attr("foo"), b.sp, b.attr("bar")]
+    })
+  );
+});
+
+test("A tag with multiple attributes", assert => {
+  assert.tree(
+    `<div id=foo class="bar baz" href='bat'>`,
+    b.startTag({
+      name: "div",
+      attrs: [
+        b.sp,
+        b.attr({ name: "id", value: `foo` }),
+        b.sp,
+        b.attr({ name: "class", value: `"bar baz"` }),
+        b.sp,
+        b.attr({ name: "href", value: `'bat'` })
+      ]
+    })
+  );
+});
