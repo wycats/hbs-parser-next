@@ -15,7 +15,7 @@ import {
   arg
 } from "./tokens";
 import { complete, map, mapResult } from "./utils";
-import { TEXT, START_TAG, END_TAG } from "./html";
+import { TEXT, START_TAG, END_TAG, COMMENT } from "./html";
 import { INTERPOLATE } from "./hbs";
 import { printDebug } from "./debug";
 
@@ -27,7 +27,7 @@ export function read(
 
   let result = input.invoke(
     complete(
-      map(many(any(INTERPOLATE, CONTENT)), tokens => {
+      map(many(any("top level", INTERPOLATE, CONTENT)), tokens => {
         return ok(root(tokens, range(...tokens)));
       })
     ),
@@ -41,4 +41,4 @@ export function read(
   return mapResult(result, ([, token]) => ok(token));
 }
 
-export const CONTENT = any(END_TAG, START_TAG, TEXT);
+export const CONTENT = any("CONTENT", COMMENT, END_TAG, START_TAG, TEXT);

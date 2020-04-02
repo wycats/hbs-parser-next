@@ -47,17 +47,19 @@ export function serializeNode(token: Token | null, source: string): string[] {
       return ["{{", ...serializeList(token.children, source), "}}"];
     case TokenType.TrustedInterpolate:
       return ["{{{", ...serializeList(token.children, source), "}}}"];
+    case TokenType.Comment:
+      return ["<!--", slice(token.data, source), "-->"];
     case TokenType.StartTag:
       return [
         "<",
-        slice(token.name, source),
+        ...serializeList(token.name, source),
         ...serializeList(token.attributes, source),
         ">"
       ];
     case TokenType.EndTag:
       return [
         "</",
-        slice(token.name, source),
+        ...serializeList(token.name, source),
         ...serializeNode(token.trailing, source),
         ">"
       ];

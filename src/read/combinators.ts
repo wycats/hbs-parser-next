@@ -97,7 +97,7 @@ export function tag(source: string): Combinator<Snippet> {
 
 export function pattern(source: RegExp, name: string): Combinator<Snippet> {
   return {
-    name: `pattern (${name})`,
+    name: `pattern[${name}]`,
     invoke(input) {
       let rest = input.sliceRest;
       let match = rest.match(source);
@@ -228,10 +228,11 @@ export class Logger {
 }
 
 export function seq<T extends Debuggable[]>(
+  desc: string,
   ...combinators: TupleCombinators<T>
 ): Combinator<T> {
   return {
-    name: "seq",
+    name: `seq • ${desc}`,
     kind: "arm",
     invoke(input) {
       let out: unknown[] = [];
@@ -255,10 +256,15 @@ export function seq<T extends Debuggable[]>(
 }
 
 export function any<T extends Debuggable[]>(
+  desc: string,
   ...combinators: TupleCombinators<T>
 ): Combinator<T[number]> {
+  if (String(desc) === "[object Object]") {
+    throw new Error("Assert");
+  }
+
   return {
-    name: "any",
+    name: `any • ${desc}`,
     kind: "arm",
     invoke(input) {
       let current = input;

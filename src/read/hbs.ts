@@ -20,16 +20,17 @@ import {
   sexp,
   Token,
   TokenType,
-  arg
+  arg,
+  PresentTokens
 } from "./tokens";
 import { complete, map, mapResult } from "./utils";
 // import { TEXT, START_TAG, END_TAG } from "./html";
 
-export const SPACED_TOKENS: Combinator<[Token, ...Token[]]> = {
+export const SPACED_TOKENS: Combinator<PresentTokens> = {
   name: "SPACED_TOKENS",
   invoke(input) {
     let out: Token[] = [];
-    let tk = any(wrap(SEXP), NAMED, PATH, wrap(WS));
+    let tk = any("token", wrap(SEXP), NAMED, SIMPLE_PATH, wrap(WS));
     let current = input;
 
     while (true) {
@@ -64,19 +65,19 @@ export const SPACED_TOKENS: Combinator<[Token, ...Token[]]> = {
       };
     }
 
-    return ok([current, out as [Token, ...Token[]]]);
+    return ok([current, out as PresentTokens]);
   }
 };
 
 export const INTERPOLATE = map(
-  seq(tag("{{"), SPACED_TOKENS, tag("}}")),
+  seq("INTERPOLATE", tag("{{"), SPACED_TOKENS, tag("}}")),
   ([open, path, close]) => {
     return ok(interpolate(path, range(open, close)));
   }
 );
 
 export const SEXP = map(
-  seq(tag("("), SPACED_TOKENS, tag(")")),
+  seq("SEXP", tag("("), SPACED_TOKENS, tag(")")),
   ([open, path, close]) => {
     return ok(sexp(path, range(open, close)));
   }
@@ -95,8 +96,9 @@ export const WS = token(
 );
 export const EQ = token(tag("="), TokenType.Eq);
 
-const ARG: Combinator<Token> = map(seq(tag("@"), ID_SNIPPET), ([at, id]) =>
-  ok(arg(range(at, id)))
+const ARG: Combinator<Token> = map(
+  seq("@id", tag("@"), ID_SNIPPET),
+  ([at, id]) => ok(arg(range(at, id)))
 );
 
 export function wrap<T extends Debuggable>(
@@ -140,17 +142,17 @@ export function token<T extends LeafTokenType>(
   };
 }
 
-export const PATH: Combinator<[Token, ...Token[]]> = {
+export const SIMPLE_PATH: Combinator<PresentTokens> = {
   name: "PATH",
   invoke(input) {
-    let result = input.invoke(HEAD, input);
+    let result = input.invoke(SIMPLE_HEAD, input);
 
     if (result.kind === "err") {
       return result;
     }
 
     let [current, head] = result.value;
-    let out: Token[] & [Token, ...Token[]] = [head];
+    let out: Token[] & PresentTokens = [head];
 
     while (true) {
       if (current.isEOF()) {
@@ -180,9 +182,9 @@ export const PATH: Combinator<[Token, ...Token[]]> = {
   }
 };
 
-export const NAMED = seq(ID, EQ, PATH);
+export const NAMED = seq("NAMED", ID, EQ, SIMPLE_PATH);
 
-export const HEAD = any(ARG, ID);
+export const SIMPLE_HEAD = any("HEAD", ARG, ID);
 
 // TODO: Allow `[]` or string members
 export const MEMBER = ID;

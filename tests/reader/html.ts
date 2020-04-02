@@ -112,3 +112,51 @@ test("A tag with multiple attributes", assert => {
     })
   );
 });
+
+test("A self-closing tag", assert => {
+  assert.tree(
+    `<img />`,
+    b.startTag({
+      name: "img",
+      attrs: [b.sp],
+      selfClosing: true
+    })
+  );
+});
+
+test("A self-closing tag with valueless attributes", assert => {
+  assert.tree(
+    `<input disabled />`,
+    b.startTag({
+      name: "input",
+      attrs: [b.sp, b.attr("disabled"), b.sp],
+      selfClosing: true
+    })
+  );
+
+  assert.tree(
+    `<input disabled/>`,
+    b.startTag({
+      name: "input",
+      attrs: [b.sp, b.attr("disabled")],
+      selfClosing: true
+    })
+  );
+
+  assert.tree(
+    `<input data-foo=bar/>`,
+    b.startTag({
+      name: "input",
+      attrs: [b.sp, b.attr({ name: "data-foo", value: "bar/" })]
+    })
+  );
+});
+
+test("A comment", assert => {
+  assert.tree("<!-- hello -->", b.comment(" hello "));
+  assert.tree("<!---->", b.comment(""));
+  assert.tree(
+    "<!-- A perfectly legal - appears -->",
+    b.comment(" A perfectly legal - appears ")
+  );
+});

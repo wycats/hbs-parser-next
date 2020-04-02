@@ -1,11 +1,11 @@
-import { Combinator, Debuggable } from "./combinators";
+import { Combinator, Debuggable, combinatorName } from "./combinators";
 import { Snippet, ok, err } from "../snippet";
 
 export function many<T extends Debuggable>(
   source: Combinator<T>
 ): Combinator<T[]> {
   return {
-    name: "many",
+    name: `many • ${combinatorName(source)}`,
     invoke(input) {
       let current = input;
       let out: T[] = [];

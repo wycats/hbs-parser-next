@@ -6,6 +6,14 @@ export type CurriedToken = (builder: TokenBuilder) => tokens.Token;
 export type CurriedAttributeToken = (
   builder: TokenBuilder
 ) => tokens.AttributeToken;
+export type CurriedPresentTokens = [CurriedToken, ...CurriedToken[]];
+
+export function buildPresentTokens(
+  tokens: CurriedPresentTokens,
+  builder: TokenBuilder
+): tokens.PresentTokens {
+  return tokens.map(token => token(builder)) as tokens.PresentTokens;
+}
 
 export function id(name: string): CurriedToken {
   return builder => tokens.id(builder.consume(name));
@@ -49,32 +57,95 @@ export function text(chars: string): CurriedToken {
   };
 }
 
-export function startTag(name: string): CurriedToken;
+export function comment(chars: string): CurriedToken {
+  return builder => {
+    let start = builder.consume("<!--");
+    let data = builder.consume(chars);
+    let end = builder.consume("-->");
+    return tokens.comment(data, range(start, end));
+  };
+}
+
+export type TagName =
+  | string
+  | CurriedToken
+  | [string, ...string[]]
+  | [CurriedToken, ...CurriedToken[]];
+
+function isTagName(input: TagName | object): input is TagName {
+  return (
+    typeof input === "string" ||
+    Array.isArray(input) ||
+    typeof input === "function"
+  );
+}
+
+function buildTagName(name: TagName): CurriedPresentTokens {
+  if (Array.isArray(name)) {
+    let tokens: CurriedToken[] = [];
+
+    for (let part of name) {
+      if (typeof part === "function") {
+        tokens.push(part);
+      } else {
+        switch (part[0]) {
+          case "@":
+            tokens.push(arg(part));
+          default:
+            tokens.push(id(part));
+        }
+      }
+    }
+
+    return tokens as CurriedPresentTokens;
+  } else {
+    if (typeof name === "function") {
+      return [name];
+    } else {
+      switch (name[0]) {
+        case "@":
+          return [arg(name)];
+        default:
+          return [id(name)];
+      }
+    }
+  }
+}
+
+export function startTag(name: TagName): CurriedToken;
 export function startTag(options: {
-  name: string;
+  name: TagName;
   attrs: CurriedAttributeToken[];
+  selfClosing?: true;
 }): CurriedToken;
 export function startTag(
-  options: string | { name: string; attrs: CurriedAttributeToken[] }
+  options:
+    | TagName
+    | { name: TagName; attrs: CurriedAttributeToken[]; selfClosing?: true }
 ): CurriedToken {
-  if (typeof options === "string") {
+  if (isTagName(options)) {
     return builder => {
       let start = builder.consume("<");
-      let nameSpan = builder.consume(options);
+      let nameTokens = buildPresentTokens(buildTagName(options), builder);
       let end = builder.consume(">");
 
-      return tokens.startTag({ name: nameSpan }, range(start, end));
+      return tokens.startTag({ name: nameTokens }, range(start, end));
     };
   } else {
     return builder => {
-      let { name, attrs } = options;
+      let { name, attrs, selfClosing } = options;
 
       let start = builder.consume("<");
-      let nameSpan = builder.consume(name);
+      let nameTokens = buildPresentTokens(buildTagName(name), builder);
       let children = attrs.map(attr => attr(builder));
+
+      if (selfClosing) {
+        builder.consume("/");
+      }
+
       let end = builder.consume(">");
       return tokens.startTag(
-        { name: nameSpan, attrs: children },
+        { name: nameTokens, attrs: children, selfClosing },
         range(start, end)
       );
     };
@@ -82,19 +153,19 @@ export function startTag(
 }
 
 export function endTag(
-  options: string | { name: string; trailing: string }
+  options: TagName | { name: TagName; trailing: string }
 ): CurriedToken {
-  let tagName = typeof options === "string" ? options : options.name;
-  let trailing = typeof options === "string" ? undefined : options.trailing;
+  let tagName = isTagName(options) ? options : options.name;
+  let trailing = isTagName(options) ? undefined : options.trailing;
 
   return builder => {
     let start = builder.consume("</");
-    let tag = builder.consume(tagName);
+    let tagTokens = buildPresentTokens(buildTagName(tagName), builder);
     let trailingToken = trailing ? ws(trailing)(builder) : undefined;
     let end = builder.consume(">");
 
     return tokens.endTag(
-      { name: tag, trailing: trailingToken },
+      { name: tagTokens, trailing: trailingToken },
       range(start, end)
     );
   };

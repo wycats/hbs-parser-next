@@ -12,6 +12,7 @@ export const enum TokenType {
 
   // HTML
   Text = "Text",
+  Comment = "Comment",
   StartTag = "StartTag",
   EndTag = "EndTag",
   AttributeName = "AttributeName",
@@ -48,6 +49,15 @@ export const eq = leaf(TokenType.Eq);
 export const ws = leaf(TokenType.WS);
 export const text = leaf(TokenType.Text);
 export const attrName = leaf(TokenType.AttributeName);
+
+export function comment(data: SourceSpan, span: SourceSpan): CommentToken {
+  return {
+    type: TokenType.Comment,
+    data,
+    span
+  };
+}
+
 export function arg(span: SourceSpan): ArgumentToken {
   return {
     type: TokenType.Argument,
@@ -82,6 +92,11 @@ export interface LeafTokenMap {
 
 export type AnyLeafToken = LeafTokenMap[keyof LeafTokenMap];
 
+export interface CommentToken extends BaseToken {
+  type: TokenType.Comment;
+  data: SourceSpan;
+}
+
 export interface ArgumentToken extends BaseToken {
   type: TokenType.Argument;
   name: SourceSpan;
@@ -104,14 +119,15 @@ export interface TrustedInterpolateToken extends BaseToken {
 
 export interface StartTagToken extends BaseToken {
   type: TokenType.StartTag;
-  name: SourceSpan;
+  name: PresentTokens;
   attributes: readonly AttributeToken[];
+  selfClosing?: true;
 }
 
 export interface EndTagToken extends BaseToken {
   type: TokenType.EndTag;
   trailing: Token | null;
-  name: SourceSpan;
+  name: PresentTokens;
 }
 
 export const enum AttributeValueType {
@@ -156,20 +172,27 @@ export function valuedAttr(
   };
 }
 
+export interface StartTagOptions {
+  name: PresentTokens;
+  attrs?: readonly AttributeToken[];
+  selfClosing?: true;
+}
+
 export function startTag(
-  { name, attrs }: { name: SourceSpan; attrs?: readonly AttributeToken[] },
+  { name, attrs, selfClosing }: StartTagOptions,
   span: SourceSpan
 ): StartTagToken {
   return {
     type: TokenType.StartTag,
     span,
     name,
-    attributes: attrs || []
+    attributes: attrs || [],
+    selfClosing
   };
 }
 
 export function endTag(
-  { name, trailing }: { name: SourceSpan; trailing?: Token | null },
+  { name, trailing }: { name: PresentTokens; trailing?: Token | null },
   span: SourceSpan
 ): EndTagToken {
   return {
@@ -228,6 +251,7 @@ export function root(children: readonly Token[], span: SourceSpan): RootToken {
 }
 
 export interface TokenMap extends LeafTokenMap {
+  [TokenType.Comment]: CommentToken;
   [TokenType.Argument]: ArgumentToken;
   [TokenType.Sexp]: SexpToken;
   [TokenType.Interpolate]: InterpolateToken;
@@ -240,6 +264,8 @@ export interface TokenMap extends LeafTokenMap {
 }
 
 export type Token = TokenMap[keyof TokenMap];
+
+export type PresentTokens = [Token, ...Token[]];
 
 export function debugFormatToken(token: Token | RootToken) {
   return `<token:${token.type}>`;
