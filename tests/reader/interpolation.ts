@@ -36,7 +36,9 @@ assert.tree = function(source: string, ...expected: b.CurriedToken[]) {
   this.step(step);
   let tree = read(source, { logging: config.logging });
 
-  let expectedString = serializeRoot(b.root(expected), source);
+  let { root: expectedRoot, source: expectedSource } = b.root(expected);
+
+  let expectedString = serializeRoot(expectedRoot, expectedSource);
 
   if (tree.kind === "err") {
     this.ok(
@@ -50,7 +52,7 @@ assert.tree = function(source: string, ...expected: b.CurriedToken[]) {
       expectedString,
       "serialization of expected and actual match"
     );
-    this.deepEqual(tree.value, b.root(expected), "token trees match");
+    this.deepEqual(tree.value, expectedRoot, "token trees match");
   }
   this.verifySteps([step], "verified steps");
 };

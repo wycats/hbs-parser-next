@@ -4,7 +4,8 @@ import {
   TokenType,
   AttributeValueType,
   ValuedAttributeToken,
-  AttributeValueToken
+  AttributeValueToken,
+  isInterpolateAttribute
 } from "./tokens";
 import { slice } from "../span";
 import { unreachable } from "./utils";
@@ -33,12 +34,10 @@ export function serializeNode(token: Token | null, source: string): string[] {
     case TokenType.Text:
     case TokenType.AttributeName:
       return [slice(token.span, source)];
+    case TokenType.ArgName:
+      return ["@", slice(token.name, source)];
     case TokenType.AttributeValue:
-      return [
-        serializeQuote(token),
-        slice(token.value, source),
-        serializeQuote(token)
-      ];
+      return serializeAttributeValue(token, source);
     case TokenType.Argument:
       return ["@", slice(token.name, source)];
     case TokenType.Sexp:
@@ -69,9 +68,26 @@ export function serializeNode(token: Token | null, source: string): string[] {
         "=",
         ...serializeNode(token.value, source)
       ];
+    case TokenType.StringInterpolation:
+      return serializeList(token.parts, source);
     default:
       return unreachable(token);
   }
+}
+
+function serializeAttributeValue(
+  token: AttributeValueToken,
+  source: string
+): string[] {
+  if (isInterpolateAttribute(token)) {
+    return serializeNode(token.value, source);
+  }
+
+  return [
+    serializeQuote(token),
+    ...serializeNode(token.value, source),
+    serializeQuote(token)
+  ];
 }
 
 function serializeQuote(token: AttributeValueToken): string {

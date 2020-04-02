@@ -13,7 +13,12 @@ import {
   AttributeValueType,
   comment,
   id,
-  PresentTokens
+  PresentTokens,
+  stringInterpolation,
+  StringInterpolationPart,
+  StringInterpolationToken,
+  ArgNameToken,
+  argName
 } from "./tokens";
 import {
   takeUntil,
@@ -25,9 +30,9 @@ import {
   any,
   pick
 } from "./combinators";
-import { map } from "./utils";
+import { map, present } from "./utils";
 import { range } from "../span";
-import { WS, EQ, token, SIMPLE_PATH } from "./hbs";
+import { WS, EQ, token, SIMPLE_PATH, INTERPOLATE } from "./hbs";
 import { many } from "./multi";
 
 export const TEXT: Combinator<Token> = {
@@ -67,34 +72,96 @@ export const ATTRIBUTE_NAME: Combinator<AttributeNameToken> = map(
   name => ok(attrName(name.span))
 );
 
+export const ARG_NAME: Combinator<ArgNameToken> = map(
+  seq("ARG_NAME", tag("@"), ATTRIBUTE_NAME),
+  ([at, attr]) => ok(argName(attr.span, range(at.span, attr.span)))
+);
+
+export const ANY_ATTR_NAME = any("ANY_ATTR_NAME", ARG_NAME, ATTRIBUTE_NAME);
+
+export const DQ_STRING_INTERPOLATE = any(
+  "DQ_STRING_INTERPOLATE",
+  INTERPOLATE,
+  map(pattern(/^[^"]+/, `dq text`), value => ok(text(value.span)))
+);
+
+export const SQ_STRING_INTERPOLATE = any(
+  "SQ_STRING_INTERPOLATE",
+  INTERPOLATE,
+  map(pattern(/^[^']+/, `sq text`), value => ok(text(value.span)))
+);
+
+export function STRING_INTERPOLATION(
+  combinator: Combinator<StringInterpolationPart>
+): Combinator<StringInterpolationToken> {
+  return {
+    name: "STRING_INTERPOLATION",
+    invoke(input) {
+      return input.invoke(
+        map(many(combinator), value =>
+          ok(stringInterpolation(value, range(...value)))
+        ),
+        input
+      );
+    }
+  };
+}
+
 export const ATTRIBUTE_VALUE: Combinator<AttributeValueToken> = pick(
   {
-    dq: seq("dq", tag(`"`), pattern(/^[^"]*/, `dq contents`), tag(`"`)),
-    sq: seq("sq", tag(`'`), pattern(/^[^']*/, `sq contents`), tag(`'`)),
+    interpolate: INTERPOLATE,
+    dq: seq(
+      "dq",
+      tag(`"`),
+      STRING_INTERPOLATION(DQ_STRING_INTERPOLATE),
+      tag(`"`)
+    ),
+    sq: seq(
+      "sq",
+      tag(`'`),
+      STRING_INTERPOLATION(SQ_STRING_INTERPOLATE),
+      tag(`'`)
+    ),
     unquoted: pattern(
       /^[^\u0009\u000A\u000C\u0020>\0"'<=`]+/u,
       `unquoted contents`
     )
   },
   {
-    dq: ([open, string, close]) =>
+    interpolate: interpolate =>
       ok(
         attrValue(
-          { type: AttributeValueType.DoubleQuoted, value: string.span },
+          { type: AttributeValueType.Interpolate, value: interpolate },
+          interpolate.span
+        )
+      ),
+    dq: ([open, value, close]) =>
+      ok(
+        attrValue(
+          {
+            type: AttributeValueType.DoubleQuoted,
+            value
+          },
           range(open, close)
         )
       ),
-    sq: ([open, string, close]) =>
+    sq: ([open, value, close]) =>
       ok(
         attrValue(
-          { type: AttributeValueType.SingleQuoted, value: string.span },
+          {
+            type: AttributeValueType.SingleQuoted,
+            value
+          },
           range(open, close)
         )
       ),
     unquoted: value =>
       ok(
         attrValue(
-          { type: AttributeValueType.Unquoted, value: value.span },
+          {
+            type: AttributeValueType.Unquoted,
+            value: stringInterpolation([text(value.span)], value.span)
+          },
           value.span
         )
       )
@@ -103,7 +170,7 @@ export const ATTRIBUTE_VALUE: Combinator<AttributeValueToken> = pick(
 
 export const ATTRIBUTE = pick(
   {
-    valued: seq("valued attribute", ATTRIBUTE_NAME, EQ, ATTRIBUTE_VALUE),
+    valued: seq("valued attribute", ANY_ATTR_NAME, EQ, ATTRIBUTE_VALUE),
     bare: ATTRIBUTE_NAME
   },
   {
@@ -115,7 +182,11 @@ export const ATTRIBUTE = pick(
 );
 
 export const ATTRIBUTES: Combinator<AttributeToken[]> = map(
-  seq("ATTRIBUTES", WS, many(any("spaced attribute", WS, ATTRIBUTE))),
+  seq(
+    "ATTRIBUTES",
+    WS,
+    many(any("spaced attribute", WS, INTERPOLATE, ATTRIBUTE))
+  ),
   ([ws, attrs]) => {
     return ok([ws, ...attrs]);
   }

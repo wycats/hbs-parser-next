@@ -1,5 +1,6 @@
 import { Combinator, Debuggable, combinatorName } from "./combinators";
 import { Snippet, ok, err } from "../snippet";
+import { present } from "./utils";
 
 export function many<T extends Debuggable>(
   source: Combinator<T>
@@ -10,12 +11,18 @@ export function many<T extends Debuggable>(
       let current = input;
       let out: T[] = [];
 
+      let count = 0;
+
       while (true) {
+        if (count++ > 50) {
+          return err(input, "likely infinite loop");
+        }
+
         if (current.isEOF()) {
           return ok([current.rest, out]);
         }
 
-        let iterate = input.invoke(source, current);
+        let iterate = input.invoke(present(source), current);
 
         if (iterate.kind === "err") {
           return ok([current.rest, out]);

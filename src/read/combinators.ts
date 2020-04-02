@@ -40,7 +40,9 @@ function formatDebuggable(debuggable: Debuggable): string {
     return "null";
   } else if (Array.isArray(debuggable)) {
     if (debuggable.length <= 2) {
-      return `[${debuggable.map(formatDebuggable).join(", ")}]`;
+      return `[${(debuggable as Debuggable[])
+        .map(formatDebuggable)
+        .join(", ")}]`;
     } else {
       return `[${formatDebuggable(debuggable[0])}, ${formatDebuggable(
         debuggable[1]

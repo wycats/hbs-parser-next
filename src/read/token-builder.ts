@@ -2,7 +2,9 @@ import * as read from "./hbs";
 import * as tokens from "./tokens";
 import { SourceSpan, range, span } from "../span";
 
-export type CurriedToken = (builder: TokenBuilder) => tokens.Token;
+export type CurriedToken<T extends tokens.Token = tokens.Token> = (
+  builder: TokenBuilder
+) => T;
 export type CurriedAttributeToken = (
   builder: TokenBuilder
 ) => tokens.AttributeToken;
@@ -32,12 +34,48 @@ export function ws(space: string): CurriedAttributeToken {
   return builder => tokens.ws(builder.consume(space));
 }
 
-export function interpolate(children: CurriedToken[]): CurriedToken {
+export function interpolate(
+  children: CurriedToken[]
+): CurriedToken<tokens.InterpolateToken> {
   return builder => {
     let open = builder.consume("{{");
     let out = children.map(child => child(builder));
     let close = builder.consume("}}");
     return tokens.interpolate(out, range(open, close));
+  };
+}
+
+export function stringInterpolate(
+  children: CurriedToken<tokens.StringInterpolationPart>[],
+  quote: `"` | `'`
+): CurriedToken<tokens.AttributeValueToken> {
+  return builder => {
+    let open = builder.consume(quote);
+    let out = children.map(child => child(builder));
+    let close = builder.consume(quote);
+    return tokens.attrValue(
+      {
+        type: quoteType(quote),
+        value: tokens.stringInterpolation(out, range(...out))
+      },
+      range(open, close)
+    );
+  };
+}
+
+export function attrInterpolate(
+  ...tokenList: CurriedToken[]
+): CurriedToken<tokens.AttributeValueToken> {
+  return builder => {
+    let value = interpolate(tokenList)(builder);
+
+    return tokens.attrValue(
+      {
+        type: tokens.AttributeValueType.Interpolate,
+        value
+      },
+      value.span
+    );
   };
 }
 
@@ -50,7 +88,7 @@ export function sexp(children: CurriedToken[]): CurriedToken {
   };
 }
 
-export function text(chars: string): CurriedToken {
+export function text(chars: string): CurriedToken<tokens.TextToken> {
   return builder => {
     let out = builder.consume(chars);
     return tokens.text(out);
@@ -171,17 +209,40 @@ export function endTag(
   };
 }
 
-export function attr(name: string): CurriedAttributeToken;
+export function argName(name: string): CurriedToken<tokens.ArgNameToken> {
+  return builder => {
+    let startSpan = builder.consume(name[0]);
+    let nameSpan = builder.consume(name.slice(1));
+
+    return tokens.argName(nameSpan, range(startSpan, nameSpan));
+  };
+}
+
+export function attr(
+  name:
+    | string
+    | CurriedToken<tokens.AttributeNameToken>
+    | CurriedToken<tokens.ArgNameToken>
+): CurriedAttributeToken;
 export function attr(options: {
-  name: string;
-  value: string;
+  name:
+    | string
+    | CurriedToken<tokens.AttributeNameToken>
+    | CurriedToken<tokens.ArgNameToken>;
+  value: string | CurriedToken<tokens.AttributeValueToken>;
+  arg?: true;
 }): CurriedAttributeToken;
 export function attr(
   options:
     | string
+    | CurriedToken<tokens.AnyAttrNameToken>
     | {
-        name: string;
-        value: string;
+        name:
+          | string
+          | CurriedToken<tokens.AttributeNameToken>
+          | CurriedToken<tokens.ArgNameToken>;
+        value: string | CurriedToken<tokens.AttributeValueToken>;
+        arg?: true;
       }
 ): CurriedAttributeToken {
   if (typeof options === "string") {
@@ -189,46 +250,80 @@ export function attr(
       let nameSpan = builder.consume(options);
       return tokens.attrName(nameSpan);
     };
+  } else if (typeof options === "function") {
+    return options;
   } else {
     return builder => {
       let { name, value: rawValue } = options;
 
-      let value: string;
-      let quote: `"` | `'` | undefined;
-
-      switch (rawValue[0]) {
-        case `"`:
-          value = rawValue.slice(1, -1);
-          quote = `"`;
-          break;
-        case `'`:
-          value = rawValue.slice(1, -1);
-          quote = `'`;
-          break;
-        default:
-          value = rawValue;
-          quote = undefined;
-      }
-
       let start = builder.pos;
-      let nameSpan = builder.consume(name);
+
+      let nameToken =
+        typeof name === "string"
+          ? tokens.attrName(builder.consume(name))
+          : name(builder);
+
       builder.consume("=");
       let valueStart = builder.pos;
-      if (quote) {
-        builder.consume(quote);
+
+      let valueToken: tokens.AttributeValueToken;
+
+      if (typeof rawValue === "string") {
+        switch (rawValue[0]) {
+          case `"`: {
+            let start = builder.consume(`"`);
+            let valueSpan = builder.consume(rawValue.slice(1, -1));
+            let end = builder.consume(`"`);
+            let interpolation = tokens.stringInterpolation(
+              [tokens.text(valueSpan)],
+              valueSpan
+            );
+            valueToken = tokens.attrValue(
+              {
+                type: tokens.AttributeValueType.DoubleQuoted,
+                value: interpolation
+              },
+              range(start, end)
+            );
+            break;
+          }
+          case `'`: {
+            let start = builder.consume(`'`);
+            let valueSpan = builder.consume(rawValue.slice(1, -1));
+            let end = builder.consume(`'`);
+            let interpolation = tokens.stringInterpolation(
+              [tokens.text(valueSpan)],
+              valueSpan
+            );
+            valueToken = tokens.attrValue(
+              {
+                type: tokens.AttributeValueType.SingleQuoted,
+                value: interpolation
+              },
+              range(start, end)
+            );
+            break;
+          }
+          default: {
+            let valueSpan = builder.consume(rawValue);
+            let interpolation = tokens.stringInterpolation(
+              [tokens.text(valueSpan)],
+              valueSpan
+            );
+            valueToken = tokens.attrValue(
+              {
+                type: tokens.AttributeValueType.Unquoted,
+                value: interpolation
+              },
+              valueSpan
+            );
+          }
+        }
+      } else {
+        valueToken = rawValue(builder);
       }
-      let valueSpan = builder.consume(value);
-      if (quote) {
-        builder.consume(quote);
-      }
-      let valueEnd = builder.pos;
       let end = builder.pos;
 
-      let nameToken = tokens.attrName(nameSpan);
-      let valueToken = tokens.attrValue(
-        { type: quoteType(quote), value: valueSpan },
-        { start: valueStart, end: valueEnd }
-      );
       return tokens.valuedAttr(
         { name: nameToken, value: valueToken },
         { start, end }
@@ -248,21 +343,30 @@ function quoteType(quote?: `"` | `'`): tokens.AttributeValueType {
   }
 }
 
-export function root(children: CurriedToken[]): tokens.RootToken {
+export function root(
+  children: CurriedToken[]
+): { root: tokens.RootToken; source: string } {
   let builder = new TokenBuilder();
   let start = builder.pos;
   let out = children.map(child => child(builder));
   let end = builder.pos;
 
-  return tokens.root(out, span(start, end));
+  return { root: tokens.root(out, span(start, end)), source: builder.source };
 }
 
 class TokenBuilder {
+  private output = "";
+
   constructor(public pos = 0) {}
 
   consume(chars: string): SourceSpan {
+    this.output += chars;
     let start = this.pos;
     this.pos += chars.length;
     return { start, end: this.pos };
+  }
+
+  get source(): string {
+    return this.output;
   }
 }

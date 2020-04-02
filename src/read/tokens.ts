@@ -15,9 +15,11 @@ export const enum TokenType {
   Comment = "Comment",
   StartTag = "StartTag",
   EndTag = "EndTag",
+  ArgName = "ArgName",
   AttributeName = "AttributeName",
   AttributeValue = "AttributeValue",
-  ValuedAttribute = "ValuedAttribute"
+  ValuedAttribute = "ValuedAttribute",
+  StringInterpolation = "StringInterpolation"
 }
 
 export type LeafTokenType =
@@ -107,7 +109,7 @@ export interface SexpToken extends BaseToken {
   children: readonly Token[];
 }
 
-export interface InterpolateToken extends BaseToken {
+export interface UntrustedInterpolateToken extends BaseToken {
   type: TokenType.Interpolate;
   children: readonly Token[];
 }
@@ -116,6 +118,10 @@ export interface TrustedInterpolateToken extends BaseToken {
   type: TokenType.TrustedInterpolate;
   children: readonly Token[];
 }
+
+export type InterpolateToken =
+  | TrustedInterpolateToken
+  | UntrustedInterpolateToken;
 
 export interface StartTagToken extends BaseToken {
   type: TokenType.StartTag;
@@ -131,19 +137,73 @@ export interface EndTagToken extends BaseToken {
 }
 
 export const enum AttributeValueType {
+  Interpolate = "Interpolate",
   Unquoted = "Unquoted",
   SingleQuoted = "SingleQuoted",
   DoubleQuoted = "DoubleQuoted"
 }
 
-export interface AttributeValueToken extends BaseToken {
-  type: TokenType.AttributeValue;
-  valueType: AttributeValueType;
-  value: SourceSpan;
+export interface ArgNameToken extends BaseToken {
+  type: TokenType.ArgName;
+  name: SourceSpan;
 }
 
+export function argName(name: SourceSpan, span: SourceSpan): ArgNameToken {
+  return {
+    type: TokenType.ArgName,
+    name,
+    span
+  };
+}
+
+export type AnyAttrNameToken = AttributeNameToken | ArgNameToken;
+
+export interface StringAttributeValueToken extends BaseToken {
+  type: TokenType.AttributeValue;
+  valueType: AttributeValueType;
+  value: StringInterpolationToken;
+}
+
+export interface InterpolateAttributeValueToken extends BaseToken {
+  type: TokenType.AttributeValue;
+  valueType: AttributeValueType.Interpolate;
+  value: InterpolateToken;
+}
+
+export type StringInterpolationPart = TextToken | InterpolateToken;
+
+export interface StringInterpolationToken extends BaseToken {
+  type: TokenType.StringInterpolation;
+  parts: StringInterpolationPart[];
+}
+
+export function stringInterpolation(
+  parts: StringInterpolationPart[],
+  span: SourceSpan
+): StringInterpolationToken {
+  return {
+    type: TokenType.StringInterpolation,
+    span,
+    parts
+  };
+}
+
+export function isInterpolateAttribute(
+  input: AttributeValueToken
+): input is InterpolateAttributeValueToken {
+  return input.valueType === AttributeValueType.Interpolate;
+}
+
+export type AttributeValueToken =
+  | StringAttributeValueToken
+  | InterpolateAttributeValueToken; // disabled={{disabled}}
+
+export type AttrValueOptions =
+  | { type: AttributeValueType.Interpolate; value: InterpolateToken }
+  | { type: AttributeValueType; value: StringInterpolationToken };
+
 export function attrValue(
-  { type, value }: { type: AttributeValueType; value: SourceSpan },
+  { type, value }: AttrValueOptions,
   span: SourceSpan
 ): AttributeValueToken {
   return {
@@ -151,17 +211,17 @@ export function attrValue(
     span,
     valueType: type,
     value
-  };
+  } as AttributeValueToken;
 }
 
 export interface ValuedAttributeToken extends BaseToken {
   type: TokenType.ValuedAttribute;
-  name: AttributeNameToken;
+  name: AnyAttrNameToken;
   value: AttributeValueToken;
 }
 
 export function valuedAttr(
-  { name, value }: { name: AttributeNameToken; value: AttributeValueToken },
+  { name, value }: { name: AnyAttrNameToken; value: AttributeValueToken },
   span: SourceSpan
 ): ValuedAttributeToken {
   return {
@@ -205,7 +265,10 @@ export function endTag(
 
 export type AttributeToken =
   | AttributeNameToken
+  | ArgNameToken
   | ValuedAttributeToken
+  | UntrustedInterpolateToken
+  | TrustedInterpolateToken
   | WSToken;
 
 export function sexp(children: readonly Token[], span: SourceSpan): Token {
@@ -218,7 +281,7 @@ export function sexp(children: readonly Token[], span: SourceSpan): Token {
 export function interpolate(
   children: readonly Token[],
   span: SourceSpan
-): InterpolateToken {
+): UntrustedInterpolateToken {
   return {
     type: TokenType.Interpolate,
     span,
@@ -254,13 +317,14 @@ export interface TokenMap extends LeafTokenMap {
   [TokenType.Comment]: CommentToken;
   [TokenType.Argument]: ArgumentToken;
   [TokenType.Sexp]: SexpToken;
-  [TokenType.Interpolate]: InterpolateToken;
+  [TokenType.Interpolate]: UntrustedInterpolateToken;
   [TokenType.TrustedInterpolate]: TrustedInterpolateToken;
   [TokenType.StartTag]: StartTagToken;
   [TokenType.EndTag]: EndTagToken;
-  [TokenType.AttributeName]: AttributeNameToken;
+  [TokenType.ArgName]: ArgNameToken;
   [TokenType.AttributeValue]: AttributeValueToken;
   [TokenType.ValuedAttribute]: ValuedAttributeToken;
+  [TokenType.StringInterpolation]: StringInterpolationToken;
 }
 
 export type Token = TokenMap[keyof TokenMap];

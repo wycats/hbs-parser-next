@@ -71,7 +71,7 @@ test("A tag with a double-quoted empty", assert => {
     `<div id="">`,
     b.startTag({
       name: "div",
-      attrs: [b.sp, b.attr({ name: "id", value: `""` })]
+      attrs: [b.sp, b.attr({ name: "id", value: b.stringInterpolate([], `"`) })]
     })
   );
 });
