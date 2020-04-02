@@ -16,7 +16,6 @@ import {
   serializeRoot
 } from "hbs-parser-next";
 import { eqSnippet, unwrap, eqError, eqSnippets } from "../helpers";
-import { CurriedToken } from "src/read/token-builder";
 
 module("[READER] HTML");
 
@@ -37,4 +36,22 @@ test("A simple tag with trailing spaces", assert => {
 
 test("A simple closing tag", assert => {
   assert.tree("</div>", b.endTag("div"));
+});
+
+test("A simple closing tag with trailing spaces", assert => {
+  assert.tree("</div   \t\n>", b.endTag({ name: "div", trailing: "   \t\n" }));
+});
+
+test("A pair of hyphenated tags", assert => {
+  assert.tree("<x-foo></x-foo>", b.startTag("x-foo"), b.endTag("x-foo"));
+});
+
+test("A tag with a single-quoted attribute", assert => {
+  assert.tree(
+    `<div id='foo'>`,
+    b.startTag({
+      name: "div",
+      attrs: [b.sp, b.attr({ name: "id", value: `'foo'` })]
+    })
+  );
 });

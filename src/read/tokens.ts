@@ -47,9 +47,7 @@ export const dot = leaf(TokenType.Dot);
 export const eq = leaf(TokenType.Eq);
 export const ws = leaf(TokenType.WS);
 export const text = leaf(TokenType.Text);
-export const bareAttr: (span: SourceSpan) => Token & AttributeToken = leaf(
-  TokenType.AttributeName
-);
+export const attrName = leaf(TokenType.AttributeName);
 export function arg(span: SourceSpan): ArgumentToken {
   return {
     type: TokenType.Argument,
@@ -112,6 +110,7 @@ export interface StartTagToken extends BaseToken {
 
 export interface EndTagToken extends BaseToken {
   type: TokenType.EndTag;
+  trailing: Token | null;
   name: SourceSpan;
 }
 
@@ -127,10 +126,34 @@ export interface AttributeValueToken extends BaseToken {
   value: SourceSpan;
 }
 
+export function attrValue(
+  { type, value }: { type: AttributeValueType; value: SourceSpan },
+  span: SourceSpan
+): AttributeValueToken {
+  return {
+    type: TokenType.AttributeValue,
+    span,
+    valueType: type,
+    value
+  };
+}
+
 export interface ValuedAttributeToken extends BaseToken {
   type: TokenType.ValuedAttribute;
   name: AttributeNameToken;
   value: AttributeValueToken;
+}
+
+export function valuedAttr(
+  { name, value }: { name: AttributeNameToken; value: AttributeValueToken },
+  span: SourceSpan
+): ValuedAttributeToken {
+  return {
+    type: TokenType.ValuedAttribute,
+    span,
+    name,
+    value
+  };
 }
 
 export function startTag(
@@ -145,10 +168,14 @@ export function startTag(
   };
 }
 
-export function endTag(name: SourceSpan, span: SourceSpan): EndTagToken {
+export function endTag(
+  { name, trailing }: { name: SourceSpan; trailing?: Token | null },
+  span: SourceSpan
+): EndTagToken {
   return {
     type: TokenType.EndTag,
     span,
+    trailing: trailing ? trailing : null,
     name
   };
 }
@@ -213,3 +240,7 @@ export interface TokenMap extends LeafTokenMap {
 }
 
 export type Token = TokenMap[keyof TokenMap];
+
+export function debugFormatToken(token: Token | RootToken) {
+  return `<token:${token.type}>`;
+}

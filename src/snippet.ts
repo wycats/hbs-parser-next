@@ -1,15 +1,28 @@
 import { SourceSpan } from "./span";
+import { Logger, Debuggable, Combinator } from "./read/combinators";
 
 export class Snippet {
-  static input(source: string): Snippet {
-    return new Snippet(source, 0, 0);
+  static input(source: string, logger: Logger): Snippet {
+    return new Snippet(source, 0, 0, logger);
   }
 
   constructor(
     readonly source: string,
     readonly offset: number,
-    readonly length: number
+    readonly length: number,
+    readonly logger: Logger
   ) {}
+
+  invoke<T extends Debuggable>(
+    combinator: Combinator<T>,
+    input: Snippet,
+    {
+      forceTransparent,
+      context
+    }: { forceTransparent?: boolean; context?: string } = {}
+  ): Result<[Snippet, T]> {
+    return this.logger.invoke(combinator, input);
+  }
 
   eq(other: Snippet) {
     return (
@@ -23,8 +36,21 @@ export class Snippet {
     return `<offset:${this.offset} length:${this.length}>`;
   }
 
+  debugRest(): string {
+    if (this.isEOF()) {
+      return `(eof)`;
+    } else {
+      return `${this.source.slice(this.offset + this.length)}`;
+    }
+  }
+
   slice(chars: number): Snippet {
-    return new Snippet(this.source, this.offset + this.length, chars);
+    return new Snippet(
+      this.source,
+      this.offset + this.length,
+      chars,
+      this.logger
+    );
   }
 
   get sliceRest(): string {
@@ -32,7 +58,7 @@ export class Snippet {
   }
 
   get rest(): Snippet {
-    return new Snippet(this.source, this.offset + this.length, 0);
+    return new Snippet(this.source, this.offset + this.length, 0, this.logger);
   }
 
   isEOF(): boolean {
@@ -48,7 +74,12 @@ export class Snippet {
   }
 
   extend(count = 1): Snippet {
-    return new Snippet(this.source, this.offset, this.length + count);
+    return new Snippet(
+      this.source,
+      this.offset,
+      this.length + count,
+      this.logger
+    );
   }
 
   get span(): SourceSpan {

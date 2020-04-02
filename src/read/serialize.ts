@@ -19,7 +19,11 @@ export function serializeRoot(root: RootToken, source: string): string {
   return out.join("");
 }
 
-export function serializeNode(token: Token, source: string): string[] {
+export function serializeNode(token: Token | null, source: string): string[] {
+  if (token === null) {
+    return [""];
+  }
+
   switch (token.type) {
     // leaf tokens
     case TokenType.Dot:
@@ -51,7 +55,12 @@ export function serializeNode(token: Token, source: string): string[] {
         ">"
       ];
     case TokenType.EndTag:
-      return ["</", slice(token.name, source), ">"];
+      return [
+        "</",
+        slice(token.name, source),
+        ...serializeNode(token.trailing, source),
+        ">"
+      ];
     case TokenType.ValuedAttribute:
       return [
         ...serializeNode(token.name, source),

@@ -13,10 +13,10 @@ import {
   tokens,
   span,
   b,
-  serializeRoot
+  serializeRoot,
+  Logger
 } from "hbs-parser-next";
 import { eqSnippet, unwrap, eqError, eqSnippets } from "../helpers";
-import { CurriedToken } from "src/read/token-builder";
 
 module("[READER] interpolation");
 
@@ -25,12 +25,16 @@ declare module "qunit" {
   interface Assert {
     tree(this: Assert, source: string, ...expected: b.CurriedToken[]): void;
   }
+
+  interface Config {
+    logging: true | undefined;
+  }
 }
 
-assert.tree = function(source: string, ...expected: CurriedToken[]) {
+assert.tree = function(source: string, ...expected: b.CurriedToken[]) {
   let step = source || "(empty)";
   this.step(step);
-  let tree = read(source);
+  let tree = read(source, { logging: config.logging });
 
   let expectedString = serializeRoot(b.root(expected), source);
 
