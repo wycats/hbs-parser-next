@@ -1,4 +1,5 @@
-import { module, test, config, assert, equiv } from "qunit";
+import { module, test, config, equiv } from "qunit";
+import * as qunit from "qunit";
 import {
   combinators,
   Snippet,
@@ -31,7 +32,7 @@ declare module "qunit" {
   }
 }
 
-assert.tree = function(source: string, ...expected: b.CurriedToken[]) {
+qunit.assert.tree = function(source: string, ...expected: b.CurriedToken[]) {
   let step = source || "(empty)";
   this.step(step);
   let tree = read(source, { logging: config.logging });
@@ -65,6 +66,22 @@ test("{{id}} interpolating an id", assert => {
   assert.tree("{{identifier}}", b.interpolate([b.id("identifier")]));
   assert.tree("{{id}}", b.interpolate([b.id("id")]));
   assert.tree("{{id-with-dash}}", b.interpolate([b.id("id-with-dash")]));
+});
+
+test("{{id}} interpolating a string", assert => {
+  assert.tree(`{{"hello"}}`, b.interpolate([b.str(`"hello"`)]));
+  assert.tree(`{{"hello world"}}`, b.interpolate([b.str(`"hello world"`)]));
+  assert.tree(`{{"hello\\"world"}}`, b.interpolate([b.str(`"hello\\"world"`)]));
+  assert.tree(`{{'hello'}}`, b.interpolate([b.str(`'hello'`)]));
+  assert.tree(`{{'hello world'}}`, b.interpolate([b.str(`'hello world'`)]));
+  assert.tree(`{{'hello\\'world'}}`, b.interpolate([b.str(`'hello\\'world'`)]));
+});
+
+test("{{id}} interpolating a number", assert => {
+  assert.tree("{{10}}", b.interpolate([b.int("10")]));
+  assert.tree("{{-10}}", b.interpolate([b.int("-10")]));
+  assert.tree("{{100.5123}}", b.interpolate([b.decimal("100.5123")]));
+  assert.tree("{{-100.5123}}", b.interpolate([b.decimal("-100.5123")]));
 });
 
 test("{{(id)}} interpolating an expression", assert => {
@@ -215,7 +232,7 @@ test("named arguments", assert => {
 
 test("using all the features", assert => {
   assert.tree(
-    "{{  (id.with.path some @arg named=args other=@named.args) @some.arg another.arg named=@arg other=named.arg  }}",
+    "{{  (id.with.path some @arg named=args other=@named.args) @some.arg another.arg named=@arg other=named.arg yet-another=-12.5  }}",
     b.interpolate([
       b.ws("  "),
       b.sexp([
@@ -257,6 +274,10 @@ test("using all the features", assert => {
       b.id("named"),
       b.dot,
       b.id("arg"),
+      b.sp,
+      b.id("yet-another"),
+      b.eq,
+      b.decimal("-12.5"),
       b.ws("  ")
     ])
   );

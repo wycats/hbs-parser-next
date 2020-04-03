@@ -1,4 +1,4 @@
-import { module, test, config, assert } from "qunit";
+import { module, test, config } from "qunit";
 import {
   combinators,
   Snippet,

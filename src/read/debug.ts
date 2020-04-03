@@ -79,6 +79,7 @@ export function printDebug() {
     data: [arrow, name, a, b]
   } of table) {
     let first = `${arrow} %c${name}%c`.padEnd(60);
+    // tslint:disable-next-line:no-console
     console.log(
       `${first} | %c${b}%c |`,
       armStyle(style),

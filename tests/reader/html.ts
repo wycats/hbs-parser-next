@@ -1,21 +1,5 @@
-import { module, test, config, assert, equiv } from "qunit";
-import {
-  combinators,
-  Snippet,
-  Result,
-  Ok,
-  ok,
-  err,
-  Err,
-  multi,
-  parse,
-  read,
-  tokens,
-  span,
-  b,
-  serializeRoot
-} from "hbs-parser-next";
-import { eqSnippet, unwrap, eqError, eqSnippets } from "../helpers";
+import { b } from "hbs-parser-next";
+import { module, test } from "qunit";
 
 module("[READER] HTML");
 

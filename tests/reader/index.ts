@@ -1,3 +1,3 @@
-import "./interpolation";
+import "./hbs";
 import "./html";
 import "./hybrid";

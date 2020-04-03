@@ -1,21 +1,5 @@
-import { module, test, config, assert, equiv, todo } from "qunit";
-import {
-  combinators,
-  Snippet,
-  Result,
-  Ok,
-  ok,
-  err,
-  Err,
-  multi,
-  parse,
-  read,
-  tokens,
-  span,
-  b,
-  serializeRoot
-} from "hbs-parser-next";
-import { eqSnippet, unwrap, eqError, eqSnippets } from "../helpers";
+import { b } from "hbs-parser-next";
+import { module, test } from "qunit";
 
 module("[READER] Hybrid");
 
@@ -135,7 +119,7 @@ test("Arguments", assert => {
 
 test("Modifiers", assert => {
   assert.tree(
-    `<div disabled {{on click (fn this.handleClick @arg)}}></div>`,
+    `<div disabled {{on "click" (fn this.handleClick @arg)}}></div>`,
     b.startTag({
       name: "div",
       attrs: [
@@ -145,7 +129,7 @@ test("Modifiers", assert => {
         b.interpolate([
           b.id("on"),
           b.sp,
-          b.id("click"),
+          b.str(`"click"`),
           b.sp,
           b.sexp([
             b.id("fn"),

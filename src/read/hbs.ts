@@ -7,7 +7,8 @@ import {
   seq,
   tag,
   Debuggable,
-  combinatorName
+  combinatorName,
+  maybe
 } from "./combinators";
 import { many } from "./multi";
 import {
@@ -21,16 +22,85 @@ import {
   Token,
   TokenType,
   arg,
-  PresentTokens
+  PresentTokens,
+  stringToken,
+  QuoteType,
+  StringToken,
+  numberToken,
+  SexpToken
 } from "./tokens";
 import { complete, map, mapResult } from "./utils";
-// import { TEXT, START_TAG, END_TAG } from "./html";
+
+export const SINGLE_QUOTED: Combinator<StringToken> = map(
+  seq(
+    "SINGLE_QUOTED",
+    tag(`'`),
+    pattern(/^(\\'|[^'])*/u, "single quote body"),
+    tag(`'`)
+  ),
+  ([open, body, close]) =>
+    ok(
+      stringToken(
+        { data: body.span, quote: QuoteType.Single },
+        range(open, close)
+      )
+    )
+);
+
+export const DOUBLE_QUOTED: Combinator<StringToken> = map(
+  seq(
+    "DOUBLE_QUOTED",
+    tag(`"`),
+    pattern(/^(\\"|[^"])*/u, "double quote body"),
+    tag(`"`)
+  ),
+  ([open, body, close]) =>
+    ok(
+      stringToken(
+        { data: body.span, quote: QuoteType.Double },
+        range(open, close)
+      )
+    )
+);
+
+export const NUMBER = map(
+  seq(
+    "NUMBER",
+    maybe(tag("-")),
+    pattern(/^[0-9]+/, "digits"),
+    maybe(
+      map(seq("decimal", tag("."), pattern(/^[0-9]+/, "digits")), ([, tail]) =>
+        ok(tail)
+      )
+    )
+  ),
+  ([negative, head, tail]) =>
+    ok(
+      numberToken(
+        {
+          head: head.span,
+          tail: tail ? tail.span : null,
+          negative: negative ? negative.span : null
+        },
+        range(negative, head, tail ? tail : null)
+      )
+    )
+);
 
 export const SPACED_TOKENS: Combinator<PresentTokens> = {
   name: "SPACED_TOKENS",
   invoke(input) {
     let out: Token[] = [];
-    let tk = any("token", wrap(SEXP), NAMED, SIMPLE_PATH, wrap(WS));
+    let tk = any(
+      "token",
+      wrap(SEXP),
+      wrap(DOUBLE_QUOTED),
+      wrap(SINGLE_QUOTED),
+      wrap(NUMBER),
+      NAMED,
+      SIMPLE_PATH,
+      wrap(WS)
+    );
     let current = input;
 
     while (true) {
@@ -46,11 +116,11 @@ export const SPACED_TOKENS: Combinator<PresentTokens> = {
 
       let [next, tokens] = result.value;
 
-      for (let token of tokens) {
-        if (Array.isArray(token)) {
-          out.push(...token);
+      for (let tok of tokens) {
+        if (Array.isArray(tok)) {
+          out.push(...tok);
         } else {
-          out.push(token);
+          out.push(tok);
         }
       }
 
@@ -76,12 +146,20 @@ export const INTERPOLATE = map(
   }
 );
 
-export const SEXP = map(
-  seq("SEXP", tag("("), SPACED_TOKENS, tag(")")),
-  ([open, path, close]) => {
-    return ok(sexp(path, range(open, close)));
+export const SEXP: Combinator<Token> = {
+  name: "SEXP",
+  invoke(input) {
+    return input.invoke(
+      map(
+        seq("SEXP", tag("("), SPACED_TOKENS, tag(")")),
+        ([open, path, close]) => {
+          return ok(sexp(path, range(open, close)));
+        }
+      ),
+      input
+    );
   }
-);
+};
 
 const ID_SNIPPET: Combinator<Snippet> = pattern(
   /^\p{ID_Start}[\p{ID_Continue}-]*/u,
@@ -182,7 +260,16 @@ export const SIMPLE_PATH: Combinator<PresentTokens> = {
   }
 };
 
-export const NAMED = seq("NAMED", ID, EQ, SIMPLE_PATH);
+export const EXPRESSION = any(
+  "EXPRESSION",
+  SEXP,
+  SIMPLE_PATH,
+  DOUBLE_QUOTED,
+  SINGLE_QUOTED,
+  NUMBER
+);
+
+export const NAMED = seq("NAMED", ID, EQ, EXPRESSION);
 
 export const SIMPLE_HEAD = any("HEAD", ARG, ID);
 

@@ -115,15 +115,15 @@ export function pattern(source: RegExp, name: string): Combinator<Snippet> {
   };
 }
 
-export function takeUntil(pattern: Pattern): Combinator<Snippet> {
-  if (typeof pattern === "string") {
+export function takeUntil(pat: Pattern): Combinator<Snippet> {
+  if (typeof pat === "string") {
     return {
       name: "takeUntil",
       invoke(input) {
         let next = input;
 
         while (true) {
-          if (next.isEOF() || next.isMatch(pattern)) {
+          if (next.isEOF() || next.isMatch(pat)) {
             return ok([next.rest, next]);
           } else {
             next = next.extend(1);
@@ -136,8 +136,8 @@ export function takeUntil(pattern: Pattern): Combinator<Snippet> {
   }
 }
 
-export function takeWhile(pattern: Pattern): Combinator<Snippet> {
-  if (typeof pattern === "string") {
+export function takeWhile(pat: Pattern): Combinator<Snippet> {
+  if (typeof pat === "string") {
     return {
       name: "takeWhile",
       invoke(input) {
@@ -146,8 +146,8 @@ export function takeWhile(pattern: Pattern): Combinator<Snippet> {
         while (true) {
           if (next.isEOF()) {
             return ok([next.rest, next]);
-          } else if (next.isMatch(pattern)) {
-            next = next.extend(pattern.length);
+          } else if (next.isMatch(pat)) {
+            next = next.extend(pat.length);
           } else if (next.length === 0) {
             return err(input, "takeWhile");
           } else {

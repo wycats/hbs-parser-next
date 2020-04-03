@@ -9,6 +9,8 @@ export const enum TokenType {
   Dot = "Dot",
   Eq = "Eq",
   WS = "WS",
+  String = "String",
+  Number = "Number",
 
   // HTML
   Text = "Text",
@@ -51,6 +53,53 @@ export const eq = leaf(TokenType.Eq);
 export const ws = leaf(TokenType.WS);
 export const text = leaf(TokenType.Text);
 export const attrName = leaf(TokenType.AttributeName);
+
+export const enum QuoteType {
+  Single,
+  Double
+}
+
+export interface StringToken extends BaseToken {
+  type: TokenType.String;
+  data: SourceSpan;
+  quote: QuoteType;
+}
+
+export function stringToken(
+  { data, quote }: { data: SourceSpan; quote: QuoteType },
+  span: SourceSpan
+): StringToken {
+  return {
+    type: TokenType.String,
+    span,
+    data,
+    quote
+  };
+}
+
+export interface NumberToken extends BaseToken {
+  type: TokenType.Number;
+  negative: SourceSpan | null;
+  head: SourceSpan;
+  tail: SourceSpan | null;
+}
+
+export function numberToken(
+  {
+    head,
+    tail,
+    negative
+  }: { head: SourceSpan; tail: SourceSpan | null; negative: SourceSpan | null },
+  span: SourceSpan
+): NumberToken {
+  return {
+    type: TokenType.Number,
+    span,
+    negative,
+    head,
+    tail
+  };
+}
 
 export function comment(data: SourceSpan, span: SourceSpan): CommentToken {
   return {
@@ -271,7 +320,7 @@ export type AttributeToken =
   | TrustedInterpolateToken
   | WSToken;
 
-export function sexp(children: readonly Token[], span: SourceSpan): Token {
+export function sexp(children: readonly Token[], span: SourceSpan): SexpToken {
   return {
     type: TokenType.Sexp,
     span,
@@ -314,6 +363,8 @@ export function root(children: readonly Token[], span: SourceSpan): RootToken {
 }
 
 export interface TokenMap extends LeafTokenMap {
+  [TokenType.String]: StringToken;
+  [TokenType.Number]: NumberToken;
   [TokenType.Comment]: CommentToken;
   [TokenType.Argument]: ArgumentToken;
   [TokenType.Sexp]: SexpToken;

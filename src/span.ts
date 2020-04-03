@@ -7,9 +7,13 @@ export function span(start: number, end: number) {
   return { start, end };
 }
 
-export type HasSpan = SourceSpan | { span: SourceSpan };
+export type HasSpan = SourceSpan | { span: SourceSpan; };
 
-export function range(...spans: HasSpan[]): SourceSpan {
+export function range(...rawSpans: Array<HasSpan | null | undefined>): SourceSpan {
+  let spans = rawSpans.filter(
+    s => s !== null && s !== undefined
+  ) as HasSpan[];
+
   if (spans.length === 0) {
     return span(0, 0);
   }
@@ -17,8 +21,8 @@ export function range(...spans: HasSpan[]): SourceSpan {
   let first = spans[0];
   let last = first;
 
-  for (let span of spans) {
-    last = span;
+  for (let s of spans) {
+    last = s;
   }
 
   return { start: getSpan(first).start, end: getSpan(last).end };
@@ -38,6 +42,6 @@ export function getSpan(item: HasSpan & Partial<SourceSpan>): SourceSpan {
   }
 }
 
-export function slice(span: SourceSpan, source: string): string {
-  return source.slice(span.start, span.end);
+export function slice(s: SourceSpan, source: string): string {
+  return source.slice(s.start, s.end);
 }

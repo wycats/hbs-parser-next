@@ -5,7 +5,8 @@ import {
   AttributeValueType,
   ValuedAttributeToken,
   AttributeValueToken,
-  isInterpolateAttribute
+  isInterpolateAttribute,
+  QuoteType
 } from "./tokens";
 import { slice } from "../span";
 import { unreachable } from "./utils";
@@ -34,6 +35,25 @@ export function serializeNode(token: Token | null, source: string): string[] {
     case TokenType.Text:
     case TokenType.AttributeName:
       return [slice(token.span, source)];
+    case TokenType.String: {
+      let quote = token.quote === QuoteType.Single ? `'` : `"`;
+      return [quote, slice(token.data, source), quote];
+    }
+    case TokenType.Number: {
+      let out = [];
+
+      if (token.negative) {
+        out.push(slice(token.negative, source));
+      }
+
+      out.push(slice(token.head, source));
+
+      if (token.tail) {
+        out.push(".", slice(token.tail, source));
+      }
+
+      return out;
+    }
     case TokenType.ArgName:
       return ["@", slice(token.name, source)];
     case TokenType.AttributeValue:
