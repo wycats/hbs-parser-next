@@ -1,9 +1,9 @@
-import { SourceSpan } from "./span";
+import type { SourceSpan } from "./span";
 
 export const enum NodeType {
   Interpolation,
   Path,
-  Identifier
+  Identifier,
 }
 
 export interface Root {}
@@ -26,7 +26,7 @@ export function interpolation(
   return {
     type: NodeType.Interpolation,
     expr,
-    span
+    span,
   };
 }
 
@@ -43,7 +43,7 @@ export function id(name: string, span: SourceSpan): Identifier {
   return {
     type: NodeType.Identifier,
     name,
-    span
+    span,
   };
 }
 
@@ -62,13 +62,13 @@ export function path(head: PathHead, tail: PathTail[] = []): Path {
       type: NodeType.Path,
       head,
       tail,
-      span: { start: head.span.start, end: tail[tail.length - 1].span.end }
+      span: { start: head.span.start, end: tail[tail.length - 1].span.end },
     };
   } else {
     return {
       type: NodeType.Path,
       head,
-      span: head.span
+      span: head.span,
     };
   }
 }

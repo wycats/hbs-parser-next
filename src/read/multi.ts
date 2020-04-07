@@ -1,10 +1,11 @@
-import { Combinator, Debuggable, combinatorName } from "./combinators";
-import { Snippet, ok, err } from "../snippet";
-import { present } from "./utils";
+import { ok, err } from "../snippet";
+import { present, combinatorName } from "./utils";
+import type { Debuggable } from "./logger";
+import type { CombinatorType } from "./combinators/types";
 
 export function many<T extends Debuggable>(
-  source: Combinator<T>
-): Combinator<T[]> {
+  source: CombinatorType<T>
+): CombinatorType<T[]> {
   return {
     name: `many • ${combinatorName(source)}`,
     invoke(input) {
@@ -22,7 +23,7 @@ export function many<T extends Debuggable>(
           return ok([current.rest, out]);
         }
 
-        let iterate = input.invoke(present(source), current);
+        let iterate = current.invoke(present(source));
 
         if (iterate.kind === "err") {
           return ok([current.rest, out]);
@@ -32,6 +33,6 @@ export function many<T extends Debuggable>(
           current = next;
         }
       }
-    }
+    },
   };
 }

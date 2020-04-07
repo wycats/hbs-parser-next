@@ -1,93 +1,87 @@
-import { ok, Result, Snippet } from "../snippet";
-import { range, SourceSpan } from "../span";
-import {
-  any,
-  Combinator,
-  pattern,
-  seq,
-  tag,
-  Debuggable,
-  combinatorName,
-  maybe
-} from "./combinators";
+import { ok, Snippet } from "../snippet";
+import { range } from "../span";
+import { any, maybe, pattern, seq, tag } from "./combinators";
 import { many } from "./multi";
+import { TOP_LEVEL } from "./read";
 import {
-  ArgumentToken,
-  interpolate,
-  LeafToken,
-  LeafTokenType,
-  root,
-  RootToken,
-  sexp,
-  Token,
-  TokenType,
   arg,
-  PresentTokens,
-  stringToken,
-  QuoteType,
-  StringToken,
+  block,
+  BlockToken,
+  closeBlock,
+  interpolate,
+  LeafTokenMap,
   numberToken,
-  SexpToken
+  openBlock,
+  PresentTokens,
+  QuoteType,
+  sexp,
+  stringToken,
+  StringToken,
+  TokenType,
+  Token,
 } from "./tokens";
-import { complete, map, mapResult } from "./utils";
+import { map } from "./utils";
+import type { Debuggable } from "./logger";
+import type { CombinatorType } from "./combinators/types";
+import Wrap from "./combinators/wrap";
+import SomeToken from "./combinators/hbs/token";
 
-export const SINGLE_QUOTED: Combinator<StringToken> = map(
-  seq(
-    "SINGLE_QUOTED",
-    tag(`'`),
-    pattern(/^(\\'|[^'])*/u, "single quote body"),
-    tag(`'`)
-  ),
-  ([open, body, close]) =>
-    ok(
-      stringToken(
-        { data: body.span, quote: QuoteType.Single },
-        range(open, close)
-      )
+export const token = <T extends keyof LeafTokenMap>(
+  combinator: CombinatorType<Snippet>,
+  type: T
+) => new SomeToken(combinator, type);
+
+export const SINGLE_QUOTED: CombinatorType<StringToken> = seq(
+  "SINGLE_QUOTED",
+  tag(`'`),
+  pattern(/^(\\'|[^'])*/u, "single quote body"),
+  tag(`'`)
+).map(([open, body, close]) =>
+  ok(
+    stringToken(
+      { data: body.span, quote: QuoteType.Single },
+      range(open, close)
     )
+  )
 );
 
-export const DOUBLE_QUOTED: Combinator<StringToken> = map(
-  seq(
-    "DOUBLE_QUOTED",
-    tag(`"`),
-    pattern(/^(\\"|[^"])*/u, "double quote body"),
-    tag(`"`)
-  ),
-  ([open, body, close]) =>
-    ok(
-      stringToken(
-        { data: body.span, quote: QuoteType.Double },
-        range(open, close)
-      )
+export const DOUBLE_QUOTED: CombinatorType<StringToken> = seq(
+  "DOUBLE_QUOTED",
+  tag(`"`),
+  pattern(/^(\\"|[^"])*/u, "double quote body"),
+  tag(`"`)
+).map(([open, body, close]) =>
+  ok(
+    stringToken(
+      { data: body.span, quote: QuoteType.Double },
+      range(open, close)
     )
+  )
 );
 
-export const NUMBER = map(
-  seq(
-    "NUMBER",
-    maybe(tag("-")),
-    pattern(/^[0-9]+/, "digits"),
-    maybe(
-      map(seq("decimal", tag("."), pattern(/^[0-9]+/, "digits")), ([, tail]) =>
-        ok(tail)
-      )
+export const NUMBER = seq(
+  "NUMBER",
+  maybe(tag("-")),
+  pattern(/^[0-9]+/, "digits"),
+  maybe(
+    map(seq("decimal", tag("."), pattern(/^[0-9]+/, "digits")), ([, tail]) =>
+      ok(tail)
     )
-  ),
-  ([negative, head, tail]) =>
-    ok(
-      numberToken(
-        {
-          head: head.span,
-          tail: tail ? tail.span : null,
-          negative: negative ? negative.span : null
-        },
-        range(negative, head, tail ? tail : null)
-      )
+  )
+).map(([negative, head, tail]) =>
+  ok(
+    numberToken(
+      {
+        head: head.span,
+        tail: tail ? tail.span : null,
+        negative: negative ? negative.span : null,
+      },
+      range(negative, head, tail ? tail : null)
     )
+  )
 );
 
-export const SPACED_TOKENS: Combinator<PresentTokens> = {
+export const SPACED_TOKENS: CombinatorType<PresentTokens> = {
   name: "SPACED_TOKENS",
   invoke(input) {
     let out: Token[] = [];
@@ -108,7 +102,7 @@ export const SPACED_TOKENS: Combinator<PresentTokens> = {
         break;
       }
 
-      let result = input.invoke(tk, current);
+      let result = current.invoke(tk);
 
       if (result.kind === "err") {
         break;
@@ -131,99 +125,18 @@ export const SPACED_TOKENS: Combinator<PresentTokens> = {
       return {
         kind: "err",
         reason: "present",
-        snippet: input
+        snippet: input,
       };
     }
 
     return ok([current, out as PresentTokens]);
-  }
+  },
 };
 
-export const INTERPOLATE = map(
-  seq("INTERPOLATE", tag("{{"), SPACED_TOKENS, tag("}}")),
-  ([open, path, close]) => {
-    return ok(interpolate(path, range(open, close)));
-  }
-);
-
-export const SEXP: Combinator<Token> = {
-  name: "SEXP",
-  invoke(input) {
-    return input.invoke(
-      map(
-        seq("SEXP", tag("("), SPACED_TOKENS, tag(")")),
-        ([open, path, close]) => {
-          return ok(sexp(path, range(open, close)));
-        }
-      ),
-      input
-    );
-  }
-};
-
-const ID_SNIPPET: Combinator<Snippet> = pattern(
-  /^\p{ID_Start}[\p{ID_Continue}-]*/u,
-  "ID_SNIPPET"
-);
-
-export const ID = token(ID_SNIPPET, TokenType.Identifier);
-export const DOT = token(tag("."), TokenType.Dot);
-export const WS = token(
-  pattern(/^[\u0009\u000A\u000C\u0020]+/u, "WS"),
-  TokenType.WS
-);
-export const EQ = token(tag("="), TokenType.Eq);
-
-const ARG: Combinator<Token> = map(
-  seq("@id", tag("@"), ID_SNIPPET),
-  ([at, id]) => ok(arg(range(at, id)))
-);
-
-export function wrap<T extends Debuggable>(
-  combinator: Combinator<T>
-): Combinator<T[]> {
-  return {
-    name: "wrap",
-    invoke(input) {
-      let result = input.invoke(combinator, input);
-
-      if (result.kind === "err") {
-        return result;
-      } else {
-        return ok([result.value[0], [result.value[1]]]);
-      }
-    }
-  };
-}
-
-export function token<T extends LeafTokenType>(
-  combinator: Combinator<Snippet>,
-  type: T
-): Combinator<LeafToken<T>> {
-  return {
-    name: `token (${combinatorName(combinator)})`,
-    invoke(input) {
-      let result = input.invoke(combinator, input, { forceTransparent: true });
-
-      if (result.kind === "err") {
-        return result;
-      } else {
-        return ok([
-          result.value[0],
-          {
-            type,
-            span: result.value[1].span
-          }
-        ]);
-      }
-    }
-  };
-}
-
-export const SIMPLE_PATH: Combinator<PresentTokens> = {
+export const SIMPLE_PATH: CombinatorType<PresentTokens> = {
   name: "PATH",
   invoke(input) {
-    let result = input.invoke(SIMPLE_HEAD, input);
+    let result = input.invoke(SIMPLE_HEAD);
 
     if (result.kind === "err") {
       return result;
@@ -237,7 +150,7 @@ export const SIMPLE_PATH: Combinator<PresentTokens> = {
         return ok([current, out]);
       }
 
-      let resultDot = input.invoke(DOT, current);
+      let resultDot = current.invoke(DOT);
 
       if (resultDot.kind === "err") {
         return ok([current, out]);
@@ -246,7 +159,7 @@ export const SIMPLE_PATH: Combinator<PresentTokens> = {
       current = resultDot.value[0];
       let nextDot = resultDot.value[1];
 
-      let resultMember = input.invoke(MEMBER, current);
+      let resultMember = current.invoke(MEMBER);
 
       if (resultMember.kind === "err") {
         return resultMember;
@@ -257,8 +170,73 @@ export const SIMPLE_PATH: Combinator<PresentTokens> = {
 
       out.push(nextDot, nextMember);
     }
-  }
+  },
 };
+
+export const BLOCK: CombinatorType<BlockToken> = {
+  name: "BLOCK",
+  invoke(input) {
+    return input.invoke(
+      map(
+        seq("BLOCK", OPEN_BLOCK, many(TOP_LEVEL), CLOSE_BLOCK),
+        ([open, body, close]) => ok(block({ open, body, close }))
+      )
+    );
+  },
+};
+
+export const OPEN_BLOCK = map(
+  seq("OPEN_BLOCK", tag("{{#"), SIMPLE_PATH, SPACED_TOKENS, tag("}}")),
+  ([open, path, head, close]) =>
+    ok(openBlock({ name: path, head, blockParams: null }, range(open, close)))
+);
+
+export const CLOSE_BLOCK = map(
+  seq("CLOSE_BLOCK", tag("{{/"), SIMPLE_PATH, tag("}}")),
+  ([open, path, close]) => ok(closeBlock(path, range(open, close)))
+);
+
+export const INTERPOLATE = map(
+  seq("INTERPOLATE", tag("{{"), SPACED_TOKENS, tag("}}")),
+  ([open, path, close]) => {
+    return ok(interpolate(path, range(open, close)));
+  }
+);
+
+export const SEXP: CombinatorType<Token> = {
+  name: "SEXP",
+  invoke(input) {
+    return input.invoke(
+      map(
+        seq("SEXP", tag("("), SPACED_TOKENS, tag(")")),
+        ([open, path, close]) => {
+          return ok(sexp(path, range(open, close)));
+        }
+      )
+    );
+  },
+};
+
+const ID_SNIPPET: CombinatorType<Snippet> = pattern(
+  /^\p{ID_Start}[\p{ID_Continue}-]*/u,
+  "ID_SNIPPET"
+);
+
+export const ID = token(ID_SNIPPET, TokenType.Identifier);
+export const DOT = token(tag("."), TokenType.Dot);
+export const WS = token(
+  pattern(/^[\u0009\u000A\u000C\u0020]+/u, "WS"),
+  TokenType.WS
+);
+export const EQ = token(tag("="), TokenType.Eq);
+
+const ARG: CombinatorType<Token> = map(
+  seq("@id", tag("@"), ID_SNIPPET),
+  ([at, id]) => ok(arg(range(at, id)))
+);
+
+export const wrap = <T extends Debuggable>(combinator: CombinatorType<T>) =>
+  new Wrap(combinator);
 
 export const EXPRESSION = any(
   "EXPRESSION",

@@ -1,0 +1,19 @@
+{
+  "defaultSeverity": "error",
+  "extends": ["tslint:recommended"],
+  "jsRules": {},
+  "rules": {
+    "prefer-const": false,
+    "array-type": [true, "array-simple"],
+    "no-console": [true, "log"],
+    "no-namespace": false,
+    "no-unused-variable": [
+      true,
+      "check-parameters",
+      { "ignore-pattern": "^_" }
+    ],
+    "no-restricted-globals": [true, "name", "length", "event"],
+    "arrow-parens": false
+  },
+  "rulesDirectory": []
+}

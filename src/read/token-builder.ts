@@ -1,4 +1,3 @@
-import * as read from "./hbs";
 import * as tokens from "./tokens";
 import { SourceSpan, range, span } from "../span";
 
@@ -14,11 +13,11 @@ export function buildPresentTokens(
   tok: CurriedPresentTokens,
   builder: TokenBuilder
 ): tokens.PresentTokens {
-  return tok.map((token) => token(builder)) as tokens.PresentTokens;
+  return tok.map(token => token(builder)) as tokens.PresentTokens;
 }
 
 export function str(name: string): CurriedToken {
-  return (builder) => {
+  return builder => {
     let start = builder.consume(name[0]);
     let data = builder.consume(name.slice(1, -1));
     let end = builder.consume(name.slice(-1));
@@ -32,7 +31,7 @@ export function str(name: string): CurriedToken {
 
 export function int(num: string): CurriedToken {
   if (num[0] === "-") {
-    return (builder) => {
+    return builder => {
       let negative = builder.consume("-");
       let head = builder.consume(num.slice(1));
 
@@ -42,7 +41,7 @@ export function int(num: string): CurriedToken {
       );
     };
   } else {
-    return (builder) => {
+    return builder => {
       let head = builder.consume(num);
       return tokens.numberToken({ head, tail: null, negative: null }, head);
     };
@@ -52,7 +51,7 @@ export function int(num: string): CurriedToken {
 export function decimal(num: string): CurriedToken {
   let [, negative, head, tail] = num.match(/^(-?)([0-9]+)\.([0-9]+)$/)!;
 
-  return (builder) => {
+  return builder => {
     let negativeSpan = negative ? builder.consume("-") : null;
     let headSpan = builder.consume(head);
     let tailSpan: SourceSpan | null = null;
@@ -74,28 +73,86 @@ export function decimal(num: string): CurriedToken {
 }
 
 export function id(name: string): CurriedToken {
-  return (builder) => tokens.id(builder.consume(name));
+  return builder => tokens.id(builder.consume(name));
 }
 
 export function arg(name: string): CurriedToken {
-  return (builder) => tokens.arg(builder.consume(name));
+  return builder => tokens.arg(builder.consume(name));
 }
 
-export const dot: CurriedToken = (builder) => tokens.dot(builder.consume("."));
-export const eq: CurriedToken = (builder) => tokens.eq(builder.consume("="));
-export const sp: CurriedAttributeToken = (builder) =>
+export const dot: CurriedToken = builder => tokens.dot(builder.consume("."));
+export const eq: CurriedToken = builder => tokens.eq(builder.consume("="));
+export const sp: CurriedAttributeToken = builder =>
   tokens.ws(builder.consume(" "));
 
 export function ws(space: string): CurriedAttributeToken {
-  return (builder) => tokens.ws(builder.consume(space));
+  return builder => tokens.ws(builder.consume(space));
+}
+
+export interface BlockOptions {
+  open: {
+    name: string | CurriedPresentTokens;
+    head: CurriedToken[];
+  };
+}
+
+export function block(
+  { open }: BlockOptions,
+  ...body: CurriedToken[]
+): CurriedToken<tokens.BlockToken> {
+  let curriedName =
+    typeof open.name === "string"
+      ? ([id(open.name)] as CurriedPresentTokens)
+      : open.name;
+
+  return builder => {
+    let openToken = builder.consume("{{#");
+    let nameTokens = buildTokens(curriedName, builder);
+    let headTokens = buildTokens(open.head, builder);
+    let endOpen = builder.consume("}}");
+
+    let bodyTokens = body.map(tok => tok(builder));
+
+    let close = builder.consume("{{/");
+    let closeName = buildTokens(curriedName, builder);
+    let endClose = builder.consume("}}");
+
+    return tokens.block({
+      open: tokens.openBlock(
+        {
+          name: nameTokens,
+          head: headTokens,
+          blockParams: null,
+        },
+        range(openToken, endOpen)
+      ),
+      body: bodyTokens,
+      close: tokens.closeBlock(closeName, range(close, endClose)),
+    });
+  };
+}
+
+function buildTokens(
+  input: CurriedPresentTokens,
+  builder: TokenBuilder
+): tokens.PresentTokens;
+function buildTokens(
+  input: CurriedToken[],
+  builder: TokenBuilder
+): tokens.Token[];
+function buildTokens(
+  input: CurriedToken[],
+  builder: TokenBuilder
+): tokens.Token[] {
+  return input.map(tok => tok(builder));
 }
 
 export function interpolate(
   children: CurriedToken[]
 ): CurriedToken<tokens.InterpolateToken> {
-  return (builder) => {
+  return builder => {
     let open = builder.consume("{{");
-    let out = children.map((child) => child(builder));
+    let out = children.map(child => child(builder));
     let close = builder.consume("}}");
     return tokens.interpolate(out, range(open, close));
   };
@@ -105,9 +162,9 @@ export function stringInterpolate(
   children: Array<CurriedToken<tokens.StringInterpolationPart>>,
   quote: `"` | `'`
 ): CurriedToken<tokens.AttributeValueToken> {
-  return (builder) => {
+  return builder => {
     let open = builder.consume(quote);
-    let out = children.map((child) => child(builder));
+    let out = children.map(child => child(builder));
     let close = builder.consume(quote);
     return tokens.attrValue(
       {
@@ -122,7 +179,7 @@ export function stringInterpolate(
 export function attrInterpolate(
   ...tokenList: CurriedToken[]
 ): CurriedToken<tokens.AttributeValueToken> {
-  return (builder) => {
+  return builder => {
     let value = interpolate(tokenList)(builder);
 
     return tokens.attrValue(
@@ -136,23 +193,23 @@ export function attrInterpolate(
 }
 
 export function sexp(children: CurriedToken[]): CurriedToken {
-  return (builder) => {
+  return builder => {
     let open = builder.consume("(");
-    let out = children.map((child) => child(builder));
+    let out = children.map(child => child(builder));
     let close = builder.consume(")");
     return tokens.sexp(out, range(open, close));
   };
 }
 
 export function text(chars: string): CurriedToken<tokens.TextToken> {
-  return (builder) => {
+  return builder => {
     let out = builder.consume(chars);
     return tokens.text(out);
   };
 }
 
 export function comment(chars: string): CurriedToken {
-  return (builder) => {
+  return builder => {
     let start = builder.consume("<!--");
     let data = builder.consume(chars);
     let end = builder.consume("-->");
@@ -185,6 +242,7 @@ function buildTagName(name: TagName): CurriedPresentTokens {
         switch (part[0]) {
           case "@":
             toks.push(arg(part));
+            break;
           default:
             toks.push(id(part));
         }
@@ -209,10 +267,10 @@ function buildTagName(name: TagName): CurriedPresentTokens {
 export function startTag(
   options:
     | TagName
-    | { name: TagName; attrs: CurriedAttributeToken[]; selfClosing?: true; }
+    | { name: TagName; attrs: CurriedAttributeToken[]; selfClosing?: true }
 ): CurriedToken {
   if (isTagName(options)) {
-    return (builder) => {
+    return builder => {
       let start = builder.consume("<");
       let nameTokens = buildPresentTokens(buildTagName(options), builder);
       let end = builder.consume(">");
@@ -220,12 +278,12 @@ export function startTag(
       return tokens.startTag({ name: nameTokens }, range(start, end));
     };
   } else {
-    return (builder) => {
+    return builder => {
       let { name, attrs, selfClosing } = options;
 
       let start = builder.consume("<");
       let nameTokens = buildPresentTokens(buildTagName(name), builder);
-      let children = attrs.map((a) => a(builder));
+      let children = attrs.map(a => a(builder));
 
       if (selfClosing) {
         builder.consume("/");
@@ -241,12 +299,12 @@ export function startTag(
 }
 
 export function endTag(
-  options: TagName | { name: TagName; trailing: string; }
+  options: TagName | { name: TagName; trailing: string }
 ): CurriedToken {
   let tagName = isTagName(options) ? options : options.name;
   let trailing = isTagName(options) ? undefined : options.trailing;
 
-  return (builder) => {
+  return builder => {
     let start = builder.consume("</");
     let tagTokens = buildPresentTokens(buildTagName(tagName), builder);
     let trailingToken = trailing ? ws(trailing)(builder) : undefined;
@@ -260,7 +318,7 @@ export function endTag(
 }
 
 export function argName(name: string): CurriedToken<tokens.ArgNameToken> {
-  return (builder) => {
+  return builder => {
     let startSpan = builder.consume(name[0]);
     let nameSpan = builder.consume(name.slice(1));
 
@@ -273,23 +331,23 @@ export function attr(
     | string
     | CurriedToken<tokens.AnyAttrNameToken>
     | {
-      name:
-      | string
-      | CurriedToken<tokens.AttributeNameToken>
-      | CurriedToken<tokens.ArgNameToken>;
-      value: string | CurriedToken<tokens.AttributeValueToken>;
-      arg?: true;
-    }
+        name:
+          | string
+          | CurriedToken<tokens.AttributeNameToken>
+          | CurriedToken<tokens.ArgNameToken>;
+        value: string | CurriedToken<tokens.AttributeValueToken>;
+        arg?: true;
+      }
 ): CurriedAttributeToken {
   if (typeof options === "string") {
-    return (builder) => {
+    return builder => {
       let nameSpan = builder.consume(options);
       return tokens.attrName(nameSpan);
     };
   } else if (typeof options === "function") {
     return options;
   } else {
-    return (builder) => {
+    return builder => {
       let { name, value: rawValue } = options;
 
       let start = builder.pos;
@@ -300,7 +358,6 @@ export function attr(
           : name(builder);
 
       builder.consume("=");
-      let valueStart = builder.pos;
 
       let valueToken: tokens.AttributeValueToken;
 
@@ -381,10 +438,10 @@ function quoteType(quote?: `"` | `'`): tokens.AttributeValueType {
 
 export function root(
   children: CurriedToken[]
-): { root: tokens.RootToken; source: string; } {
+): { root: tokens.RootToken; source: string } {
   let builder = new TokenBuilder();
   let start = builder.pos;
-  let out = children.map((child) => child(builder));
+  let out = children.map(child => child(builder));
   let end = builder.pos;
 
   return { root: tokens.root(out, span(start, end)), source: builder.source };
@@ -393,7 +450,7 @@ export function root(
 class TokenBuilder {
   private output = "";
 
-  constructor(public pos = 0) { }
+  constructor(public pos = 0) {}
 
   consume(chars: string): SourceSpan {
     this.output += chars;

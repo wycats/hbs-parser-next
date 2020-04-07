@@ -1,6 +1,6 @@
 import * as combinators from "./read/combinators";
 export { combinators };
-export { Logger } from "./read/combinators";
+export { Logger } from "./read/logger";
 
 import * as multi from "./read/multi";
 export { multi };
@@ -25,6 +25,6 @@ export { utils };
 export * from "./read/serialize";
 export * from "./read/read";
 
-export function parse(input: string): ast.Root {
+export function parse(_input: string): ast.Root {
   return {};
 }

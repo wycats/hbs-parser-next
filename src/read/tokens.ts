@@ -1,8 +1,26 @@
-import { SourceSpan } from "../span";
+import { SourceSpan, range } from "../span";
+
+/**
+ * Steps for creating a new token type:
+ *
+ * 1. add a variant to TokenType
+ * 2. create an interface {Name}Token
+ * 3. add the new token to LeafTokenMap or TokenMap
+ * 4. update serializeNode to serialize the new token
+ * 5. add a function to construct the new token (unless it's always nested
+ *    inside another token like `BlockParams`)
+ * 6. update token-builder.ts to support building the new token
+ */
+
 export const enum TokenType {
   Root = "Root",
   Interpolate = "Interpolate",
   TrustedInterpolate = "TrustedInterpolate",
+  // TODO: Either we should have Block and Element or StartBlock/EndBlock and StartElement/EndElement
+  Block = "Block",
+  BlockParams = "BlockParams",
+  OpenBlock = "OpenBlock",
+  CloseBlock = "CloseBlock",
   Sexp = "Sexp",
   Identifier = "Identifier",
   Argument = "Argument",
@@ -21,21 +39,8 @@ export const enum TokenType {
   AttributeName = "AttributeName",
   AttributeValue = "AttributeValue",
   ValuedAttribute = "ValuedAttribute",
-  StringInterpolation = "StringInterpolation"
+  StringInterpolation = "StringInterpolation",
 }
-
-export type LeafTokenType =
-  | TokenType.Identifier
-  | TokenType.Dot
-  | TokenType.Eq
-  | TokenType.WS
-  | TokenType.Text
-  | TokenType.AttributeName;
-
-export type LeafToken<T extends LeafTokenType> = BaseToken & {
-  type: T;
-  span: SourceSpan;
-};
 
 export interface BaseToken {
   span: SourceSpan;
@@ -44,7 +49,7 @@ export interface BaseToken {
 export function leaf<T extends keyof LeafTokenMap>(
   type: T
 ): (span: SourceSpan) => LeafTokenMap[T] {
-  return span => ({ type, span } as LeafTokenMap[T]);
+  return (span) => ({ type, span } as LeafTokenMap[T]);
 }
 
 export const id = leaf(TokenType.Identifier);
@@ -56,7 +61,7 @@ export const attrName = leaf(TokenType.AttributeName);
 
 export const enum QuoteType {
   Single,
-  Double
+  Double,
 }
 
 export interface StringToken extends BaseToken {
@@ -73,7 +78,7 @@ export function stringToken(
     type: TokenType.String,
     span,
     data,
-    quote
+    quote,
   };
 }
 
@@ -88,7 +93,7 @@ export function numberToken(
   {
     head,
     tail,
-    negative
+    negative,
   }: { head: SourceSpan; tail: SourceSpan | null; negative: SourceSpan | null },
   span: SourceSpan
 ): NumberToken {
@@ -97,7 +102,7 @@ export function numberToken(
     span,
     negative,
     head,
-    tail
+    tail,
   };
 }
 
@@ -105,7 +110,7 @@ export function comment(data: SourceSpan, span: SourceSpan): CommentToken {
   return {
     type: TokenType.Comment,
     data,
-    span
+    span,
   };
 }
 
@@ -113,16 +118,39 @@ export function arg(span: SourceSpan): ArgumentToken {
   return {
     type: TokenType.Argument,
     name: { start: span.start + 1, end: span.end },
-    span
+    span,
   };
 }
 
-export type IdentifierToken = LeafToken<TokenType.Identifier>;
-export type DotToken = LeafToken<TokenType.Dot>;
-export type EqToken = LeafToken<TokenType.Eq>;
-export type WSToken = LeafToken<TokenType.WS>;
-export type TextToken = LeafToken<TokenType.Text>;
-export type AttributeNameToken = LeafToken<TokenType.AttributeName>;
+export interface IdentifierToken {
+  type: TokenType.Identifier;
+  span: SourceSpan;
+}
+
+export interface DotToken {
+  type: TokenType.Dot;
+  span: SourceSpan;
+}
+
+export interface EqToken {
+  type: TokenType.Eq;
+  span: SourceSpan;
+}
+
+export interface WSToken {
+  type: TokenType.WS;
+  span: SourceSpan;
+}
+
+export interface TextToken {
+  type: TokenType.Text;
+  span: SourceSpan;
+}
+
+export interface AttributeNameToken {
+  type: TokenType.AttributeName;
+  span: SourceSpan;
+}
 
 /**
  * A leaf token is a simple token whose value is represented entirely
@@ -141,7 +169,7 @@ export interface LeafTokenMap {
   [TokenType.AttributeName]: AttributeNameToken;
 }
 
-export type AnyLeafToken = LeafTokenMap[keyof LeafTokenMap];
+export type LeafToken = LeafTokenMap[keyof LeafTokenMap];
 
 export interface CommentToken extends BaseToken {
   type: TokenType.Comment;
@@ -172,6 +200,93 @@ export type InterpolateToken =
   | TrustedInterpolateToken
   | UntrustedInterpolateToken;
 
+export interface BlockToken extends BaseToken {
+  type: TokenType.Block;
+  open: OpenBlockToken;
+  body: readonly Token[];
+  close: CloseBlockToken;
+}
+
+export interface OpenBlockToken extends BaseToken {
+  type: TokenType.OpenBlock;
+  // {{#if}} has a single token name, while {{#f.input}} has a
+  // three-token head. Blocks must close with `/` followed by
+  // the same tokens as the name.
+  name: readonly Token[];
+  // the rest of the tokens in the opening part of the block
+  head: readonly Token[] | null;
+  blockParams: BlockParamsToken | null;
+}
+
+export type BlockParamToken = WSToken | IdentifierToken;
+
+export interface BlockParamsToken extends BaseToken {
+  type: TokenType.BlockParams;
+  params: readonly BlockParamToken[];
+}
+
+export interface CloseBlockToken extends BaseToken {
+  type: TokenType.CloseBlock;
+  name: readonly Token[];
+}
+
+export interface BlockOptions {
+  open: OpenBlockToken;
+  body: readonly Token[];
+  close: CloseBlockToken;
+}
+
+export function block({ open, body, close }: BlockOptions): BlockToken {
+  return {
+    type: TokenType.Block,
+    span: range(open.span, close.span),
+    open,
+    body,
+    close,
+  };
+}
+
+export interface OpenBlockOptions {
+  name: PresentTokens;
+  head: readonly Token[] | null;
+  blockParams: [BlockParamToken, ...BlockParamToken[]] | null;
+}
+
+export function openBlock(
+  { name, head, blockParams }: OpenBlockOptions,
+  span: SourceSpan
+): OpenBlockToken {
+  return {
+    type: TokenType.OpenBlock,
+    span,
+    name,
+    head,
+    blockParams: blockParams
+      ? {
+          type: TokenType.BlockParams,
+          span: range(...blockParams),
+          params: blockParams,
+        }
+      : null,
+  };
+}
+
+export interface CloseBlockOptions {
+  span: SourceSpan;
+  name: PresentTokens;
+}
+
+export function closeBlock(
+  name: PresentTokens,
+  span: SourceSpan
+): CloseBlockToken {
+  return {
+    type: TokenType.CloseBlock,
+    span,
+    name,
+  };
+}
+
 export interface StartTagToken extends BaseToken {
   type: TokenType.StartTag;
   name: PresentTokens;
@@ -189,7 +304,7 @@ export const enum AttributeValueType {
   Interpolate = "Interpolate",
   Unquoted = "Unquoted",
   SingleQuoted = "SingleQuoted",
-  DoubleQuoted = "DoubleQuoted"
+  DoubleQuoted = "DoubleQuoted",
 }
 
 export interface ArgNameToken extends BaseToken {
@@ -201,7 +316,7 @@ export function argName(name: SourceSpan, span: SourceSpan): ArgNameToken {
   return {
     type: TokenType.ArgName,
     name,
-    span
+    span,
   };
 }
 
@@ -233,7 +348,7 @@ export function stringInterpolation(
   return {
     type: TokenType.StringInterpolation,
     span,
-    parts
+    parts,
   };
 }
 
@@ -259,7 +374,7 @@ export function attrValue(
     type: TokenType.AttributeValue,
     span,
     valueType: type,
-    value
+    value,
   } as AttributeValueToken;
 }
 
@@ -277,7 +392,7 @@ export function valuedAttr(
     type: TokenType.ValuedAttribute,
     span,
     name,
-    value
+    value,
   };
 }
 
@@ -296,7 +411,7 @@ export function startTag(
     span,
     name,
     attributes: attrs || [],
-    selfClosing
+    selfClosing,
   };
 }
 
@@ -308,7 +423,7 @@ export function endTag(
     type: TokenType.EndTag,
     span,
     trailing: trailing ? trailing : null,
-    name
+    name,
   };
 }
 
@@ -324,7 +439,7 @@ export function sexp(children: readonly Token[], span: SourceSpan): SexpToken {
   return {
     type: TokenType.Sexp,
     span,
-    children
+    children,
   };
 }
 export function interpolate(
@@ -334,7 +449,7 @@ export function interpolate(
   return {
     type: TokenType.Interpolate,
     span,
-    children
+    children,
   };
 }
 
@@ -345,7 +460,7 @@ export function trustedInterpolate(
   return {
     type: TokenType.TrustedInterpolate,
     span,
-    children
+    children,
   };
 }
 
@@ -358,11 +473,11 @@ export function root(children: readonly Token[], span: SourceSpan): RootToken {
   return {
     type: TokenType.Root,
     span,
-    children
+    children,
   };
 }
 
-export interface TokenMap extends LeafTokenMap {
+export interface HBSTokenMap extends LeafTokenMap {
   [TokenType.String]: StringToken;
   [TokenType.Number]: NumberToken;
   [TokenType.Comment]: CommentToken;
@@ -370,6 +485,15 @@ export interface TokenMap extends LeafTokenMap {
   [TokenType.Sexp]: SexpToken;
   [TokenType.Interpolate]: UntrustedInterpolateToken;
   [TokenType.TrustedInterpolate]: TrustedInterpolateToken;
+  [TokenType.Block]: BlockToken;
+  [TokenType.OpenBlock]: OpenBlockToken;
+  [TokenType.BlockParams]: BlockParamsToken;
+  [TokenType.CloseBlock]: CloseBlockToken;
+}
+
+export type HBSToken = HBSTokenMap[keyof HBSTokenMap];
+
+export interface HTMLTokenMap {
   [TokenType.StartTag]: StartTagToken;
   [TokenType.EndTag]: EndTagToken;
   [TokenType.ArgName]: ArgNameToken;
@@ -377,6 +501,10 @@ export interface TokenMap extends LeafTokenMap {
   [TokenType.ValuedAttribute]: ValuedAttributeToken;
   [TokenType.StringInterpolation]: StringInterpolationToken;
 }
+
+export type HTMLToken = HTMLTokenMap[keyof HTMLTokenMap];
+
+export interface TokenMap extends HBSTokenMap, HTMLTokenMap {}
 
 export type Token = TokenMap[keyof TokenMap];
 

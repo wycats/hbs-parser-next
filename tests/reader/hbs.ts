@@ -1,23 +1,6 @@
-import { module, test, config, equiv } from "qunit";
+import { b, read, serializeRoot } from "hbs-parser-next";
 import * as qunit from "qunit";
-import {
-  combinators,
-  Snippet,
-  Result,
-  Ok,
-  ok,
-  err,
-  Err,
-  multi,
-  parse,
-  read,
-  tokens,
-  span,
-  b,
-  serializeRoot,
-  Logger
-} from "hbs-parser-next";
-import { eqSnippet, unwrap, eqError, eqSnippets } from "../helpers";
+import { config, module, test } from "qunit";
 
 module("[READER] interpolation");
 
@@ -32,7 +15,7 @@ declare module "qunit" {
   }
 }
 
-qunit.assert.tree = function(source: string, ...expected: b.CurriedToken[]) {
+qunit.assert.tree = function (source: string, ...expected: b.CurriedToken[]) {
   let step = source || "(empty)";
   this.step(step);
   let tree = read(source, { logging: config.logging });
@@ -127,7 +110,7 @@ test("paths", assert => {
       b.id("with"),
       b.dot,
       b.id("path"),
-      b.sp
+      b.sp,
     ])
   );
 
@@ -140,7 +123,7 @@ test("paths", assert => {
       b.id("with"),
       b.dot,
       b.id("path"),
-      b.ws("  ")
+      b.ws("  "),
     ])
   );
 
@@ -156,7 +139,7 @@ test("paths", assert => {
       b.dot,
       b.id("with-dashed"),
       b.dot,
-      b.id("path")
+      b.id("path"),
     ])
   );
 });
@@ -175,7 +158,7 @@ test("{{id.with.path some other.stuff}}", assert => {
       b.sp,
       b.id("other"),
       b.dot,
-      b.id("stuff")
+      b.id("stuff"),
     ])
   );
 });
@@ -200,7 +183,7 @@ test("named arguments", assert => {
       b.eq,
       b.id("named"),
       b.dot,
-      b.id("args")
+      b.id("args"),
     ])
   );
 
@@ -225,7 +208,7 @@ test("named arguments", assert => {
       b.eq,
       b.arg("@named"),
       b.dot,
-      b.id("args")
+      b.id("args"),
     ])
   );
 });
@@ -254,7 +237,7 @@ test("using all the features", assert => {
         b.eq,
         b.arg("@named"),
         b.dot,
-        b.id("args")
+        b.id("args"),
       ]),
       b.sp,
       b.arg("@some"),
@@ -278,7 +261,7 @@ test("using all the features", assert => {
       b.id("yet-another"),
       b.eq,
       b.decimal("-12.5"),
-      b.ws("  ")
+      b.ws("  "),
     ])
   );
 });
@@ -303,8 +286,20 @@ test("two interpolations next to each other", assert => {
       b.eq,
       b.id("named"),
       b.dot,
-      b.id("args")
+      b.id("args"),
     ]),
     b.interpolate([b.id("some"), b.dot, b.id("stuff")])
+  );
+});
+
+test("blocks", assert => {
+  assert.tree(
+    "{{#if @x}}{{/if}}",
+    b.block({
+      open: {
+        name: "if",
+        head: [b.sp, b.arg("@x")],
+      },
+    })
   );
 });

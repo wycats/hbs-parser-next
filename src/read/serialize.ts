@@ -3,10 +3,9 @@ import {
   Token,
   TokenType,
   AttributeValueType,
-  ValuedAttributeToken,
   AttributeValueToken,
   isInterpolateAttribute,
-  QuoteType
+  QuoteType,
 } from "./tokens";
 import { slice } from "../span";
 import { unreachable } from "./utils";
@@ -66,6 +65,24 @@ export function serializeNode(token: Token | null, source: string): string[] {
       return ["{{", ...serializeList(token.children, source), "}}"];
     case TokenType.TrustedInterpolate:
       return ["{{{", ...serializeList(token.children, source), "}}}"];
+    case TokenType.Block:
+      return [
+        ...serializeNode(token.open, source),
+        ...serializeList(token.body, source),
+        ...serializeNode(token.close, source),
+      ];
+    case TokenType.OpenBlock:
+      return [
+        "{{#",
+        ...serializeList(token.name, source),
+        ...serializeList(token.head, source),
+        ...serializeNode(token.blockParams, source),
+        "}}",
+      ];
+    case TokenType.BlockParams:
+      return ["as |", ...serializeList(token.params, source), "|"];
+    case TokenType.CloseBlock:
+      return ["{{/", ...serializeList(token.name, source), "}}"];
     case TokenType.Comment:
       return ["<!--", slice(token.data, source), "-->"];
     case TokenType.StartTag:
@@ -73,20 +90,20 @@ export function serializeNode(token: Token | null, source: string): string[] {
         "<",
         ...serializeList(token.name, source),
         ...serializeList(token.attributes, source),
-        ">"
+        ">",
       ];
     case TokenType.EndTag:
       return [
         "</",
         ...serializeList(token.name, source),
         ...serializeNode(token.trailing, source),
-        ">"
+        ">",
       ];
     case TokenType.ValuedAttribute:
       return [
         ...serializeNode(token.name, source),
         "=",
-        ...serializeNode(token.value, source)
+        ...serializeNode(token.value, source),
       ];
     case TokenType.StringInterpolation:
       return serializeList(token.parts, source);
@@ -106,7 +123,7 @@ function serializeAttributeValue(
   return [
     serializeQuote(token),
     ...serializeNode(token.value, source),
-    serializeQuote(token)
+    serializeQuote(token),
   ];
 }
 
@@ -121,6 +138,13 @@ function serializeQuote(token: AttributeValueToken): string {
   }
 }
 
-function serializeList(tokens: readonly Token[], source: string): string[] {
-  return [...tokens.flatMap(child => serializeNode(child, source))];
+function serializeList(
+  tokens: readonly Token[] | null,
+  source: string
+): string[] {
+  if (tokens === null) {
+    return [];
+  }
+
+  return [...tokens.flatMap((child) => serializeNode(child, source))];
 }

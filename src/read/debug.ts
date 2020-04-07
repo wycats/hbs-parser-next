@@ -1,15 +1,12 @@
-import {
-  Combinator,
-  combinatorName,
-  combinatorType,
-  CombinatorType
-} from "./combinators";
+import { combinatorDebugType } from "./logger";
+import type { CombinatorDebugType, CombinatorType } from "./combinators/types";
+import { combinatorName } from "./utils";
 
 export type RowResult = "success" | "error" | "start";
 
 export type RowStyle = {
   result: RowResult;
-  kind: CombinatorType;
+  kind: CombinatorDebugType;
 };
 
 export type TableRow = {
@@ -24,11 +21,11 @@ export function row(
     result,
     arrow,
     combinator,
-    context
+    context,
   }: {
     result: RowResult;
     arrow: string;
-    combinator: Combinator;
+    combinator: CombinatorType;
     context?: string;
   },
   a: any,
@@ -41,8 +38,8 @@ export function row(
   }
 
   table.push({
-    style: { result, kind: combinatorType(combinator) },
-    data: [arrow, name, a, b]
+    style: { result, kind: combinatorDebugType(combinator) },
+    data: [arrow, name, a, b],
   });
 }
 
@@ -61,6 +58,7 @@ export function armStyle(style: RowStyle) {
   switch (style.result) {
     case "start":
       switch (style.kind) {
+        case "transparent":
         case "arm":
           return "color: #bbb";
         case "normal":
@@ -76,7 +74,7 @@ export function armStyle(style: RowStyle) {
 export function printDebug() {
   for (let {
     style,
-    data: [arrow, name, a, b]
+    data: [arrow, name, a, b],
   } of table) {
     let first = `${arrow} %c${name}%c`.padEnd(60);
     // tslint:disable-next-line:no-console

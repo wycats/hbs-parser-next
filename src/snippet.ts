@@ -1,5 +1,6 @@
-import { SourceSpan } from "./span";
-import { Logger, Debuggable, Combinator } from "./read/combinators";
+import type { Debuggable, Logger } from "./read/logger";
+import type { SourceSpan } from "./span";
+import type { CombinatorType } from "./read/combinators/types";
 
 export class Snippet {
   static input(source: string, logger: Logger): Snippet {
@@ -14,14 +15,10 @@ export class Snippet {
   ) {}
 
   invoke<T extends Debuggable>(
-    combinator: Combinator<T>,
-    input: Snippet,
-    {
-      forceTransparent,
-      context
-    }: { forceTransparent?: boolean; context?: string } = {}
+    combinator: CombinatorType<T>,
+    options: { forceTransparent?: boolean; context?: string } = {}
   ): Result<[Snippet, T]> {
-    return this.logger.invoke(combinator, input);
+    return this.logger.invoke(combinator, this, options);
   }
 
   eq(other: Snippet) {
@@ -85,7 +82,7 @@ export class Snippet {
   get span(): SourceSpan {
     return {
       start: this.offset,
-      end: this.offset + this.length
+      end: this.offset + this.length,
     };
   }
 
@@ -117,7 +114,7 @@ export function err(snippet: Snippet, reason: string): Err {
   return {
     kind: "err",
     snippet,
-    reason
+    reason,
   };
 }
 
