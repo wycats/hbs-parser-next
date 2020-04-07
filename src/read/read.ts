@@ -4,12 +4,12 @@ import { combinator } from "./combinator";
 import { any } from "./combinators";
 import { Logger } from "./logger";
 import { printDebug } from "./debug";
-import { BLOCK, INTERPOLATE } from "./hbs";
 import { COMMENT, END_TAG, START_TAG, TEXT } from "./html";
 import { many } from "./multi";
 import { root, RootToken, Token } from "./tokens";
 import { complete, map, mapResult } from "./utils";
 import type { CombinatorType } from "./combinators/types";
+import { BLOCK, INTERPOLATE } from "./hbs";
 
 export function read(
   source: string,
