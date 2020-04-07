@@ -13,7 +13,8 @@
       { "ignore-pattern": "^_" }
     ],
     "no-restricted-globals": [true, "name", "length", "event"],
-    "arrow-parens": false
+    "arrow-parens": false,
+    "no-shadowed-variable": false
   },
   "rulesDirectory": []
 }
