@@ -43,6 +43,14 @@ export default class TokensIterator {
     return new PeekedToken(this, this.pos);
   }
 
+  get source() {
+    return this.context.source;
+  }
+
+  child(tokens: readonly Token[]): TokensIterator {
+    return new TokensIterator(tokens, this.context);
+  }
+
   commit(pos: number): void {
     if (this.pos !== pos) {
       throw new Error(

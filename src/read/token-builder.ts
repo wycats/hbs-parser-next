@@ -463,7 +463,7 @@ export function root(
   return { root: tokens.root(out, span(start, end)), source: builder.source };
 }
 
-class TokenBuilder {
+export class TokenBuilder {
   private output = "";
 
   constructor(public pos = 0) {}

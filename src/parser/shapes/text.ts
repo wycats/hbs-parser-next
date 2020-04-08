@@ -17,7 +17,7 @@ export class TextShape extends AbstractShape<TextNode> {
 
     if (token.type === TokenType.Text) {
       next.commit();
-      return ok(ast.text(token.span));
+      return ok(ast.text(token));
     } else {
       return err(next, "mismatch");
     }

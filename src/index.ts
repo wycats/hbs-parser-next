@@ -19,6 +19,9 @@ export * from "./span";
 import * as b from "./read/token-builder";
 export { b };
 
+import * as a from "./parser/ast-builder";
+export { a };
+
 import * as utils from "./read/utils";
 export { utils };
 

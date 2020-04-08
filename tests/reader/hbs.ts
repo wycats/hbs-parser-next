@@ -1,13 +1,26 @@
 import * as qunit from "qunit";
 import { config, module, test } from "qunit";
-import { read, serializeRoot, b, SourceSpan, Err } from "hbs-parser-next";
+import {
+  read,
+  serializeRoot,
+  b,
+  SourceSpan,
+  Err,
+  a,
+  parse,
+} from "hbs-parser-next";
 
 module("[READER] interpolation");
 
 // Patch QUnit.assert with assert.tree
 declare module "qunit" {
   interface Assert {
-    tree(this: Assert, source: string, ...expected: b.CurriedToken[]): void;
+    tree(
+      this: Assert,
+      source: string,
+      expectedRead: b.CurriedToken | b.CurriedToken[],
+      expectedAst?: a.CurriedNode | a.CurriedNode[]
+    ): void;
     readError(
       this: Assert,
       source: string,
@@ -20,12 +33,26 @@ declare module "qunit" {
   }
 }
 
-qunit.assert.tree = function (source: string, ...expected: b.CurriedToken[]) {
-  let step = source || "(empty)";
-  this.step(step);
+qunit.assert.tree = function (
+  source: string,
+  expectedRead: b.CurriedToken | b.CurriedToken[],
+  expectedAst?: a.CurriedNode | a.CurriedNode[]
+) {
+  let readStep = `read: ${source || "(empty)"}` || "(empty)";
+  let parseStep = `parse: ${source || "(empty)"}` || "(empty)";
+
+  let steps = [readStep];
+
+  this.step(readStep);
   let tree = read(source, { logging: config.logging });
 
-  let { root: expectedRoot, source: expectedSource } = b.root(...expected);
+  let expectedTokens: b.CurriedToken[] = Array.isArray(expectedRead)
+    ? expectedRead
+    : [expectedRead];
+
+  let { root: expectedRoot, source: expectedSource } = b.root(
+    ...expectedTokens
+  );
 
   let expectedString = serializeRoot(expectedRoot, expectedSource);
 
@@ -42,8 +69,34 @@ qunit.assert.tree = function (source: string, ...expected: b.CurriedToken[]) {
       "serialization of expected and actual match"
     );
     this.deepEqual(tree.value, expectedRoot, "token trees match");
+
+    if (expectedAst) {
+      if (qunit.equiv(tree.value, expectedRoot)) {
+        steps.push(parseStep);
+        this.step(parseStep);
+
+        let expected: a.CurriedNode[] = Array.isArray(expectedAst)
+          ? expectedAst
+          : [expectedAst];
+
+        let result = parse(tree.value, source);
+        let ast = a.root(...expected);
+
+        this.pushResult({
+          result: result.kind === "ok",
+          actual: result.kind,
+          expected: "ok",
+          message: `parse succeeded`,
+        });
+
+        if (result.kind === "ok") {
+          this.deepEqual(result.value, ast.root);
+        }
+      }
+    }
   }
-  this.verifySteps([step], "verified steps");
+
+  this.verifySteps(steps, "verified steps");
 };
 
 qunit.assert.readError = function (
@@ -83,11 +136,15 @@ function isType<T>(_input: any): asserts _input is T {
 }
 
 test("empty", assert => {
-  assert.tree("" /* no body */);
+  assert.tree("", []);
 });
 
 test("{{id}} interpolating an id", assert => {
-  assert.tree("{{identifier}}", b.interpolate(b.id("identifier")));
+  assert.tree(
+    "{{identifier}}",
+    [b.interpolate(b.id("identifier"))],
+    [a.interpolate(a.varRef("identifier"))]
+  );
   assert.tree("{{id}}", b.interpolate(b.id("id")));
   assert.tree("{{id-with-dash}}", b.interpolate(b.id("id-with-dash")));
 });
@@ -310,26 +367,28 @@ test("using all the features", assert => {
 test("two interpolations next to each other", assert => {
   assert.tree(
     "{{id.with.path some named=args other=named.args}}{{some.stuff}}",
-    b.interpolate(
-      b.id("id"),
-      b.dot,
-      b.id("with"),
-      b.dot,
-      b.id("path"),
-      b.sp,
-      b.id("some"),
-      b.sp,
-      b.id("named"),
-      b.eq,
-      b.id("args"),
-      b.sp,
-      b.id("other"),
-      b.eq,
-      b.id("named"),
-      b.dot,
-      b.id("args")
-    ),
-    b.interpolate(b.id("some"), b.dot, b.id("stuff"))
+    [
+      b.interpolate(
+        b.id("id"),
+        b.dot,
+        b.id("with"),
+        b.dot,
+        b.id("path"),
+        b.sp,
+        b.id("some"),
+        b.sp,
+        b.id("named"),
+        b.eq,
+        b.id("args"),
+        b.sp,
+        b.id("other"),
+        b.eq,
+        b.id("named"),
+        b.dot,
+        b.id("args")
+      ),
+      b.interpolate(b.id("some"), b.dot, b.id("stuff")),
+    ]
   );
 });
 

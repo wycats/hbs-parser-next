@@ -9,3 +9,20 @@ export abstract class AbstractShape<T> implements FallibleShape<T> {
 export abstract class AbstractInfallibleShape<T> implements InfallibleShape<T> {
   abstract expandInfallible(iterator: TokensIterator): T;
 }
+
+export function or<T, U>(
+  left: FallibleShape<T>,
+  right: FallibleShape<U>
+): FallibleShape<T | U> {
+  return {
+    expandFallible(iterator) {
+      let leftResult = left.expandFallible(iterator);
+
+      if (leftResult.kind === "ok") {
+        return leftResult;
+      }
+
+      return right.expandFallible(iterator);
+    },
+  };
+}

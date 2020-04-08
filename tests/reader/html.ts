@@ -1,10 +1,10 @@
-import { b } from "hbs-parser-next";
+import { b, a } from "hbs-parser-next";
 import { module, test } from "qunit";
 
 module("[READER] HTML");
 
 test("simple content", assert => {
-  assert.tree("hello", b.text("hello"));
+  assert.tree("hello", [b.text("hello")], [a.text("hello")]);
 });
 
 test("a simple tag", assert => {
@@ -27,7 +27,7 @@ test("A simple closing tag with trailing spaces", assert => {
 });
 
 test("A pair of hyphenated tags", assert => {
-  assert.tree("<x-foo></x-foo>", b.startTag("x-foo"), b.endTag("x-foo"));
+  assert.tree("<x-foo></x-foo>", [b.startTag("x-foo"), b.endTag("x-foo")]);
 });
 
 test("A tag with a single-quoted attribute", assert => {
