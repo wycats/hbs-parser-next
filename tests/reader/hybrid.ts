@@ -7,7 +7,7 @@ test("content plus interpolation", assert => {
   assert.tree(
     "hello {{world}} goodbye",
     b.text("hello "),
-    b.interpolate([b.id("world")]),
+    b.interpolate(b.id("world")),
     b.text(" goodbye")
   );
 });
@@ -56,7 +56,7 @@ test("Curlies inside quoted attributes", assert => {
         b.sp,
         b.attr({
           name: "disabled",
-          value: b.stringInterpolate([b.interpolate([b.id("disabled")])], `"`),
+          value: b.stringInterpolate([b.interpolate(b.id("disabled"))], `"`),
         }),
       ],
     }),
@@ -72,7 +72,7 @@ test("Curlies inside quoted attributes", assert => {
         b.attr({
           name: "href",
           value: b.stringInterpolate(
-            [b.interpolate([b.id("url")]), b.text(".html")],
+            [b.interpolate(b.id("url")), b.text(".html")],
             `"`
           ),
         }),
@@ -91,7 +91,7 @@ test("Arguments", assert => {
         b.sp,
         b.attr({
           name: b.argName("@disabled"),
-          value: b.stringInterpolate([b.interpolate([b.id("disabled")])], `"`),
+          value: b.stringInterpolate([b.interpolate(b.id("disabled"))], `"`),
         }),
       ],
     }),
@@ -107,7 +107,7 @@ test("Arguments", assert => {
         b.attr({
           name: b.argName("@href"),
           value: b.stringInterpolate(
-            [b.interpolate([b.id("url")]), b.text(".html")],
+            [b.interpolate(b.id("url")), b.text(".html")],
             `"`
           ),
         }),
@@ -126,7 +126,7 @@ test("Modifiers", assert => {
         b.sp,
         b.attr("disabled"),
         b.sp,
-        b.interpolate([
+        b.interpolate(
           b.id("on"),
           b.sp,
           b.str(`"click"`),
@@ -139,8 +139,8 @@ test("Modifiers", assert => {
             b.id("handleClick"),
             b.sp,
             b.arg("@arg"),
-          ]),
-        ]),
+          ])
+        ),
       ],
     }),
     b.endTag("div")

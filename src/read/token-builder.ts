@@ -164,7 +164,7 @@ function buildTokens(
 }
 
 export function interpolate(
-  children: CurriedToken[]
+  ...children: CurriedToken[]
 ): CurriedToken<tokens.InterpolateToken> {
   return builder => {
     let open = builder.consume("{{");
@@ -196,7 +196,7 @@ export function attrInterpolate(
   ...tokenList: CurriedToken[]
 ): CurriedToken<tokens.AttributeValueToken> {
   return builder => {
-    let value = interpolate(tokenList)(builder);
+    let value = interpolate(...tokenList)(builder);
 
     return tokens.attrValue(
       {
@@ -453,7 +453,7 @@ function quoteType(quote?: `"` | `'`): tokens.AttributeValueType {
 }
 
 export function root(
-  children: CurriedToken[]
+  ...children: CurriedToken[]
 ): { root: tokens.RootToken; source: string } {
   let builder = new TokenBuilder();
   let start = builder.pos;

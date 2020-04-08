@@ -1,5 +1,4 @@
 import { SourceSpan, range, slice } from "../span";
-import { Dict } from "./utils";
 
 /**
  * Steps for creating a new token type:

@@ -21,7 +21,6 @@ export class Logger {
     input: Snippet,
     {
       forceTransparent,
-      context,
       optional,
     }: {
       forceTransparent?: boolean;

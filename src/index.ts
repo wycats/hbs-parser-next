@@ -7,12 +7,12 @@ export { multi };
 
 export * from "./snippet";
 
-import * as ast from "./ast";
-export { ast };
-
 export * from "./read/hbs";
 import * as tokens from "./read/tokens";
 export { tokens };
+
+import * as ast from "./parser/nodes";
+export { ast };
 
 export * from "./span";
 
@@ -25,6 +25,4 @@ export { utils };
 export * from "./read/serialize";
 export * from "./read/read";
 
-export function parse(_input: string): ast.Root {
-  return {};
-}
+export { default as parse } from "./parser/parse";

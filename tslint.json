@@ -14,7 +14,8 @@
     ],
     "no-restricted-globals": [true, "name", "length", "event"],
     "arrow-parens": false,
-    "no-shadowed-variable": false
+    "no-shadowed-variable": false,
+    "max-classes-per-file": false
   },
   "rulesDirectory": []
 }

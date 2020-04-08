@@ -13,7 +13,7 @@ import SomeToken from "./combinators/hbs/token";
 import type { CombinatorType } from "./combinators/types";
 import Wrap from "./combinators/wrap";
 import type { Debuggable } from "./logger";
-import { arg, LeafTokenMap, Token, TokenType, ArgumentToken } from "./tokens";
+import { arg, LeafTokenMap, TokenType, ArgumentToken } from "./tokens";
 import { map } from "./utils";
 import Id from "./combinators/hbs/id";
 

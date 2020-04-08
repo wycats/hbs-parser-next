@@ -1,23 +1,22 @@
-import { ok, Result, Snippet, err, fatalError } from "../../../snippet";
-import { seq, tag, any, maybe } from "../../combinators";
-import { SIMPLE_PATH, SPACED_TOKENS, ID, WS } from "../../hbs";
+import { fatalError, ok, Result, Snippet } from "../../../snippet";
+import { range } from "../../../span";
+import { any, maybe, seq, tag } from "../../combinators";
+import { ID, SIMPLE_PATH, WS } from "../../hbs";
 import { many } from "../../multi";
 import { TOP_LEVEL } from "../../read";
 import {
   block,
+  blockParams,
+  BlockParamsToken,
   BlockToken,
-  openBlock,
   closeBlock,
   CloseBlockToken,
-  OpenBlockToken,
   equalPath,
-  BlockParamsToken,
-  blockParams,
+  openBlock,
+  OpenBlockToken,
 } from "../../tokens";
 import { AbstractCombinator } from "../base";
-import { range } from "../../../span";
 import SpacedTokens from "./spaced-tokens";
-import { join } from "../../utils";
 
 export default class Block extends AbstractCombinator<BlockToken> {
   readonly name = "BLOCK";

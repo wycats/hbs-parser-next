@@ -1,4 +1,4 @@
-import { SEXP, wrap, NUMBER, NAMED, SIMPLE_PATH, WS, STRING } from "../../hbs";
+import { SEXP, wrap, NUMBER, NAMED, WS, STRING } from "../../hbs";
 import { any } from "../../combinators";
 import type { Token, PresentTokens } from "../../tokens";
 import { AbstractCombinator } from "../base";

@@ -25,7 +25,7 @@ qunit.assert.tree = function (source: string, ...expected: b.CurriedToken[]) {
   this.step(step);
   let tree = read(source, { logging: config.logging });
 
-  let { root: expectedRoot, source: expectedSource } = b.root(expected);
+  let { root: expectedRoot, source: expectedSource } = b.root(...expected);
 
   let expectedString = serializeRoot(expectedRoot, expectedSource);
 
@@ -87,108 +87,108 @@ test("empty", assert => {
 });
 
 test("{{id}} interpolating an id", assert => {
-  assert.tree("{{identifier}}", b.interpolate([b.id("identifier")]));
-  assert.tree("{{id}}", b.interpolate([b.id("id")]));
-  assert.tree("{{id-with-dash}}", b.interpolate([b.id("id-with-dash")]));
+  assert.tree("{{identifier}}", b.interpolate(b.id("identifier")));
+  assert.tree("{{id}}", b.interpolate(b.id("id")));
+  assert.tree("{{id-with-dash}}", b.interpolate(b.id("id-with-dash")));
 });
 
 test("{{id}} interpolating a string", assert => {
-  assert.tree(`{{"hello"}}`, b.interpolate([b.str(`"hello"`)]));
-  assert.tree(`{{"hello world"}}`, b.interpolate([b.str(`"hello world"`)]));
-  assert.tree(`{{"hello\\"world"}}`, b.interpolate([b.str(`"hello\\"world"`)]));
-  assert.tree(`{{'hello'}}`, b.interpolate([b.str(`'hello'`)]));
-  assert.tree(`{{'hello world'}}`, b.interpolate([b.str(`'hello world'`)]));
-  assert.tree(`{{'hello\\'world'}}`, b.interpolate([b.str(`'hello\\'world'`)]));
+  assert.tree(`{{"hello"}}`, b.interpolate(b.str(`"hello"`)));
+  assert.tree(`{{"hello world"}}`, b.interpolate(b.str(`"hello world"`)));
+  assert.tree(`{{"hello\\"world"}}`, b.interpolate(b.str(`"hello\\"world"`)));
+  assert.tree(`{{'hello'}}`, b.interpolate(b.str(`'hello'`)));
+  assert.tree(`{{'hello world'}}`, b.interpolate(b.str(`'hello world'`)));
+  assert.tree(`{{'hello\\'world'}}`, b.interpolate(b.str(`'hello\\'world'`)));
 });
 
 test("{{id}} interpolating a number", assert => {
-  assert.tree("{{10}}", b.interpolate([b.int("10")]));
-  assert.tree("{{-10}}", b.interpolate([b.int("-10")]));
-  assert.tree("{{100.5123}}", b.interpolate([b.decimal("100.5123")]));
-  assert.tree("{{-100.5123}}", b.interpolate([b.decimal("-100.5123")]));
+  assert.tree("{{10}}", b.interpolate(b.int("10")));
+  assert.tree("{{-10}}", b.interpolate(b.int("-10")));
+  assert.tree("{{100.5123}}", b.interpolate(b.decimal("100.5123")));
+  assert.tree("{{-100.5123}}", b.interpolate(b.decimal("-100.5123")));
 });
 
 test("{{(id)}} interpolating an expression", assert => {
-  assert.tree("{{(id)}}", b.interpolate([b.sexp([b.id("id")])]));
-  assert.tree("{{ (id) }}", b.interpolate([b.sp, b.sexp([b.id("id")]), b.sp]));
-  assert.tree("{{( id )}}", b.interpolate([b.sexp([b.sp, b.id("id"), b.sp])]));
+  assert.tree("{{(id)}}", b.interpolate(b.sexp([b.id("id")])));
+  assert.tree("{{ (id) }}", b.interpolate(b.sp, b.sexp([b.id("id")]), b.sp));
+  assert.tree("{{( id )}}", b.interpolate(b.sexp([b.sp, b.id("id"), b.sp])));
   assert.tree(
     "{{ ( id ) }}",
-    b.interpolate([b.sp, b.sexp([b.sp, b.id("id"), b.sp]), b.sp])
+    b.interpolate(b.sp, b.sexp([b.sp, b.id("id"), b.sp]), b.sp)
   );
 });
 
 test("{{@id}} interpolating an argument", assert => {
-  assert.tree("{{@identifier}}", b.interpolate([b.arg("@identifier")]));
-  assert.tree("{{@id}}", b.interpolate([b.arg("@id")]));
-  assert.tree("{{@id-with-dash}}", b.interpolate([b.arg("@id-with-dash")]));
+  assert.tree("{{@identifier}}", b.interpolate(b.arg("@identifier")));
+  assert.tree("{{@id}}", b.interpolate(b.arg("@id")));
+  assert.tree("{{@id-with-dash}}", b.interpolate(b.arg("@id-with-dash")));
 });
 
 test("whitespace around interpolation", assert => {
   assert.tree(
     "{{ identifier }}",
-    b.interpolate([b.sp, b.id("identifier"), b.sp])
+    b.interpolate(b.sp, b.id("identifier"), b.sp)
   );
-  assert.tree("{{ id }}", b.interpolate([b.sp, b.id("id"), b.sp]));
+  assert.tree("{{ id }}", b.interpolate(b.sp, b.id("id"), b.sp));
   assert.tree(
     "{{ id-with-dash }}",
-    b.interpolate([b.sp, b.id("id-with-dash"), b.sp])
+    b.interpolate(b.sp, b.id("id-with-dash"), b.sp)
   );
 });
 
 test("paths", assert => {
   assert.tree(
     "{{id.with.path}}",
-    b.interpolate([b.id("id"), b.dot, b.id("with"), b.dot, b.id("path")])
+    b.interpolate(b.id("id"), b.dot, b.id("with"), b.dot, b.id("path"))
   );
 
   assert.tree(
     "{{ id.with.path }}",
-    b.interpolate([
+    b.interpolate(
       b.sp,
       b.id("id"),
       b.dot,
       b.id("with"),
       b.dot,
       b.id("path"),
-      b.sp,
-    ])
+      b.sp
+    )
   );
 
   assert.tree(
     "{{  id.with.path  }}",
-    b.interpolate([
+    b.interpolate(
       b.ws("  "),
       b.id("id"),
       b.dot,
       b.id("with"),
       b.dot,
       b.id("path"),
-      b.ws("  "),
-    ])
+      b.ws("  ")
+    )
   );
 
   assert.tree(
     "{{@id.with.path}}",
-    b.interpolate([b.arg("@id"), b.dot, b.id("with"), b.dot, b.id("path")])
+    b.interpolate(b.arg("@id"), b.dot, b.id("with"), b.dot, b.id("path"))
   );
 
   assert.tree(
     "{{@dash-id.with-dashed.path}}",
-    b.interpolate([
+    b.interpolate(
       b.arg("@dash-id"),
       b.dot,
       b.id("with-dashed"),
       b.dot,
-      b.id("path"),
-    ])
+      b.id("path")
+    )
   );
 });
 
 test("{{id.with.path some other.stuff}}", assert => {
   assert.tree(
     "{{id.with.path some other.stuff}}",
-    b.interpolate([
+    b.interpolate(
       b.id("id"),
       b.dot,
       b.id("with"),
@@ -199,15 +199,15 @@ test("{{id.with.path some other.stuff}}", assert => {
       b.sp,
       b.id("other"),
       b.dot,
-      b.id("stuff"),
-    ])
+      b.id("stuff")
+    )
   );
 });
 
 test("named arguments", assert => {
   assert.tree(
     "{{id.with.path some named=args other=named.args}}",
-    b.interpolate([
+    b.interpolate(
       b.id("id"),
       b.dot,
       b.id("with"),
@@ -224,13 +224,13 @@ test("named arguments", assert => {
       b.eq,
       b.id("named"),
       b.dot,
-      b.id("args"),
-    ])
+      b.id("args")
+    )
   );
 
   assert.tree(
     "{{id.with.path some @arg named=args other=@named.args}}",
-    b.interpolate([
+    b.interpolate(
       b.id("id"),
       b.dot,
       b.id("with"),
@@ -249,15 +249,15 @@ test("named arguments", assert => {
       b.eq,
       b.arg("@named"),
       b.dot,
-      b.id("args"),
-    ])
+      b.id("args")
+    )
   );
 });
 
 test("using all the features", assert => {
   assert.tree(
     "{{  (id.with.path some @arg named=args other=@named.args) @some.arg another.arg named=@arg other=named.arg yet-another=-12.5  }}",
-    b.interpolate([
+    b.interpolate(
       b.ws("  "),
       b.sexp([
         b.id("id"),
@@ -302,15 +302,15 @@ test("using all the features", assert => {
       b.id("yet-another"),
       b.eq,
       b.decimal("-12.5"),
-      b.ws("  "),
-    ])
+      b.ws("  ")
+    )
   );
 });
 
 test("two interpolations next to each other", assert => {
   assert.tree(
     "{{id.with.path some named=args other=named.args}}{{some.stuff}}",
-    b.interpolate([
+    b.interpolate(
       b.id("id"),
       b.dot,
       b.id("with"),
@@ -327,9 +327,9 @@ test("two interpolations next to each other", assert => {
       b.eq,
       b.id("named"),
       b.dot,
-      b.id("args"),
-    ]),
-    b.interpolate([b.id("some"), b.dot, b.id("stuff")])
+      b.id("args")
+    ),
+    b.interpolate(b.id("some"), b.dot, b.id("stuff"))
   );
 });
 
@@ -358,7 +358,7 @@ test("blocks with block params", assert => {
       "let",
       [b.sp, b.arg("@x"), b.sp, b.as("x")],
       b.text("insert "),
-      b.interpolate([b.id("x")])
+      b.interpolate(b.id("x"))
     )
   );
 
@@ -368,7 +368,7 @@ test("blocks with block params", assert => {
       "let",
       [b.sp, b.arg("@x"), b.sp, b.as("x"), b.sp],
       b.text("insert "),
-      b.interpolate([b.id("x")])
+      b.interpolate(b.id("x"))
     )
   );
 
