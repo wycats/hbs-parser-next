@@ -1,15 +1,28 @@
-import { combinator } from "../../combinator";
 import { ok, Result, Snippet } from "../../../snippet";
-import { any } from "../../combinators";
-import { AbstractCombinator } from "../base";
-import { ID, DOT, ARG } from "../../hbs";
+import { combinator } from "../../combinator";
+import { DOT, ID } from "../../hbs";
 import type { PresentTokens, Token } from "../../tokens";
+import { AbstractCombinator } from "../base";
+import Head from "./head";
 
 export default class SimplePath extends AbstractCombinator<PresentTokens> {
-  readonly name = "PATH";
+  private head: Head;
+
+  constructor(private disallowedKeywords?: string[]) {
+    super();
+    this.head = new Head(disallowedKeywords);
+  }
+
+  get name(): string {
+    if (this.disallowedKeywords) {
+      return `SIMPLE_PATH • not ${JSON.stringify(this.disallowedKeywords)}`;
+    } else {
+      return `SIMPLE_PATH`;
+    }
+  }
 
   invoke(input: Snippet): Result<[Snippet, PresentTokens]> {
-    let result = input.invoke(SIMPLE_HEAD);
+    let result = input.invoke(this.head);
 
     if (result.kind === "err") {
       return result;
@@ -23,7 +36,7 @@ export default class SimplePath extends AbstractCombinator<PresentTokens> {
         return ok([current, out]);
       }
 
-      let resultDot = current.invoke(DOT);
+      let resultDot = current.invoke(DOT, { optional: true });
 
       if (resultDot.kind === "err") {
         return ok([current, out]);
@@ -46,6 +59,6 @@ export default class SimplePath extends AbstractCombinator<PresentTokens> {
   }
 }
 
-export const SIMPLE_HEAD = combinator(() => any("HEAD", ARG, ID));
+// export const SIMPLE_HEAD = combinator(() => any("HEAD", ARG, ID));
 // TODO: Allow `[]` or string members
 export const MEMBER = combinator(() => ID);

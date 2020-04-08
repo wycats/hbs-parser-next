@@ -1,6 +1,6 @@
-import { b, read, serializeRoot } from "hbs-parser-next";
 import * as qunit from "qunit";
 import { config, module, test } from "qunit";
+import { read, serializeRoot, b, SourceSpan, Err } from "hbs-parser-next";
 
 module("[READER] interpolation");
 
@@ -8,6 +8,11 @@ module("[READER] interpolation");
 declare module "qunit" {
   interface Assert {
     tree(this: Assert, source: string, ...expected: b.CurriedToken[]): void;
+    readError(
+      this: Assert,
+      source: string,
+      expected: { reason: string; span: SourceSpan }
+    ): void;
   }
 
   interface Config {
@@ -40,6 +45,42 @@ qunit.assert.tree = function (source: string, ...expected: b.CurriedToken[]) {
   }
   this.verifySteps([step], "verified steps");
 };
+
+qunit.assert.readError = function (
+  source: string,
+  expected: { reason: string; span: SourceSpan }
+) {
+  let tree = read(source, { logging: config.logging });
+
+  this.pushResult({
+    result: tree.kind === "err",
+    actual: tree.kind,
+    expected: "err",
+    message: `expected an error`,
+  });
+
+  isType<Err>(tree);
+
+  this.pushResult({
+    result: tree.reason === expected.reason,
+    actual: tree.reason,
+    expected: expected.reason,
+    message: `reason matches`,
+  });
+
+  this.pushResult({
+    result:
+      tree.snippet.span.start === expected.span.start &&
+      tree.snippet.span.end === expected.span.end,
+    actual: `${tree.snippet.span.start}..${tree.snippet.span.end}`,
+    expected: `${expected.span.start}..${expected.span.end}`,
+    message: `span matches`,
+  });
+};
+
+function isType<T>(_input: any): asserts _input is T {
+  return;
+}
 
 test("empty", assert => {
   assert.tree("" /* no body */);
@@ -293,13 +334,62 @@ test("two interpolations next to each other", assert => {
 });
 
 test("blocks", assert => {
+  assert.tree("{{#if @x}}{{/if}}", b.block("if", [b.sp, b.arg("@x")]));
+
   assert.tree(
-    "{{#if @x}}{{/if}}",
-    b.block({
-      open: {
-        name: "if",
-        head: [b.sp, b.arg("@x")],
-      },
-    })
+    "{{#if @x}}a b c {{#unless @y.z}}some stuff{{/unless}}{{/if}}",
+    b.block(
+      "if",
+      [b.sp, b.arg("@x")],
+      b.text("a b c "),
+      b.block(
+        "unless",
+        [b.sp, b.arg("@y"), b.dot, b.id("z")],
+        b.text("some stuff")
+      )
+    )
   );
+});
+
+test("blocks with block params", assert => {
+  assert.tree(
+    "{{#let @x as |x|}}insert {{x}}{{/let}}",
+    b.block(
+      "let",
+      [b.sp, b.arg("@x"), b.sp, b.as("x")],
+      b.text("insert "),
+      b.interpolate([b.id("x")])
+    )
+  );
+
+  assert.tree(
+    "{{#let @x as |x| }}insert {{x}}{{/let}}",
+    b.block(
+      "let",
+      [b.sp, b.arg("@x"), b.sp, b.as("x"), b.sp],
+      b.text("insert "),
+      b.interpolate([b.id("x")])
+    )
+  );
+
+  assert.tree(
+    "{{#let @x as |x|}}a b c {{#with @y.z as |z|}}some stuff{{/with}}{{/let}}",
+    b.block(
+      "let",
+      [b.sp, b.arg("@x"), b.sp, b.as("x")],
+      b.text("a b c "),
+      b.block(
+        "with",
+        [b.sp, b.arg("@y"), b.dot, b.id("z"), b.sp, b.as("z")],
+        b.text("some stuff")
+      )
+    )
+  );
+});
+
+test("mismatched blocks", assert => {
+  assert.readError("{{#if @x}}{{/unless}}", {
+    reason: "mismatch",
+    span: { start: 13, end: 19 },
+  });
 });

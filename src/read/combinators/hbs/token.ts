@@ -12,7 +12,7 @@ export default class SomeToken<
   }
 
   get name() {
-    return `token (${combinatorName(this.combinator)})`;
+    return `token • ${combinatorName(this.combinator)}`;
   }
 
   invoke(input: Snippet): Result<[Snippet, LeafTokenMap[T]]> {

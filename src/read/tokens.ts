@@ -1,4 +1,5 @@
-import { SourceSpan, range } from "../span";
+import { SourceSpan, range, slice } from "../span";
+import { Dict } from "./utils";
 
 /**
  * Steps for creating a new token type:
@@ -49,7 +50,7 @@ export interface BaseToken {
 export function leaf<T extends keyof LeafTokenMap>(
   type: T
 ): (span: SourceSpan) => LeafTokenMap[T] {
-  return (span) => ({ type, span } as LeafTokenMap[T]);
+  return span => ({ type, span } as LeafTokenMap[T]);
 }
 
 export const id = leaf(TokenType.Identifier);
@@ -213,9 +214,44 @@ export interface OpenBlockToken extends BaseToken {
   // three-token head. Blocks must close with `/` followed by
   // the same tokens as the name.
   name: readonly Token[];
-  // the rest of the tokens in the opening part of the block
+  // the rest of the tokens in the opening part of the block,
+  // including an optional trailing block param
   head: readonly Token[] | null;
-  blockParams: BlockParamsToken | null;
+}
+
+export function equalPath(
+  leftTokens: readonly Token[],
+  rightTokens: readonly Token[],
+  source: string
+): boolean {
+  if (leftTokens.length !== rightTokens.length) {
+    return false;
+  }
+
+  return leftTokens.every((left, index) => {
+    let right = rightTokens[index];
+
+    if (left.type !== right.type) {
+      return false;
+    }
+
+    switch (left.type) {
+      case TokenType.ArgName:
+        return (
+          slice(left.name, source) ===
+          slice((right as ArgNameToken).name, source)
+        );
+      case TokenType.Identifier:
+        return (
+          slice(left.span, source) ===
+          slice((right as IdentifierToken).span, source)
+        );
+      case TokenType.Dot:
+        return true;
+      default:
+        throw new Error(`assert: unexpected token type ${left.type}`);
+    }
+  });
 }
 
 export type BlockParamToken = WSToken | IdentifierToken;
@@ -223,6 +259,17 @@ export type BlockParamToken = WSToken | IdentifierToken;
 export interface BlockParamsToken extends BaseToken {
   type: TokenType.BlockParams;
   params: readonly BlockParamToken[];
+}
+
+export function blockParams(
+  params: readonly BlockParamToken[],
+  span: SourceSpan
+): BlockParamsToken {
+  return {
+    type: TokenType.BlockParams,
+    span,
+    params,
+  };
 }
 
 export interface CloseBlockToken extends BaseToken {
@@ -249,11 +296,10 @@ export function block({ open, body, close }: BlockOptions): BlockToken {
 export interface OpenBlockOptions {
   name: PresentTokens;
   head: readonly Token[] | null;
-  blockParams: [BlockParamToken, ...BlockParamToken[]] | null;
 }
 
 export function openBlock(
-  { name, head, blockParams }: OpenBlockOptions,
+  { name, head }: OpenBlockOptions,
   span: SourceSpan
 ): OpenBlockToken {
   return {
@@ -261,13 +307,6 @@ export function openBlock(
     span,
     name,
     head,
-    blockParams: blockParams
-      ? {
-          type: TokenType.BlockParams,
-          span: range(...blockParams),
-          params: blockParams,
-        }
-      : null,
   };
 }
 

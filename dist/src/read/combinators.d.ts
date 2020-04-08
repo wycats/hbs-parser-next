@@ -1,0 +1,20 @@
+import Any from "./combinators/any";
+import Pattern from "./combinators/pattern";
+import Seq from "./combinators/seq";
+import Tag from "./combinators/tag";
+import TakeUntil from "./combinators/take-until";
+import TakeWhile from "./combinators/take-while";
+import type { Combinators, CombinatorType, TupleCombinators } from "./combinators/types";
+import type { Debuggable } from "./logger";
+import Pick, { PickCallbacks } from "./combinators/pick";
+import type { Dict } from "./utils";
+import Maybe from "./combinators/maybe";
+export declare const tag: (source: string) => Tag;
+export declare const pattern: (pat: RegExp, name: string) => Pattern;
+export declare const takeUntil: (pat: string) => TakeUntil;
+export declare const takeWhile: (pat: string) => TakeWhile;
+export declare const seq: <T extends Debuggable[]>(desc: string, ...combinators: TupleCombinators<T>) => Seq<T>;
+export declare const any: <T extends Debuggable[]>(desc: string, ...combinators: TupleCombinators<T>) => Any<T>;
+export declare const pick: <T extends Dict<Debuggable>, U extends PickCallbacks<T>>(combinators: Combinators<T>, callbacks: U) => Pick<T, U>;
+export declare const maybe: <T extends Debuggable>(c: CombinatorType<T>) => Maybe<T>;
+//# sourceMappingURL=combinators.d.ts.map

@@ -35,7 +35,7 @@ test("A tag with a single-quoted attribute", assert => {
     `<div id='foo'>`,
     b.startTag({
       name: "div",
-      attrs: [b.sp, b.attr({ name: "id", value: `'foo'` })]
+      attrs: [b.sp, b.attr({ name: "id", value: `'foo'` })],
     })
   );
 });
@@ -45,7 +45,7 @@ test("A tag with a double-quoted attribute", assert => {
     `<div id="foo">`,
     b.startTag({
       name: "div",
-      attrs: [b.sp, b.attr({ name: "id", value: `"foo"` })]
+      attrs: [b.sp, b.attr({ name: "id", value: `"foo"` })],
     })
   );
 });
@@ -55,7 +55,10 @@ test("A tag with a double-quoted empty", assert => {
     `<div id="">`,
     b.startTag({
       name: "div",
-      attrs: [b.sp, b.attr({ name: "id", value: b.stringInterpolate([], `"`) })]
+      attrs: [
+        b.sp,
+        b.attr({ name: "id", value: b.stringInterpolate([], `"`) }),
+      ],
     })
   );
 });
@@ -65,7 +68,7 @@ test("A tag with unquoted attribute", assert => {
     `<div id=foo>`,
     b.startTag({
       name: "div",
-      attrs: [b.sp, b.attr({ name: "id", value: `foo` })]
+      attrs: [b.sp, b.attr({ name: "id", value: `foo` })],
     })
   );
 });
@@ -75,7 +78,7 @@ test("A tag with valueless attributes", assert => {
     `<div foo bar>`,
     b.startTag({
       name: "div",
-      attrs: [b.sp, b.attr("foo"), b.sp, b.attr("bar")]
+      attrs: [b.sp, b.attr("foo"), b.sp, b.attr("bar")],
     })
   );
 });
@@ -91,8 +94,8 @@ test("A tag with multiple attributes", assert => {
         b.sp,
         b.attr({ name: "class", value: `"bar baz"` }),
         b.sp,
-        b.attr({ name: "href", value: `'bat'` })
-      ]
+        b.attr({ name: "href", value: `'bat'` }),
+      ],
     })
   );
 });
@@ -103,7 +106,7 @@ test("A self-closing tag", assert => {
     b.startTag({
       name: "img",
       attrs: [b.sp],
-      selfClosing: true
+      selfClosing: true,
     })
   );
 });
@@ -114,7 +117,7 @@ test("A self-closing tag with valueless attributes", assert => {
     b.startTag({
       name: "input",
       attrs: [b.sp, b.attr("disabled"), b.sp],
-      selfClosing: true
+      selfClosing: true,
     })
   );
 
@@ -123,7 +126,7 @@ test("A self-closing tag with valueless attributes", assert => {
     b.startTag({
       name: "input",
       attrs: [b.sp, b.attr("disabled")],
-      selfClosing: true
+      selfClosing: true,
     })
   );
 
@@ -131,7 +134,7 @@ test("A self-closing tag with valueless attributes", assert => {
     `<input data-foo=bar/>`,
     b.startTag({
       name: "input",
-      attrs: [b.sp, b.attr({ name: "data-foo", value: "bar/" })]
+      attrs: [b.sp, b.attr({ name: "data-foo", value: "bar/" })],
     })
   );
 });

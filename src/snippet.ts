@@ -16,7 +16,11 @@ export class Snippet {
 
   invoke<T extends Debuggable>(
     combinator: CombinatorType<T>,
-    options: { forceTransparent?: boolean; context?: string } = {}
+    options: {
+      forceTransparent?: boolean;
+      context?: string;
+      optional?: true;
+    } = {}
   ): Result<[Snippet, T]> {
     return this.logger.invoke(combinator, this, options);
   }
@@ -26,6 +30,15 @@ export class Snippet {
       this.source === other.source &&
       this.offset === other.offset &&
       this.length === other.length
+    );
+  }
+
+  forSpan(span: SourceSpan): Snippet {
+    return new Snippet(
+      this.source,
+      span.start,
+      span.end - span.start,
+      this.logger
     );
   }
 
@@ -108,6 +121,7 @@ export interface Err {
   kind: "err";
   snippet: Snippet;
   reason: string;
+  fatal?: true;
 }
 
 export function err(snippet: Snippet, reason: string): Err {
@@ -115,6 +129,15 @@ export function err(snippet: Snippet, reason: string): Err {
     kind: "err",
     snippet,
     reason,
+  };
+}
+
+export function fatalError(snippet: Snippet, reason: string): Err {
+  return {
+    kind: "err",
+    snippet,
+    reason,
+    fatal: true,
   };
 }
 

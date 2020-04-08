@@ -2,10 +2,12 @@ import { AbstractCombinator } from "./base";
 import { Snippet, Result, ok } from "../../snippet";
 
 export default class Tag extends AbstractCombinator<Snippet> {
-  readonly name = "tag";
-
   constructor(private source: string) {
     super();
+  }
+
+  get name() {
+    return JSON.stringify(this.source);
   }
 
   invoke(input: Snippet): Result<[Snippet, Snippet]> {

@@ -1,6 +1,9 @@
 import * as tokens from "./tokens";
 import { SourceSpan, range, span } from "../span";
 
+export type CurriedOptionalToken<T extends tokens.Token = tokens.Token> = (
+  builder: TokenBuilder
+) => T | null;
 export type CurriedToken<T extends tokens.Token = tokens.Token> = (
   builder: TokenBuilder
 ) => T;
@@ -72,7 +75,7 @@ export function decimal(num: string): CurriedToken {
   };
 }
 
-export function id(name: string): CurriedToken {
+export function id(name: string): CurriedToken<tokens.IdentifierToken> {
   return builder => tokens.id(builder.consume(name));
 }
 
@@ -82,33 +85,25 @@ export function arg(name: string): CurriedToken {
 
 export const dot: CurriedToken = builder => tokens.dot(builder.consume("."));
 export const eq: CurriedToken = builder => tokens.eq(builder.consume("="));
-export const sp: CurriedAttributeToken = builder =>
+export const sp: CurriedToken<tokens.WSToken> = builder =>
   tokens.ws(builder.consume(" "));
 
 export function ws(space: string): CurriedAttributeToken {
   return builder => tokens.ws(builder.consume(space));
 }
 
-export interface BlockOptions {
-  open: {
-    name: string | CurriedPresentTokens;
-    head: CurriedToken[];
-  };
-}
-
 export function block(
-  { open }: BlockOptions,
+  name: string | CurriedPresentTokens,
+  head: CurriedToken[],
   ...body: CurriedToken[]
 ): CurriedToken<tokens.BlockToken> {
   let curriedName =
-    typeof open.name === "string"
-      ? ([id(open.name)] as CurriedPresentTokens)
-      : open.name;
+    typeof name === "string" ? ([id(name)] as CurriedPresentTokens) : name;
 
   return builder => {
     let openToken = builder.consume("{{#");
     let nameTokens = buildTokens(curriedName, builder);
-    let headTokens = buildTokens(open.head, builder);
+    let headTokens = buildTokens(head, builder);
     let endOpen = builder.consume("}}");
 
     let bodyTokens = body.map(tok => tok(builder));
@@ -122,13 +117,34 @@ export function block(
         {
           name: nameTokens,
           head: headTokens,
-          blockParams: null,
         },
         range(openToken, endOpen)
       ),
       body: bodyTokens,
       close: tokens.closeBlock(closeName, range(close, endClose)),
     });
+  };
+}
+
+export function as(
+  ...params: Array<string | CurriedToken<tokens.BlockParamToken>>
+): CurriedToken<tokens.BlockParamsToken> {
+  return builder => {
+    let start = builder.consume("as |");
+
+    let head = params.slice(0, -1);
+    let tail = params.slice(-1)[0] as string;
+
+    let tokenList: tokens.BlockParamToken[] = head.flatMap(param =>
+      typeof param === "function"
+        ? [param(builder)]
+        : [id(param)(builder), sp(builder)]
+    );
+    tokenList.push(id(tail)(builder));
+
+    let end = builder.consume("|");
+
+    return tokens.blockParams(tokenList, range(start, end));
   };
 }
 

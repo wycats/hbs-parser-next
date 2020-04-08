@@ -13,14 +13,14 @@ import SomeToken from "./combinators/hbs/token";
 import type { CombinatorType } from "./combinators/types";
 import Wrap from "./combinators/wrap";
 import type { Debuggable } from "./logger";
-import { arg, LeafTokenMap, Token, TokenType } from "./tokens";
+import { arg, LeafTokenMap, Token, TokenType, ArgumentToken } from "./tokens";
 import { map } from "./utils";
 import Id from "./combinators/hbs/id";
 
 export const token = <T extends keyof LeafTokenMap>(
   c: CombinatorType<Snippet>,
   type: T
-) => new SomeToken(c, type);
+): CombinatorType<LeafTokenMap[T]> => new SomeToken(c, type);
 
 export const wrap = <T extends Debuggable>(c: CombinatorType<T>) => new Wrap(c);
 
@@ -46,7 +46,7 @@ export const ID = token(ID_SNIPPET, TokenType.Identifier);
 export const DOT = token(tag("."), TokenType.Dot);
 export const EQ = token(tag("="), TokenType.Eq);
 
-export const ARG: CombinatorType<Token> = map(
+export const ARG: CombinatorType<ArgumentToken> = map(
   seq("@id", tag("@"), ID_SNIPPET),
   ([at, id]) => ok(arg(range(at, id)))
 );

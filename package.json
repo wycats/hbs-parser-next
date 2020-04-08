@@ -4,7 +4,6 @@
   "main": "index.js",
   "license": "MIT",
   "devDependencies": {
-    "@types/qunit": "^2.9.0",
     "file-loader": "^6.0.0",
     "qunit": "^2.9.3",
     "ts-loader": "^6.2.2",

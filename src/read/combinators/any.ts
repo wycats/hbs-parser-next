@@ -23,6 +23,11 @@ export default class Any<T extends Debuggable[]> extends AbstractCombinator<
       if (result.kind === "ok") {
         return result;
       }
+
+      // if there was a fatal error, don't try other variants
+      if (result.kind === "err" && result.fatal) {
+        return result;
+      }
     }
 
     return err(input, "any");

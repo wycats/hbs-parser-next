@@ -76,7 +76,6 @@ export function serializeNode(token: Token | null, source: string): string[] {
         "{{#",
         ...serializeList(token.name, source),
         ...serializeList(token.head, source),
-        ...serializeNode(token.blockParams, source),
         "}}",
       ];
     case TokenType.BlockParams:
@@ -146,5 +145,5 @@ function serializeList(
     return [];
   }
 
-  return [...tokens.flatMap((child) => serializeNode(child, source))];
+  return [...tokens.flatMap(child => serializeNode(child, source))];
 }

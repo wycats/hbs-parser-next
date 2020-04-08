@@ -4,12 +4,8 @@ import { AbstractCombinator } from "./base";
 import type { TupleCombinators } from "./types";
 
 export default class Seq<T extends Debuggable[]> extends AbstractCombinator<T> {
-  constructor(private desc: string, private combinators: TupleCombinators<T>) {
+  constructor(readonly name: string, private combinators: TupleCombinators<T>) {
     super();
-  }
-
-  get name() {
-    return `seq • ${this.desc}`;
   }
 
   invoke(input: Snippet): Result<[Snippet, T]> {

@@ -6,7 +6,7 @@ import { sexp, SexpToken } from "../../tokens";
 import { AbstractCombinator } from "../base";
 
 export default class Sexp extends AbstractCombinator<SexpToken> {
-  readonly name = "INTERPOLATE";
+  readonly name = "SEXP";
 
   invoke(input: Snippet): Result<[Snippet, SexpToken]> {
     return input.invoke(

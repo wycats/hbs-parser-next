@@ -1,5 +1,5 @@
 import { Result, Snippet } from "../snippet";
-import { indent, indentWS, row, outdent } from "./debug";
+import { indent, outdent, preInvoke, postInvoke } from "./debug";
 import { Token, LeafToken, RootToken, debugFormatToken } from "./tokens";
 import type { CombinatorType, CombinatorDebugType } from "./combinators/types";
 
@@ -22,51 +22,24 @@ export class Logger {
     {
       forceTransparent,
       context,
+      optional,
     }: {
       forceTransparent?: boolean;
       context?: string;
+      optional?: true;
     } = {}
   ): Result<[Snippet, T]> {
     let logged = this.enableLogging && !isTransparent(c) && !forceTransparent;
     if (logged) {
-      row(
-        { result: "start", arrow: `${indentWS()}->`, combinator: c, context },
-        "",
-        input.debugRest()
-      );
+      preInvoke({ combinator: c, snippet: input, optional: !!optional });
       indent();
     }
     let result = c.invoke(input);
     if (logged) {
       outdent();
+      postInvoke(result);
     }
-    if (result.kind === "ok") {
-      if (logged) {
-        row(
-          {
-            result: "success",
-            arrow: `${indentWS()}<-`,
-            combinator: c,
-            context,
-          },
-          formatDebuggable(result.value[1]),
-          result.value[0].debugRest()
-        );
-      }
-    } else {
-      if (logged) {
-        row(
-          {
-            result: "error",
-            arrow: `${indentWS()}<-`,
-            combinator: c,
-            context,
-          },
-          result.reason,
-          result.snippet.debugRest()
-        );
-      }
-    }
+
     return result;
   }
 }

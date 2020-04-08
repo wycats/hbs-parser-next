@@ -63,6 +63,7 @@ export function present<T extends Debuggable>(
 ): CombinatorType<T> {
   return {
     name: "present",
+    kind: "transparent",
     invoke(input) {
       let result = input.invoke(source);
 
@@ -95,3 +96,7 @@ export function unreachable(value: never): never {
 }
 
 export type Dict<T> = { [key: number]: T };
+
+export function join<T>(...items: Array<T | null | undefined>): T[] {
+  return items.filter(i => i === null || i === undefined) as T[];
+}

@@ -33,7 +33,7 @@ test("mismatch: not at 0 offset", () => {
   let input = Snippet.input("hello world", LOGGER);
   let [next] = unwrap(input.invoke(combinators.tag("hello ")));
 
-  let mismatch = next.invoke(combinators.tag("woold"), next);
+  let mismatch = next.invoke(combinators.tag("woold"));
 
   eqError(mismatch, err(next, "tag"));
 });
@@ -85,7 +85,7 @@ module("[combinators] takeWhile");
 test("match: at non-zero offset", () => {
   let input = Snippet.input("hello!!!!", LOGGER);
   let [next1] = unwrap(input.invoke(combinators.tag("hello")));
-  let [next, match] = unwrap(next1.invoke(combinators.takeWhile("!"), next1));
+  let [next, match] = unwrap(next1.invoke(combinators.takeWhile("!")));
 
   eqSnippet(next, input.slice(9).rest);
   eqSnippet(match, input.slice(5).slice(4));

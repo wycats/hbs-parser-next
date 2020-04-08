@@ -15,7 +15,7 @@ export function many<T extends Debuggable>(
       let count = 0;
 
       while (true) {
-        if (count++ > 50) {
+        if (count++ > 1000) {
           return err(input, "likely infinite loop");
         }
 
@@ -26,7 +26,13 @@ export function many<T extends Debuggable>(
         let iterate = current.invoke(present(source));
 
         if (iterate.kind === "err") {
-          return ok([current.rest, out]);
+          // if we encountered a fatal error, the entire `many`
+          // is an error
+          if (iterate.fatal) {
+            return iterate;
+          } else {
+            return ok([current.rest, out]);
+          }
         } else {
           let [next, match] = iterate.value;
           out.push(match);

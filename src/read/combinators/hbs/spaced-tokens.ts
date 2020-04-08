@@ -3,9 +3,24 @@ import { any } from "../../combinators";
 import type { Token, PresentTokens } from "../../tokens";
 import { AbstractCombinator } from "../base";
 import { Snippet, Result, ok } from "../../../snippet";
+import type { CombinatorType } from "../types";
+import SimplePath from "./simple-path";
 
 export default class SpacedTokens extends AbstractCombinator<PresentTokens> {
-  readonly name = "SPACED_TOKENS";
+  private path: CombinatorType<Token[]>;
+
+  constructor(private disallowedKeywords?: string[]) {
+    super();
+    this.path = new SimplePath(disallowedKeywords);
+  }
+
+  get name() {
+    if (this.disallowedKeywords) {
+      return `SPACED_TOKENS • not ${JSON.stringify(this.disallowedKeywords)}`;
+    } else {
+      return "SPACED_TOKENS";
+    }
+  }
 
   invoke(input: Snippet): Result<[Snippet, PresentTokens]> {
     let out: Token[] = [];
@@ -15,7 +30,7 @@ export default class SpacedTokens extends AbstractCombinator<PresentTokens> {
       wrap(STRING),
       wrap(NUMBER),
       NAMED,
-      SIMPLE_PATH,
+      this.path,
       wrap(WS)
     );
     let current = input;

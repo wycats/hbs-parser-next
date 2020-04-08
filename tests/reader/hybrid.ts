@@ -39,9 +39,9 @@ test("Curly attributes", assert => {
         b.sp,
         b.attr({
           name: "disabled",
-          value: b.attrInterpolate(b.id("disabled"))
-        })
-      ]
+          value: b.attrInterpolate(b.id("disabled")),
+        }),
+      ],
     }),
     b.endTag("div")
   );
@@ -56,9 +56,9 @@ test("Curlies inside quoted attributes", assert => {
         b.sp,
         b.attr({
           name: "disabled",
-          value: b.stringInterpolate([b.interpolate([b.id("disabled")])], `"`)
-        })
-      ]
+          value: b.stringInterpolate([b.interpolate([b.id("disabled")])], `"`),
+        }),
+      ],
     }),
     b.endTag("div")
   );
@@ -74,9 +74,9 @@ test("Curlies inside quoted attributes", assert => {
           value: b.stringInterpolate(
             [b.interpolate([b.id("url")]), b.text(".html")],
             `"`
-          )
-        })
-      ]
+          ),
+        }),
+      ],
     }),
     b.endTag("a")
   );
@@ -91,9 +91,9 @@ test("Arguments", assert => {
         b.sp,
         b.attr({
           name: b.argName("@disabled"),
-          value: b.stringInterpolate([b.interpolate([b.id("disabled")])], `"`)
-        })
-      ]
+          value: b.stringInterpolate([b.interpolate([b.id("disabled")])], `"`),
+        }),
+      ],
     }),
     b.endTag("div")
   );
@@ -109,9 +109,9 @@ test("Arguments", assert => {
           value: b.stringInterpolate(
             [b.interpolate([b.id("url")]), b.text(".html")],
             `"`
-          )
-        })
-      ]
+          ),
+        }),
+      ],
     }),
     b.endTag("a")
   );
@@ -138,10 +138,10 @@ test("Modifiers", assert => {
             b.dot,
             b.id("handleClick"),
             b.sp,
-            b.arg("@arg")
-          ])
-        ])
-      ]
+            b.arg("@arg"),
+          ]),
+        ]),
+      ],
     }),
     b.endTag("div")
   );
