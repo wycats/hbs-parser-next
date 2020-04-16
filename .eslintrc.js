@@ -25,6 +25,10 @@ module.exports = {
             allowExpressions: true,
           },
         ],
+        "@typescript-eslint/no-unused-vars": [
+          "error",
+          { argsIgnorePattern: "^_" },
+        ],
         "prefer-const": "off",
         "no-constant-condition": [
           "error",

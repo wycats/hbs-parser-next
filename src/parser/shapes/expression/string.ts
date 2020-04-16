@@ -1,7 +1,7 @@
 import { TokenType } from "../../../read/tokens";
 import * as ast from "../../nodes";
 import type { StringNode } from "../../nodes/expression";
-import { err, ok, Result, EXPAND } from "../../shape";
+import { EXPAND, Result } from "../../shape";
 import type TokensIterator from "../../tokens-iterator";
 import { AbstractShape } from "../abstract";
 

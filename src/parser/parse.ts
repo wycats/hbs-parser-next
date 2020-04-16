@@ -26,7 +26,7 @@ export default function parse({
   try {
     let topLevel = new BlockBodyShape();
 
-    let root = iterator.expand(topLevel);
+    let root = iterator.expandInfallible(topLevel);
 
     let maybeEOF = iterator.peek("eof");
 

@@ -13,42 +13,44 @@ class PositionalShape extends AbstractShape<ast.PositionalArgumentsNode> {
   readonly desc = "Positional";
 
   [EXPAND](iterator: TokensIterator): Result<ast.PositionalArgumentsNode> {
-    let eof = iterator.assertNotEOF();
+    return iterator
+      .assertNotEOF()
+      .map(() => {
+        return iterator.many(iterator =>
+          iterator.transaction(iterator => {
+            return iterator.expand(WS).andThen(before => {
+              return iterator.expand(ExpressionShape).map(expr => {
+                return { ...expr, before };
+              });
+            });
+          })
+        );
 
-    if (eof.kind === "err") {
-      return eof;
-    }
+        let out: ast.ExpressionAstNode[] = [];
 
-    let out: ast.ExpressionAstNode[] = [];
+        while (true) {
+          let expr = iterator.transaction(iterator => {
+            return seq(iterator.expand(WS)).andThen(before => {
+              return seq(iterator.expand(ExpressionShape)).map(expr => {
+                out.push({ ...expr, before });
+              });
+            });
+          });
 
-    while (true) {
-      let transaction = iterator.begin();
-
-      try {
-        let before = transaction.expand(WS);
-
-        if (before.kind === "err") {
-          break;
+          if (expr.kind === "err") {
+            break;
+          }
         }
 
-        let expr = transaction.expand(ExpressionShape);
-
-        if (expr.kind === "err") {
-          break;
+        return out;
+      })
+      .andThen(out => {
+        if (out.length === 0) {
+          return err(iterator.peek("positional").reject(), "empty");
+        } else {
+          return ok(ast.positional(out, { span: range(...out) }));
         }
-
-        transaction.commit();
-        out.push({ ...expr.value, before: before.value });
-      } finally {
-        transaction.finallyRollback();
-      }
-    }
-
-    if (out.length === 0) {
-      return err(iterator.peek("positional").reject(), "empty");
-    } else {
-      return ok(ast.positional(out, { span: range(...out) }));
-    }
+      });
   }
 }
 
@@ -89,7 +91,7 @@ class NamedArgumentShape extends AbstractShape<ast.NamedArgumentNode> {
         return expr;
       }
 
-      let trailingWS = transaction.expand(MAYBE_WS);
+      let trailingWS = transaction.expandInfallible(MAYBE_WS);
 
       transaction.commit();
 
@@ -154,12 +156,12 @@ export class CallBodyShape extends AbstractShape<ast.CallBodyNode> {
   readonly desc = "CallBody";
 
   [EXPAND](iterator: TokensIterator): Result<ast.CallBodyNode> {
-    let before = iterator.expand(MAYBE_WS) || undefined;
+    let before = iterator.expandInfallible(MAYBE_WS) || undefined;
 
     return seq(iterator.expand(HeadShape)).map(head => {
-      let positional = iterator.expand(maybe(new PositionalShape()));
-      let named = iterator.expand(maybe(new NamedArgumentsShape()));
-      let after = iterator.expand(MAYBE_WS) || undefined;
+      let positional = iterator.expandInfallible(maybe(new PositionalShape()));
+      let named = iterator.expandInfallible(maybe(new NamedArgumentsShape()));
+      let after = iterator.expandInfallible(MAYBE_WS) || undefined;
 
       return ast.callBody(
         { head: head, positional, named },

@@ -29,9 +29,12 @@ export class BlockShape extends AbstractShape<BlockNode> {
     if (next.token.type === TokenType.Block) {
       let token = next.token;
 
-      let open = iterator.processInner(token.open.name, iterator =>
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      let _open = iterator.processInner(token.open.name, iterator =>
         iterator.expand(ExpressionShape)
       );
+
+      throw new Error("not implemented");
     } else {
       return err(next.reject(), "mismatch");
     }

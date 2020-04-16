@@ -1,13 +1,13 @@
 import { TokenType } from "../../../read/tokens";
+import { slice } from "../../../span";
 import * as ast from "../../nodes";
 import type {
-  VarReferenceNode,
   ThisReferenceNode,
+  VarReferenceNode,
 } from "../../nodes/expression";
-import { err, ok, Result, EXPAND } from "../../shape";
+import { EXPAND, Result } from "../../shape";
 import type TokensIterator from "../../tokens-iterator";
 import { AbstractShape } from "../abstract";
-import { slice } from "../../../span";
 
 export class VarRefShape extends AbstractShape<
   VarReferenceNode | ThisReferenceNode
@@ -27,9 +27,10 @@ export class VarRefShape extends AbstractShape<
           }
         })
         .andThen(id => {
+          debugger;
           return transaction
             .assertNotNext("eq", token => token.type === TokenType.Eq)
-            .mapResult(() => ok(id));
+            .map(() => id);
         })
         .map(id => {
           transaction.commit();

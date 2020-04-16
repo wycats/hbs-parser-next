@@ -1,7 +1,7 @@
 import type { Token } from "../read/tokens";
 import type { SourceSpan } from "../span";
-import { Result, Shape, EXPAND, err, ok, Sequence, seq } from "./shape";
 import type { ParseTracer } from "./debug";
+import { err, EXPAND, ok, Result, seq, Sequence, Shape } from "./shape";
 
 export const TOKENS = Symbol("TOKENS");
 
@@ -97,13 +97,13 @@ export default class TokensIterator {
     this[TOKENS] = tokens;
   }
 
-  assertNotEOF(): Result<null> {
+  assertNotEOF(): Result<null> & Sequence<null> {
     let next = this.peek("eof");
 
     if (next.isEOF) {
-      return err(next.reject(), "eof");
+      return seq(err(next.reject(), "eof"));
     } else {
-      return ok(next.ignore());
+      return seq(ok(next.ignore()));
     }
   }
 
@@ -120,7 +120,7 @@ export default class TokensIterator {
   consume<T>(
     options: string | { desc: string; isLeaf: boolean },
     callback: (token: Token) => T | void | undefined
-  ): Result<T> & Sequence<T> {
+  ): Sequence<T> {
     let eof = this.assertNotEOF();
     if (eof.kind === "err") {
       return seq(eof);
@@ -144,8 +144,7 @@ export default class TokensIterator {
   consumeParent<T>(
     options: string | { desc: string; isLeaf: boolean },
     callback: (token: Token) => Result<T> | void
-  ): Result<{ result: T; token: Token }> &
-    Sequence<{ result: T; token: Token }> {
+  ): Sequence<{ result: T; token: Token }> {
     let eof = this.assertNotEOF();
     if (eof.kind === "err") {
       return seq(eof);
@@ -201,12 +200,25 @@ export default class TokensIterator {
     return result;
   }
 
-  expand<T>(shapeOrClass: { new (): Shape<T> } | Shape<T>): T {
+  expand<T>(
+    shapeOrClass: { new (): Shape<Result<T>> } | Shape<Result<T>>
+  ): Sequence<T> {
     let shape =
       typeof shapeOrClass === "function" ? new shapeOrClass() : shapeOrClass;
     this.context.tracer.preInvoke(shape, this[TOKENS][this.pos]);
     let result = shape[EXPAND](this);
     this.context.tracer.postInvoke(shape, result, this[TOKENS][this.pos]);
+
+    return seq(result) as Sequence<T> & Result<T>;
+  }
+
+  expandInfallible<T>(shapeOrClass: { new (): Shape<T> } | Shape<T>): T {
+    let shape =
+      typeof shapeOrClass === "function" ? new shapeOrClass() : shapeOrClass;
+    this.context.tracer.preInvoke(shape, this[TOKENS][this.pos]);
+    let result = shape[EXPAND](this);
+    this.context.tracer.postInvoke(shape, result, this[TOKENS][this.pos]);
+
     return result;
   }
 
@@ -263,6 +275,38 @@ export default class TokensIterator {
 
   peekFailure(desc: string, reason: "ignored" | "optional"): void {
     this.context.tracer.postInvokeFailure({ desc }, reason);
+  }
+
+  many<T>(callback: (iterator: TokensIterator) => Result<T>): T[] {
+    let out: T[] = [];
+
+    while (true) {
+      let result = callback(this);
+
+      if (result.kind === "err") {
+        break;
+      } else {
+        out.push(result.value);
+      }
+    }
+
+    return out;
+  }
+
+  transaction<T>(
+    callback: (iterator: TokensIteratorTransaction) => Result<T>
+  ): Result<T> {
+    let transaction = this.begin();
+
+    let result = callback(transaction);
+
+    if (result.kind === "ok") {
+      transaction.commit();
+    } else {
+      transaction.rollback();
+    }
+
+    return result;
   }
 
   begin(): TokensIteratorTransaction {
