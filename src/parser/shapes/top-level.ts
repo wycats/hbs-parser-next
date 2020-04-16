@@ -1,15 +1,20 @@
 import type { TextNode } from "../nodes";
-import type { Result } from "../shape";
+import { Result, EXPAND } from "../shape";
 import type TokensIterator from "../tokens-iterator";
-import { AbstractShape, or } from "./abstract";
+import { AbstractShape } from "./abstract";
 import { TextShape } from "./text";
 import { InterpolateShape } from "./interpolate";
 import type { InterpolateNode } from "../nodes/top-level";
+import { Any } from "./internal/any";
 
 export type TopLevelNode = TextNode | InterpolateNode;
 
 export class TopLevelShape extends AbstractShape<TopLevelNode> {
-  expandFallible(iterator: TokensIterator): Result<TopLevelNode> {
-    return or(new TextShape(), new InterpolateShape()).expandFallible(iterator);
+  readonly desc = "TopLevel";
+
+  [EXPAND](iterator: TokensIterator): Result<TopLevelNode> {
+    return iterator.expand(
+      new Any([new TextShape(), new InterpolateShape()], "top level")
+    );
   }
 }

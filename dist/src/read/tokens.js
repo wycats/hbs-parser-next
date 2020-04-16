@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const span_1 = require("../span");
 function leaf(type) {
-    return (span) => ({ type, span });
+    return span => ({ type, span });
 }
 exports.leaf = leaf;
 exports.id = leaf("Identifier" /* Identifier */);
@@ -46,6 +46,38 @@ function arg(span) {
     };
 }
 exports.arg = arg;
+function equalPath(leftTokens, rightTokens, source) {
+    if (leftTokens.length !== rightTokens.length) {
+        return false;
+    }
+    return leftTokens.every((left, index) => {
+        let right = rightTokens[index];
+        if (left.type !== right.type) {
+            return false;
+        }
+        switch (left.type) {
+            case "ArgName" /* ArgName */:
+                return (span_1.slice(left.name, source) ===
+                    span_1.slice(right.name, source));
+            case "Identifier" /* Identifier */:
+                return (span_1.slice(left.span, source) ===
+                    span_1.slice(right.span, source));
+            case "Dot" /* Dot */:
+                return true;
+            default:
+                throw new Error(`assert: unexpected token type ${left.type}`);
+        }
+    });
+}
+exports.equalPath = equalPath;
+function blockParams(params, span) {
+    return {
+        type: "BlockParams" /* BlockParams */,
+        span,
+        params,
+    };
+}
+exports.blockParams = blockParams;
 function block({ open, body, close }) {
     return {
         type: "Block" /* Block */,
@@ -56,19 +88,12 @@ function block({ open, body, close }) {
     };
 }
 exports.block = block;
-function openBlock({ name, head, blockParams }, span) {
+function openBlock({ name, head }, span) {
     return {
         type: "OpenBlock" /* OpenBlock */,
         span,
         name,
         head,
-        blockParams: blockParams
-            ? {
-                type: "BlockParams" /* BlockParams */,
-                span: span_1.range(...blockParams),
-                params: blockParams,
-            }
-            : null,
     };
 }
 exports.openBlock = openBlock;

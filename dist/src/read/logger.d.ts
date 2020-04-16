@@ -5,9 +5,10 @@ export declare type Debuggable = string | null | Snippet | Snippet[] | Token | T
 export declare class Logger {
     private enableLogging;
     constructor(enableLogging: boolean);
-    invoke<T extends Debuggable>(c: CombinatorType<T>, input: Snippet, { forceTransparent, context, }?: {
+    invoke<T extends Debuggable>(c: CombinatorType<T>, input: Snippet, { forceTransparent, optional, }?: {
         forceTransparent?: boolean;
         context?: string;
+        optional?: true;
     }): Result<[Snippet, T]>;
 }
 export declare function combinatorDebugType(c: CombinatorType): CombinatorDebugType;

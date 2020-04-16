@@ -3,16 +3,16 @@ export interface SourceSpan {
   end: number;
 }
 
-export function span(start: number, end: number) {
+export function span(start: number, end: number): SourceSpan {
   return { start, end };
 }
 
-export type HasSpan = SourceSpan | { span: SourceSpan; };
+export type HasSpan = SourceSpan | { span: SourceSpan };
 
-export function range(...rawSpans: Array<HasSpan | null | undefined>): SourceSpan {
-  let spans = rawSpans.filter(
-    s => s !== null && s !== undefined
-  ) as HasSpan[];
+export function range(
+  ...rawSpans: Array<HasSpan | null | undefined>
+): SourceSpan {
+  let spans = rawSpans.filter(s => s !== null && s !== undefined) as HasSpan[];
 
   if (spans.length === 0) {
     return span(0, 0);

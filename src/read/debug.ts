@@ -2,6 +2,11 @@ import type { CombinatorDebugType, CombinatorType } from "./combinators/types";
 import { Debuggable, formatDebuggable } from "./logger";
 import type { Result, Snippet } from "../snippet";
 
+const ERROR = "color: red";
+const SUCCESS = "color: green";
+const NORMAL = "color: #333";
+const OPTIONAL = "color: #999";
+
 export type RowResult = "success" | "error" | "start";
 
 export type RowStyle = {
@@ -14,7 +19,7 @@ export type TableRow = {
   data: [string, string, string, string];
 };
 
-interface StateRow {
+export interface StateRow {
   combinator: CombinatorType;
   preSnippet: Snippet;
   optional: boolean;
@@ -33,7 +38,7 @@ export function preInvoke({
   combinator: CombinatorType;
   snippet: Snippet;
   optional: boolean;
-}) {
+}): void {
   let child: StateRow = {
     combinator,
     preSnippet: snippet,
@@ -48,7 +53,7 @@ export function preInvoke({
   childStack.push(child);
 }
 
-export function postInvoke(result: Result<[Snippet, Debuggable]>) {
+export function postInvoke(result: Result<[Snippet, Debuggable]>): void {
   let last = childStack[childStack.length - 1];
   last.output = result;
   let row = childStack.pop();
@@ -57,61 +62,6 @@ export function postInvoke(result: Result<[Snippet, Debuggable]>) {
     root = row;
   }
 }
-
-// export function row(
-//   {
-//     result,
-//     arrow,
-//     combinator,
-//     context,
-//   }: {
-//     result: RowResult;
-//     arrow: string;
-//     combinator: CombinatorType;
-//     context?: string;
-//   },
-//   a: any,
-//   b: string
-// ) {
-//   let name = combinatorName(combinator);
-
-//   if (context) {
-//     name = `${context}: ${name}`;
-//   }
-
-//   table.push({
-//     style: { result, kind: combinatorDebugType(combinator) },
-//     data: [arrow, name, a, b],
-//   });
-// }
-
-// export function snippetStyle(style: RowStyle) {
-//   switch (style.result) {
-//     case "start":
-//       return "color: #333";
-//     case "success":
-//       return "color: green";
-//     case "error":
-//       return "color: red";
-//   }
-// }
-
-// export function armStyle(style: RowStyle) {
-//   switch (style.result) {
-//     case "start":
-//       switch (style.kind) {
-//         case "transparent":
-//         case "arm":
-//           return "color: #bbb";
-//         case "normal":
-//           return "color: #333";
-//       }
-//     case "success":
-//       return "color: green";
-//     case "error":
-//       return "color: red";
-//   }
-// }
 
 export function outputStyle(
   { output, optional }: StateRow,
@@ -153,7 +103,7 @@ export function outputString(
 
 export function afterSnippet(
   output: Result<[Snippet, Debuggable]> | undefined
-) {
+): Snippet {
   if (output === undefined) {
     throw new Error(`assert: unexpected undefined output (should be a result)`);
   }
@@ -176,17 +126,31 @@ export function trunc(snippet: Snippet): string {
   }
 }
 
-const ERROR = "color: red";
-const SUCCESS = "color: green";
-const NORMAL = "color: #333";
-const OPTIONAL = "color: #999";
+export function truncString(snippet: string, length = 13): string {
+  if (snippet.length > length) {
+    return `${snippet.slice(0, length - 3)}...`;
+  } else {
+    return snippet.padEnd(length);
+  }
+}
 
-export function printDebug(
+export function getTrace(): StateRow {
+  let current = root;
+
+  if (current === undefined) {
+    throw new Error(`attempting to get the trace, but none was recorded`);
+  }
+
+  root = undefined;
+  return current;
+}
+
+export function printTrace(
   indent = 0,
   nestedError = 0,
   parentStatus?: "success" | "error" | "optional" | undefined,
-  row: StateRow | undefined = root
-) {
+  row: StateRow | undefined = getTrace()
+): void {
   if (row === undefined) {
     // tslint:disable-next-line:no-console
     console.log(`%cassert: unexpected undefined row`, ERROR);
@@ -252,7 +216,7 @@ export function printDebug(
   }
 
   for (let child of row.children) {
-    printDebug(indent + 1, nestedError, currentStatus, child);
+    printTrace(indent + 1, nestedError, currentStatus, child);
   }
 
   if (inErrorHere) {
@@ -262,14 +226,14 @@ export function printDebug(
 
 let TAB = 0;
 
-export function indent() {
+export function indent(): void {
   TAB += 1;
 }
 
-export function outdent() {
+export function outdent(): void {
   TAB -= 1;
 }
 
-export function indentWS() {
+export function indentWS(): string {
   return " ".repeat(TAB);
 }

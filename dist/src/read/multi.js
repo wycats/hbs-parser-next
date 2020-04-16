@@ -10,7 +10,7 @@ function many(source) {
             let out = [];
             let count = 0;
             while (true) {
-                if (count++ > 50) {
+                if (count++ > 1000) {
                     return snippet_1.err(input, "likely infinite loop");
                 }
                 if (current.isEOF()) {
@@ -18,7 +18,14 @@ function many(source) {
                 }
                 let iterate = current.invoke(utils_1.present(source));
                 if (iterate.kind === "err") {
-                    return snippet_1.ok([current.rest, out]);
+                    // if we encountered a fatal error, the entire `many`
+                    // is an error
+                    if (iterate.fatal) {
+                        return iterate;
+                    }
+                    else {
+                        return snippet_1.ok([current.rest, out]);
+                    }
                 }
                 else {
                     let [next, match] = iterate.value;

@@ -3,13 +3,52 @@
   "version": "0.5.0",
   "main": "index.js",
   "license": "MIT",
+  "browserslist": {
+    "production": [
+      "last 2 Edge versions",
+      "last 2 Chrome versions",
+      "last 2 Firefox versions",
+      "last 2 Safari versions"
+    ],
+    "development": [
+      "last 1 Chrome version",
+      "last 1 Firefox version",
+      "last 1 Safari version"
+    ]
+  },
+  "scripts": {
+    "dev": "webpack-dev-server --mode development -w"
+  },
   "devDependencies": {
+    "@babel/core": "^7.0.0",
+    "@babel/preset-env": "^7.9.5",
+    "@babel/preset-typescript": "^7.9.0",
+    "@glimmer/babel-plugin-glimmer-env": "^2.0.0-beta.1",
+    "@glimmer/bundle-compiler": "^0.50.1",
+    "@glimmer/validator": "^0.50.1",
+    "@glimmerx/babel-plugin-component-templates": "^0.2.0",
+    "@glimmerx/component": "^0.2.0",
+    "@glimmerx/core": "^0.2.0",
+    "@glimmerx/eslint-plugin": "^0.2.0",
+    "@glimmerx/modifier": "^0.2.0",
+    "@glimmerx/service": "^0.2.0",
+    "@typescript-eslint/eslint-plugin": "^2.27.0",
+    "@typescript-eslint/parser": "^2.27.0",
+    "babel-eslint": "^10.1.0",
+    "babel-loader": "^8.1.0",
+    "babel-plugin-const-enum": "^0.0.5",
+    "eslint": "^6.8.0",
+    "eslint-config-prettier": "^6.10.1",
+    "eslint-plugin-prettier": "^3.1.2",
     "file-loader": "^6.0.0",
+    "prettier": "^2.0.4",
     "qunit": "^2.9.3",
     "ts-loader": "^6.2.2",
+    "tsconfig-paths-webpack-plugin": "^3.2.0",
     "tslint": "^6.1.1",
-    "typescript": "^3.8.3",
+    "typescript": "beta",
     "webpack": "^4.42.1",
-    "webpack-cli": "^3.3.11"
+    "webpack-cli": "^3.3.11",
+    "webpack-dev-server": "^3.10.3"
   }
 }

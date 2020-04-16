@@ -5,6 +5,10 @@ import type { PresentTokens, Token } from "../../tokens";
 import { AbstractCombinator } from "../base";
 import Head from "./head";
 
+// export const SIMPLE_HEAD = combinator(() => any("HEAD", ARG, ID));
+// TODO: Allow `[]` or string members
+export const MEMBER = combinator(() => ID);
+
 export default class SimplePath extends AbstractCombinator<PresentTokens> {
   private head: Head;
 
@@ -58,7 +62,3 @@ export default class SimplePath extends AbstractCombinator<PresentTokens> {
     }
   }
 }
-
-// export const SIMPLE_HEAD = combinator(() => any("HEAD", ARG, ID));
-// TODO: Allow `[]` or string members
-export const MEMBER = combinator(() => ID);

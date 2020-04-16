@@ -1,5 +1,6 @@
 import * as tokens from "./tokens";
 import { SourceSpan, range, span } from "../span";
+import { unwrap } from "./utils";
 
 export type CurriedOptionalToken<T extends tokens.Token = tokens.Token> = (
   builder: TokenBuilder
@@ -19,7 +20,7 @@ export function buildPresentTokens(
   return tok.map(token => token(builder)) as tokens.PresentTokens;
 }
 
-export function str(name: string): CurriedToken {
+export function str(name: string): CurriedToken<tokens.StringToken> {
   return builder => {
     let start = builder.consume(name[0]);
     let data = builder.consume(name.slice(1, -1));
@@ -32,7 +33,7 @@ export function str(name: string): CurriedToken {
   };
 }
 
-export function int(num: string): CurriedToken {
+export function int(num: string): CurriedToken<tokens.NumberToken> {
   if (num[0] === "-") {
     return builder => {
       let negative = builder.consume("-");
@@ -51,8 +52,8 @@ export function int(num: string): CurriedToken {
   }
 }
 
-export function decimal(num: string): CurriedToken {
-  let [, negative, head, tail] = num.match(/^(-?)([0-9]+)\.([0-9]+)$/)!;
+export function decimal(num: string): CurriedToken<tokens.NumberToken> {
+  let [, negative, head, tail] = unwrap(num.match(/^(-?)([0-9]+)\.([0-9]+)$/));
 
   return builder => {
     let negativeSpan = negative ? builder.consume("-") : null;
@@ -79,16 +80,18 @@ export function id(name: string): CurriedToken<tokens.IdentifierToken> {
   return builder => tokens.id(builder.consume(name));
 }
 
-export function arg(name: string): CurriedToken {
+export function arg(name: string): CurriedToken<tokens.ArgumentToken> {
   return builder => tokens.arg(builder.consume(name));
 }
 
-export const dot: CurriedToken = builder => tokens.dot(builder.consume("."));
-export const eq: CurriedToken = builder => tokens.eq(builder.consume("="));
+export const dot: CurriedToken<tokens.DotToken> = builder =>
+  tokens.dot(builder.consume("."));
+export const eq: CurriedToken<tokens.EqToken> = builder =>
+  tokens.eq(builder.consume("="));
 export const sp: CurriedToken<tokens.WSToken> = builder =>
   tokens.ws(builder.consume(" "));
 
-export function ws(space: string): CurriedAttributeToken {
+export function ws(space: string): CurriedToken<tokens.WSToken> {
   return builder => tokens.ws(builder.consume(space));
 }
 
@@ -211,9 +214,14 @@ export function attrInterpolate(
 export function sexp(children: CurriedToken[]): CurriedToken {
   return builder => {
     let open = builder.consume("(");
+    let innerStart = builder.pos;
     let out = children.map(child => child(builder));
+    let innerEnd = builder.pos;
     let close = builder.consume(")");
-    return tokens.sexp(out, range(open, close));
+    return tokens.sexp(
+      { children: out, inner: span(innerStart, innerEnd) },
+      range(open, close)
+    );
   };
 }
 
@@ -452,17 +460,6 @@ function quoteType(quote?: `"` | `'`): tokens.AttributeValueType {
   }
 }
 
-export function root(
-  ...children: CurriedToken[]
-): { root: tokens.RootToken; source: string } {
-  let builder = new TokenBuilder();
-  let start = builder.pos;
-  let out = children.map(child => child(builder));
-  let end = builder.pos;
-
-  return { root: tokens.root(out, span(start, end)), source: builder.source };
-}
-
 export class TokenBuilder {
   private output = "";
 
@@ -475,7 +472,25 @@ export class TokenBuilder {
     return { start, end: this.pos };
   }
 
+  /**
+   * This method is used by the AstBuilder to share an output
+   */
+  updateOutput(output: string): void {
+    this.output = output;
+  }
+
   get source(): string {
     return this.output;
   }
+}
+
+export function root(
+  ...children: CurriedToken[]
+): { root: tokens.RootToken; source: string } {
+  let builder = new TokenBuilder();
+  let start = builder.pos;
+  let out = children.map(child => child(builder));
+  let end = builder.pos;
+
+  return { root: tokens.root(out, span(start, end)), source: builder.source };
 }

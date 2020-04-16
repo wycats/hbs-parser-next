@@ -25,7 +25,7 @@ export class Snippet {
     return this.logger.invoke(combinator, this, options);
   }
 
-  eq(other: Snippet) {
+  eq(other: Snippet): boolean {
     return (
       this.source === other.source &&
       this.offset === other.offset &&

@@ -15,7 +15,9 @@ export default class Sexp extends AbstractCombinator<SexpToken> {
         tag("("),
         SPACED_TOKENS,
         tag(")")
-      ).map(([open, path, close]) => ok(sexp(path, range(open, close))))
+      ).map(([open, path, close]) =>
+        ok(sexp({ children: path, inner: range(...path) }, range(open, close)))
+      )
     );
   }
 }

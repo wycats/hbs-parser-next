@@ -10,7 +10,7 @@ class SomeToken extends base_1.AbstractCombinator {
         this.type = type;
     }
     get name() {
-        return `token (${utils_1.combinatorName(this.combinator)})`;
+        return `token • ${utils_1.combinatorName(this.combinator)}`;
     }
     invoke(input) {
         let result = input.invoke(this.combinator, {

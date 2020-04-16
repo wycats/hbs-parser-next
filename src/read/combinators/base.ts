@@ -5,7 +5,7 @@ import { map } from "../utils";
 
 export abstract class AbstractCombinator<T extends Debuggable>
   implements CombinatorType<T> {
-  abstract readonly name: string;
+  declare abstract readonly name: string;
   abstract invoke(input: Snippet): Result<[Snippet, T]>;
 
   map<U extends Debuggable>(

@@ -100,3 +100,11 @@ export type Dict<T> = { [key: number]: T };
 export function join<T>(...items: Array<T | null | undefined>): T[] {
   return items.filter(i => i === null || i === undefined) as T[];
 }
+
+export function unwrap<T>(v: T | null | undefined): T {
+  if (v === null || v === undefined) {
+    throw new Error(`ASSERT: Expected non-null`);
+  }
+
+  return v;
+}

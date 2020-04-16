@@ -1,28 +1,31 @@
-import type { FallibleShape, InfallibleShape, Result } from "../shape";
+import type { Shape, Result } from "../shape";
+import { EXPAND } from "../shape";
 import type TokensIterator from "../tokens-iterator";
 
-export abstract class AbstractShape<T> implements FallibleShape<T> {
-  abstract expandFallible(iterator: TokensIterator): Result<T>;
+export abstract class AbstractShape<T> implements Shape<Result<T>> {
+  abstract readonly desc: string;
+  abstract [EXPAND](iterator: TokensIterator): Result<T>;
 }
 
-// tslint:disable-next-line:max-classes-per-file
-export abstract class AbstractInfallibleShape<T> implements InfallibleShape<T> {
-  abstract expandInfallible(iterator: TokensIterator): T;
+export abstract class AbstractInfallibleShape<T> implements Shape<T> {
+  declare abstract readonly desc: string;
+  abstract [EXPAND](iterator: TokensIterator): T;
 }
 
 export function or<T, U>(
-  left: FallibleShape<T>,
-  right: FallibleShape<U>
-): FallibleShape<T | U> {
+  left: Shape<Result<T>>,
+  right: Shape<Result<U>>
+): Shape<Result<T | U>> {
   return {
-    expandFallible(iterator) {
-      let leftResult = left.expandFallible(iterator);
+    desc: `${left.desc} OR ${right.desc}`,
+    [EXPAND](iterator) {
+      let leftResult = iterator.expand(left);
 
       if (leftResult.kind === "ok") {
         return leftResult;
       }
 
-      return right.expandFallible(iterator);
+      return iterator.expand(right);
     },
   };
 }

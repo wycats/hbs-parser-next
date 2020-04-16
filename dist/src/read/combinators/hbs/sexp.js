@@ -9,7 +9,7 @@ const base_1 = require("../base");
 class Sexp extends base_1.AbstractCombinator {
     constructor() {
         super(...arguments);
-        this.name = "INTERPOLATE";
+        this.name = "SEXP";
     }
     invoke(input) {
         return input.invoke(combinators_1.seq("SEXP", combinators_1.tag("("), hbs_1.SPACED_TOKENS, combinators_1.tag(")")).map(([open, path, close]) => snippet_1.ok(tokens_1.sexp(path, span_1.range(open, close)))));

@@ -1,26 +1,22 @@
 import * as tokens from "./tokens";
 import { SourceSpan } from "../span";
+export declare type CurriedOptionalToken<T extends tokens.Token = tokens.Token> = (builder: TokenBuilder) => T | null;
 export declare type CurriedToken<T extends tokens.Token = tokens.Token> = (builder: TokenBuilder) => T;
 export declare type CurriedAttributeToken = (builder: TokenBuilder) => tokens.AttributeToken;
 export declare type CurriedPresentTokens = [CurriedToken, ...CurriedToken[]];
 export declare function buildPresentTokens(tok: CurriedPresentTokens, builder: TokenBuilder): tokens.PresentTokens;
-export declare function str(name: string): CurriedToken;
-export declare function int(num: string): CurriedToken;
-export declare function decimal(num: string): CurriedToken;
-export declare function id(name: string): CurriedToken;
+export declare function str(name: string): CurriedToken<tokens.StringToken>;
+export declare function int(num: string): CurriedToken<tokens.NumberToken>;
+export declare function decimal(num: string): CurriedToken<tokens.NumberToken>;
+export declare function id(name: string): CurriedToken<tokens.IdentifierToken>;
 export declare function arg(name: string): CurriedToken;
 export declare const dot: CurriedToken;
 export declare const eq: CurriedToken;
-export declare const sp: CurriedAttributeToken;
+export declare const sp: CurriedToken<tokens.WSToken>;
 export declare function ws(space: string): CurriedAttributeToken;
-export interface BlockOptions {
-    open: {
-        name: string | CurriedPresentTokens;
-        head: CurriedToken[];
-    };
-}
-export declare function block({ open }: BlockOptions, ...body: CurriedToken[]): CurriedToken<tokens.BlockToken>;
-export declare function interpolate(children: CurriedToken[]): CurriedToken<tokens.InterpolateToken>;
+export declare function block(name: string | CurriedPresentTokens, head: CurriedToken[], ...body: CurriedToken[]): CurriedToken<tokens.BlockToken>;
+export declare function as(...params: Array<string | CurriedToken<tokens.BlockParamToken>>): CurriedToken<tokens.BlockParamsToken>;
+export declare function interpolate(...children: CurriedToken[]): CurriedToken<tokens.InterpolateToken>;
 export declare function stringInterpolate(children: Array<CurriedToken<tokens.StringInterpolationPart>>, quote: `"` | `'`): CurriedToken<tokens.AttributeValueToken>;
 export declare function attrInterpolate(...tokenList: CurriedToken[]): CurriedToken<tokens.AttributeValueToken>;
 export declare function sexp(children: CurriedToken[]): CurriedToken;
@@ -42,16 +38,19 @@ export declare function attr(options: string | CurriedToken<tokens.AnyAttrNameTo
     value: string | CurriedToken<tokens.AttributeValueToken>;
     arg?: true;
 }): CurriedAttributeToken;
-export declare function root(children: CurriedToken[]): {
+export declare function root(...children: CurriedToken[]): {
     root: tokens.RootToken;
     source: string;
 };
-declare class TokenBuilder {
+export declare class TokenBuilder {
     pos: number;
     private output;
     constructor(pos?: number);
     consume(chars: string): SourceSpan;
+    /**
+     * This method is used by the AstBuilder to share an output
+     */
+    updateOutput(output: string): void;
     get source(): string;
 }
-export {};
 //# sourceMappingURL=token-builder.d.ts.map

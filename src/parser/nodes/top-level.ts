@@ -1,12 +1,17 @@
+import type { TextToken } from "../../read/tokens";
+import type { SourceSpan } from "../../span";
 import {
   AstNode,
   AstNodeType,
   BaseNode,
-  ExpressionNode,
   ExpressionAstNode,
+  TopLevelAstNode,
 } from "../nodes";
-import type { SourceSpan } from "../../span";
-import type { TextToken, IdentifierToken } from "../../read/tokens";
+import type {
+  CallBodyNode,
+  PositionalArgumentsNode,
+  NamedArgumentsNode,
+} from "./call";
 
 export interface RootNode extends BaseNode {
   type: AstNodeType.Root;
@@ -34,46 +39,102 @@ export function text(token: TextToken): TextNode {
 
 export interface InterpolateNode extends BaseNode {
   type: AstNodeType.Interpolate;
-  head: ExpressionNode;
-  positional: ExpressionNode[] | null;
-  named: NamedNode | null;
+  body: CallBodyNode;
 }
 
 export function interpolate(
+  body: CallBodyNode,
+  base: BaseNode
+): InterpolateNode {
+  return {
+    type: AstNodeType.Interpolate,
+    ...base,
+    body,
+  };
+}
+
+export interface BlockParamsNode extends BaseNode {
+  type: AstNodeType.BlockParams;
+  params: SourceSpan[];
+}
+
+export function blockParams(
+  params: SourceSpan[],
+  span: SourceSpan
+): BlockParamsNode {
+  return {
+    type: AstNodeType.BlockParams,
+    params,
+    span,
+  };
+}
+
+export interface OpenBlockNode extends Omit<CallBodyNode, "type"> {
+  type: AstNodeType.OpenBlock;
+  params: BlockParamsNode | null;
+}
+
+export function openBlock(
   {
     head,
     positional = null,
     named = null,
+    params = null,
   }: {
     head: ExpressionAstNode;
-    positional?: ExpressionNode[] | null;
-    named?: NamedNode | null;
+    positional?: PositionalArgumentsNode | null;
+    named?: NamedArgumentsNode | null;
+    params?: BlockParamsNode | null;
   },
-  span: SourceSpan
-): InterpolateNode {
+  base: BaseNode
+): OpenBlockNode {
   return {
-    type: AstNodeType.Interpolate,
-    span,
+    type: AstNodeType.OpenBlock,
+    ...base,
     head,
     positional,
     named,
+    params,
   };
 }
 
-export interface NamedNode extends BaseNode {
-  type: AstNodeType.Named;
+export interface CloseBlockNode extends BaseNode {
+  type: AstNodeType.CloseBlock;
   name: SourceSpan;
-  value: ExpressionNode;
 }
 
-export function named(
-  { name, value }: { name: IdentifierToken; value: ExpressionAstNode },
-  span: SourceSpan
-): NamedNode {
+export function closeBlock(name: SourceSpan, base: BaseNode): CloseBlockNode {
   return {
-    type: AstNodeType.Named,
-    span,
-    name: name.span,
-    value,
+    type: AstNodeType.CloseBlock,
+    ...base,
+    name,
+  };
+}
+
+export interface BlockNode extends BaseNode {
+  type: AstNodeType.Block;
+  open: OpenBlockNode;
+  close: CloseBlockNode;
+  body: TopLevelAstNode[];
+}
+
+export function block(
+  {
+    open,
+    body,
+    close,
+  }: {
+    open: OpenBlockNode;
+    body: TopLevelAstNode[];
+    close: CloseBlockNode;
+  },
+  base: BaseNode
+): BlockNode {
+  return {
+    type: AstNodeType.Block,
+    ...base,
+    open,
+    body,
+    close,
   };
 }

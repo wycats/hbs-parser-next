@@ -11,8 +11,10 @@ export declare class Snippet {
     invoke<T extends Debuggable>(combinator: CombinatorType<T>, options?: {
         forceTransparent?: boolean;
         context?: string;
+        optional?: true;
     }): Result<[Snippet, T]>;
     eq(other: Snippet): boolean;
+    forSpan(span: SourceSpan): Snippet;
     fmt(): string;
     debugRest(): string;
     slice(chars: number): Snippet;
@@ -34,7 +36,9 @@ export interface Err {
     kind: "err";
     snippet: Snippet;
     reason: string;
+    fatal?: true;
 }
 export declare function err(snippet: Snippet, reason: string): Err;
+export declare function fatalError(snippet: Snippet, reason: string): Err;
 export declare type Result<T> = Ok<T> | Err;
 //# sourceMappingURL=snippet.d.ts.map

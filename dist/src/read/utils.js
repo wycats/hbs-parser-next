@@ -79,3 +79,7 @@ function unreachable(value) {
     throw new Error(`unreachable code reached`);
 }
 exports.unreachable = unreachable;
+function join(...items) {
+    return items.filter(i => i === null || i === undefined);
+}
+exports.join = join;

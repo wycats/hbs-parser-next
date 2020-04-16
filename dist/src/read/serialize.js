@@ -62,7 +62,6 @@ function serializeNode(token, source) {
                 "{{#",
                 ...serializeList(token.name, source),
                 ...serializeList(token.head, source),
-                ...serializeNode(token.blockParams, source),
                 "}}",
             ];
         case "BlockParams" /* BlockParams */:
@@ -122,5 +121,5 @@ function serializeList(tokens, source) {
     if (tokens === null) {
         return [];
     }
-    return [...tokens.flatMap((child) => serializeNode(child, source))];
+    return [...tokens.flatMap(child => serializeNode(child, source))];
 }

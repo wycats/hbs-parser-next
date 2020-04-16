@@ -6,7 +6,9 @@ class Tag extends base_1.AbstractCombinator {
     constructor(source) {
         super();
         this.source = source;
-        this.name = "tag";
+    }
+    get name() {
+        return JSON.stringify(this.source);
     }
     invoke(input) {
         let next = input.slice(this.source.length);

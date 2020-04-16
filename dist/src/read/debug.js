@@ -1,56 +1,190 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const logger_1 = require("./logger");
-const utils_1 = require("./utils");
-let table = [];
-function row({ result, arrow, combinator, context, }, a, b) {
-    let name = utils_1.combinatorName(combinator);
-    if (context) {
-        name = `${context}: ${name}`;
+const ERROR = "color: red";
+const SUCCESS = "color: green";
+const NORMAL = "color: #333";
+const OPTIONAL = "color: #999";
+let childStack = [];
+let root;
+function preInvoke({ combinator, snippet, optional, }) {
+    let child = {
+        combinator,
+        preSnippet: snippet,
+        optional,
+        children: [],
+    };
+    if (childStack.length !== 0) {
+        let last = childStack[childStack.length - 1];
+        last.children.push(child);
     }
-    table.push({
-        style: { result, kind: logger_1.combinatorDebugType(combinator) },
-        data: [arrow, name, a, b],
-    });
+    childStack.push(child);
 }
-exports.row = row;
-function snippetStyle(style) {
-    switch (style.result) {
-        case "start":
-            return "color: #333";
-        case "success":
-            return "color: green";
-        case "error":
-            return "color: red";
+exports.preInvoke = preInvoke;
+function postInvoke(result) {
+    let last = childStack[childStack.length - 1];
+    last.output = result;
+    let row = childStack.pop();
+    if (childStack.length === 0) {
+        root = row;
     }
 }
-exports.snippetStyle = snippetStyle;
-function armStyle(style) {
-    switch (style.result) {
-        case "start":
-            switch (style.kind) {
-                case "transparent":
-                case "arm":
-                    return "color: #bbb";
-                case "normal":
-                    return "color: #333";
+exports.postInvoke = postInvoke;
+// export function row(
+//   {
+//     result,
+//     arrow,
+//     combinator,
+//     context,
+//   }: {
+//     result: RowResult;
+//     arrow: string;
+//     combinator: CombinatorType;
+//     context?: string;
+//   },
+//   a: any,
+//   b: string
+// ) {
+//   let name = combinatorName(combinator);
+//   if (context) {
+//     name = `${context}: ${name}`;
+//   }
+//   table.push({
+//     style: { result, kind: combinatorDebugType(combinator) },
+//     data: [arrow, name, a, b],
+//   });
+// }
+// export function snippetStyle(style: RowStyle) {
+//   switch (style.result) {
+//     case "start":
+//       return "color: #333";
+//     case "success":
+//       return "color: green";
+//     case "error":
+//       return "color: red";
+//   }
+// }
+// export function armStyle(style: RowStyle) {
+//   switch (style.result) {
+//     case "start":
+//       switch (style.kind) {
+//         case "transparent":
+//         case "arm":
+//           return "color: #bbb";
+//         case "normal":
+//           return "color: #333";
+//       }
+//     case "success":
+//       return "color: green";
+//     case "error":
+//       return "color: red";
+//   }
+// }
+function outputStyle({ output, optional }, weight) {
+    if (output === undefined) {
+        throw new Error(`assert: unexpected undefined output (should be a result)`);
+    }
+    switch (output.kind) {
+        case "ok":
+            return `${SUCCESS};${weight}`;
+        case "err": {
+            if (optional) {
+                return OPTIONAL;
             }
-        case "success":
-            return "color: green";
-        case "error":
-            return "color: red";
+            else {
+                return `${ERROR};${weight}`;
+            }
+        }
     }
 }
-exports.armStyle = armStyle;
-function printDebug() {
-    for (let { style, data: [arrow, name, a, b], } of table) {
-        let first = `${arrow} %c${name}%c`.padEnd(60);
+exports.outputStyle = outputStyle;
+function outputString(output) {
+    if (output === undefined) {
+        throw new Error(`assert: unexpected undefined output (should be a result)`);
+    }
+    switch (output.kind) {
+        case "ok":
+            return `${logger_1.formatDebuggable(output.value[1])}%c`;
+        case "err":
+            return `${output.fatal ? "fatal " : ""}error: ${output.reason} %c@ ${output.snippet.fmt()}`;
+    }
+}
+exports.outputString = outputString;
+function afterSnippet(output) {
+    if (output === undefined) {
+        throw new Error(`assert: unexpected undefined output (should be a result)`);
+    }
+    switch (output.kind) {
+        case "ok":
+            return output.value[0];
+        case "err":
+            return output.snippet;
+    }
+}
+exports.afterSnippet = afterSnippet;
+function trunc(snippet) {
+    let rest = snippet.sliceRest;
+    if (rest.length > 13) {
+        return `${rest.slice(0, 10)}...`;
+    }
+    else {
+        return rest.padEnd(13);
+    }
+}
+exports.trunc = trunc;
+function getTrace() {
+    let current = root;
+    if (current === undefined) {
+        throw new Error(`attempting to get the trace, but none was recorded`);
+    }
+    root = undefined;
+    return current;
+}
+exports.getTrace = getTrace;
+function printTrace(indent = 0, nestedError = 0, parentStatus, row = getTrace()) {
+    if (row === undefined) {
         // tslint:disable-next-line:no-console
-        console.log(`${first} | %c${b}%c |`, armStyle(style), "color: #333", snippetStyle(style), "color: #333", a);
+        console.log(`%cassert: unexpected undefined row`, ERROR);
+        return;
     }
-    table = [];
+    let context = row.combinator.name;
+    let afterPad = Math.max(60 - indent - context.length - nestedError, 0);
+    let inErrorHere = row.output &&
+        row.output.kind === "err" &&
+        row.children.length > 0 &&
+        indent !== 0;
+    let currentStatus;
+    if (row.output && row.output.kind === "err") {
+        if (row.optional) {
+            currentStatus = "optional";
+        }
+        else {
+            currentStatus = "error";
+        }
+    }
+    else {
+        currentStatus = "success";
+    }
+    let weight = parentStatus === currentStatus
+        ? "font-weight: normal"
+        : "font-weight: bold";
+    if (inErrorHere) {
+        // tslint:disable-next-line:no-console
+        console.groupCollapsed(`${String(indent).padEnd(3)}%c${" ".repeat(indent)}%c${context}%c${" ".repeat(afterPad)}| ${trunc(row.preSnippet)} | ${trunc(afterSnippet(row.output))} | %c${outputString(row.output)}`, NORMAL, outputStyle(row, weight), NORMAL, outputStyle(row, weight), NORMAL);
+        nestedError += 2;
+    }
+    else {
+        // tslint:disable-next-line:no-console
+        console.log(`${String(indent).padEnd(3)}%c${" ".repeat(indent)}%c${context}%c${" ".repeat(afterPad)}| ${trunc(row.preSnippet)} | ${trunc(afterSnippet(row.output))} | %c${outputString(row.output)}`, NORMAL, outputStyle(row, weight), NORMAL, outputStyle(row, weight), NORMAL);
+    }
+    for (let child of row.children) {
+        printTrace(indent + 1, nestedError, currentStatus, child);
+    }
+    if (inErrorHere) {
+        console.groupEnd();
+    }
 }
-exports.printDebug = printDebug;
+exports.printTrace = printTrace;
 let TAB = 0;
 function indent() {
     TAB += 1;

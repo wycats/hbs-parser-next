@@ -143,13 +143,14 @@ export interface OpenBlockToken extends BaseToken {
     type: TokenType.OpenBlock;
     name: readonly Token[];
     head: readonly Token[] | null;
-    blockParams: BlockParamsToken | null;
 }
+export declare function equalPath(leftTokens: readonly Token[], rightTokens: readonly Token[], source: string): boolean;
 export declare type BlockParamToken = WSToken | IdentifierToken;
 export interface BlockParamsToken extends BaseToken {
     type: TokenType.BlockParams;
     params: readonly BlockParamToken[];
 }
+export declare function blockParams(params: readonly BlockParamToken[], span: SourceSpan): BlockParamsToken;
 export interface CloseBlockToken extends BaseToken {
     type: TokenType.CloseBlock;
     name: readonly Token[];
@@ -163,9 +164,8 @@ export declare function block({ open, body, close }: BlockOptions): BlockToken;
 export interface OpenBlockOptions {
     name: PresentTokens;
     head: readonly Token[] | null;
-    blockParams: [BlockParamToken, ...BlockParamToken[]] | null;
 }
-export declare function openBlock({ name, head, blockParams }: OpenBlockOptions, span: SourceSpan): OpenBlockToken;
+export declare function openBlock({ name, head }: OpenBlockOptions, span: SourceSpan): OpenBlockToken;
 export interface CloseBlockOptions {
     span: SourceSpan;
     name: PresentTokens;

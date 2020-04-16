@@ -1,4 +1,6 @@
 import type { CombinatorDebugType, CombinatorType } from "./combinators/types";
+import { Debuggable } from "./logger";
+import type { Result, Snippet } from "../snippet";
 export declare type RowResult = "success" | "error" | "start";
 export declare type RowStyle = {
     result: RowResult;
@@ -8,15 +10,25 @@ export declare type TableRow = {
     style: RowStyle;
     data: [string, string, string, string];
 };
-export declare function row({ result, arrow, combinator, context, }: {
-    result: RowResult;
-    arrow: string;
+export interface StateRow {
     combinator: CombinatorType;
-    context?: string;
-}, a: any, b: string): void;
-export declare function snippetStyle(style: RowStyle): "color: #333" | "color: green" | "color: red";
-export declare function armStyle(style: RowStyle): "color: #333" | "color: green" | "color: red" | "color: #bbb";
-export declare function printDebug(): void;
+    preSnippet: Snippet;
+    optional: boolean;
+    output?: Result<[Snippet, Debuggable]>;
+    children: StateRow[];
+}
+export declare function preInvoke({ combinator, snippet, optional, }: {
+    combinator: CombinatorType;
+    snippet: Snippet;
+    optional: boolean;
+}): void;
+export declare function postInvoke(result: Result<[Snippet, Debuggable]>): void;
+export declare function outputStyle({ output, optional }: StateRow, weight: string): string;
+export declare function outputString(output: Result<[Snippet, Debuggable]> | undefined): string;
+export declare function afterSnippet(output: Result<[Snippet, Debuggable]> | undefined): Snippet;
+export declare function trunc(snippet: Snippet): string;
+export declare function getTrace(): StateRow;
+export declare function printTrace(indent?: number, nestedError?: number, parentStatus?: "success" | "error" | "optional" | undefined, row?: StateRow | undefined): void;
 export declare function indent(): void;
 export declare function outdent(): void;
 export declare function indentWS(): string;

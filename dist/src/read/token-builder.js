@@ -72,14 +72,12 @@ function ws(space) {
     return builder => tokens.ws(builder.consume(space));
 }
 exports.ws = ws;
-function block({ open }, ...body) {
-    let curriedName = typeof open.name === "string"
-        ? [id(open.name)]
-        : open.name;
+function block(name, head, ...body) {
+    let curriedName = typeof name === "string" ? [id(name)] : name;
     return builder => {
         let openToken = builder.consume("{{#");
         let nameTokens = buildTokens(curriedName, builder);
-        let headTokens = buildTokens(open.head, builder);
+        let headTokens = buildTokens(head, builder);
         let endOpen = builder.consume("}}");
         let bodyTokens = body.map(tok => tok(builder));
         let close = builder.consume("{{/");
@@ -89,7 +87,6 @@ function block({ open }, ...body) {
             open: tokens.openBlock({
                 name: nameTokens,
                 head: headTokens,
-                blockParams: null,
             }, span_1.range(openToken, endOpen)),
             body: bodyTokens,
             close: tokens.closeBlock(closeName, span_1.range(close, endClose)),
@@ -97,10 +94,24 @@ function block({ open }, ...body) {
     };
 }
 exports.block = block;
+function as(...params) {
+    return builder => {
+        let start = builder.consume("as |");
+        let head = params.slice(0, -1);
+        let tail = params.slice(-1)[0];
+        let tokenList = head.flatMap(param => typeof param === "function"
+            ? [param(builder)]
+            : [id(param)(builder), exports.sp(builder)]);
+        tokenList.push(id(tail)(builder));
+        let end = builder.consume("|");
+        return tokens.blockParams(tokenList, span_1.range(start, end));
+    };
+}
+exports.as = as;
 function buildTokens(input, builder) {
     return input.map(tok => tok(builder));
 }
-function interpolate(children) {
+function interpolate(...children) {
     return builder => {
         let open = builder.consume("{{");
         let out = children.map(child => child(builder));
@@ -123,7 +134,7 @@ function stringInterpolate(children, quote) {
 exports.stringInterpolate = stringInterpolate;
 function attrInterpolate(...tokenList) {
     return builder => {
-        let value = interpolate(tokenList)(builder);
+        let value = interpolate(...tokenList)(builder);
         return tokens.attrValue({
             type: "Interpolate" /* Interpolate */,
             value,
@@ -310,7 +321,7 @@ function quoteType(quote) {
             return "Unquoted" /* Unquoted */;
     }
 }
-function root(children) {
+function root(...children) {
     let builder = new TokenBuilder();
     let start = builder.pos;
     let out = children.map(child => child(builder));
@@ -329,7 +340,14 @@ class TokenBuilder {
         this.pos += chars.length;
         return { start, end: this.pos };
     }
+    /**
+     * This method is used by the AstBuilder to share an output
+     */
+    updateOutput(output) {
+        this.output = output;
+    }
     get source() {
         return this.output;
     }
 }
+exports.TokenBuilder = TokenBuilder;

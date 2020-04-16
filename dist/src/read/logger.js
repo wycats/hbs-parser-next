@@ -7,35 +7,16 @@ class Logger {
     constructor(enableLogging) {
         this.enableLogging = enableLogging;
     }
-    invoke(c, input, { forceTransparent, context, } = {}) {
+    invoke(c, input, { forceTransparent, optional, } = {}) {
         let logged = this.enableLogging && !isTransparent(c) && !forceTransparent;
         if (logged) {
-            debug_1.row({ result: "start", arrow: `${debug_1.indentWS()}->`, combinator: c, context }, "", input.debugRest());
+            debug_1.preInvoke({ combinator: c, snippet: input, optional: !!optional });
             debug_1.indent();
         }
         let result = c.invoke(input);
         if (logged) {
             debug_1.outdent();
-        }
-        if (result.kind === "ok") {
-            if (logged) {
-                debug_1.row({
-                    result: "success",
-                    arrow: `${debug_1.indentWS()}<-`,
-                    combinator: c,
-                    context,
-                }, formatDebuggable(result.value[1]), result.value[0].debugRest());
-            }
-        }
-        else {
-            if (logged) {
-                debug_1.row({
-                    result: "error",
-                    arrow: `${debug_1.indentWS()}<-`,
-                    combinator: c,
-                    context,
-                }, result.reason, result.snippet.debugRest());
-            }
+            debug_1.postInvoke(result);
         }
         return result;
     }

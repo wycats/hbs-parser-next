@@ -22,7 +22,8 @@ export const token = <T extends keyof LeafTokenMap>(
   type: T
 ): CombinatorType<LeafTokenMap[T]> => new SomeToken(c, type);
 
-export const wrap = <T extends Debuggable>(c: CombinatorType<T>) => new Wrap(c);
+export const wrap = <T extends Debuggable>(c: CombinatorType<T>): Wrap<T> =>
+  new Wrap(c);
 
 export const WS = token(
   pattern(/^[\u0009\u000A\u000C\u0020]+/u, "WS"),
@@ -33,6 +34,11 @@ export const STRING = new SomeString();
 export const NUMBER = new SomeNumber();
 export const SEXP = new Sexp();
 
+const ID_SNIPPET = new Id();
+export const ID = token(ID_SNIPPET, TokenType.Identifier);
+export const EQ = token(tag("="), TokenType.Eq);
+
+// eslint-disable-next-line @typescript-eslint/no-use-before-define
 export const NAMED = combinator(() => seq("NAMED", ID, EQ, EXPRESSION));
 export const SIMPLE_PATH = new SimplePath();
 
@@ -40,11 +46,7 @@ export const SPACED_TOKENS = new SpacedTokens();
 export const BLOCK = new Block();
 export const INTERPOLATE = new Interpolate();
 
-const ID_SNIPPET = new Id();
-
-export const ID = token(ID_SNIPPET, TokenType.Identifier);
 export const DOT = token(tag("."), TokenType.Dot);
-export const EQ = token(tag("="), TokenType.Eq);
 
 export const ARG: CombinatorType<ArgumentToken> = map(
   seq("@id", tag("@"), ID_SNIPPET),

@@ -18,6 +18,10 @@ class Any extends base_1.AbstractCombinator {
             if (result.kind === "ok") {
                 return result;
             }
+            // if there was a fatal error, don't try other variants
+            if (result.kind === "err" && result.fatal) {
+                return result;
+            }
         }
         return snippet_1.err(input, "any");
     }

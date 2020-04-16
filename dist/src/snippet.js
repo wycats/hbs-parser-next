@@ -18,6 +18,9 @@ class Snippet {
             this.offset === other.offset &&
             this.length === other.length);
     }
+    forSpan(span) {
+        return new Snippet(this.source, span.start, span.end - span.start, this.logger);
+    }
     fmt() {
         return `<offset:${this.offset} length:${this.length}>`;
     }
@@ -74,3 +77,12 @@ function err(snippet, reason) {
     };
 }
 exports.err = err;
+function fatalError(snippet, reason) {
+    return {
+        kind: "err",
+        snippet,
+        reason,
+        fatal: true,
+    };
+}
+exports.fatalError = fatalError;

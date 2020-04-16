@@ -49,7 +49,7 @@ export interface BaseToken {
 export function leaf<T extends keyof LeafTokenMap>(
   type: T
 ): (span: SourceSpan) => LeafTokenMap[T] {
-  return span => ({ type, span } as LeafTokenMap[T]);
+  return span => (({ type, span } as unknown) as LeafTokenMap[T]);
 }
 
 export const id = leaf(TokenType.Identifier);
@@ -183,6 +183,7 @@ export interface ArgumentToken extends BaseToken {
 
 export interface SexpToken extends BaseToken {
   type: TokenType.Sexp;
+  inner: SourceSpan;
   children: readonly Token[];
 }
 
@@ -473,10 +474,14 @@ export type AttributeToken =
   | TrustedInterpolateToken
   | WSToken;
 
-export function sexp(children: readonly Token[], span: SourceSpan): SexpToken {
+export function sexp(
+  { children, inner }: { children: readonly Token[]; inner: SourceSpan },
+  span: SourceSpan
+): SexpToken {
   return {
     type: TokenType.Sexp,
     span,
+    inner,
     children,
   };
 }
@@ -548,6 +553,6 @@ export type Token = TokenMap[keyof TokenMap];
 
 export type PresentTokens = [Token, ...Token[]];
 
-export function debugFormatToken(token: Token | RootToken) {
+export function debugFormatToken(token: Token | RootToken): string {
   return `<token:${token.type}>`;
 }

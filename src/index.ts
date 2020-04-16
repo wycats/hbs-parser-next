@@ -1,6 +1,6 @@
 import * as combinators from "./read/combinators";
 export { combinators };
-export { Logger } from "./read/logger";
+export { Logger, Debuggable, formatDebuggable } from "./read/logger";
 
 import * as multi from "./read/multi";
 export { multi };
@@ -16,8 +16,8 @@ export { ast };
 
 export * from "./span";
 
-import * as b from "./read/token-builder";
-export { b };
+import * as r from "./read/token-builder";
+export { r };
 
 import * as a from "./parser/ast-builder";
 export { a };
@@ -29,3 +29,6 @@ export * from "./read/serialize";
 export * from "./read/read";
 
 export { default as parse } from "./parser/parse";
+
+export type { StateRow as ReadTrace } from "./read/debug";
+export { trunc } from "./read/debug";

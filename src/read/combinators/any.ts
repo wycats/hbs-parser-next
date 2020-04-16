@@ -10,7 +10,7 @@ export default class Any<T extends Debuggable[]> extends AbstractCombinator<
     super();
   }
 
-  get name() {
+  get name(): string {
     return `any • ${this.desc}`;
   }
 

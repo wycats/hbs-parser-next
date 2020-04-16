@@ -10,4 +10,5 @@ export declare function unreachable(value: never): never;
 export declare type Dict<T> = {
     [key: number]: T;
 };
+export declare function join<T>(...items: Array<T | null | undefined>): T[];
 //# sourceMappingURL=utils.d.ts.map

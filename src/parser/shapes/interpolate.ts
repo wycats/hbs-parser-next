@@ -1,39 +1,32 @@
 import { TokenType } from "../../read/tokens";
 import * as ast from "../nodes";
 import type { InterpolateNode } from "../nodes/top-level";
-import { err, ok, Result } from "../shape";
+import { EXPAND, Result, seq } from "../shape";
 import type TokensIterator from "../tokens-iterator";
 import { AbstractShape } from "./abstract";
-import { VarRefShape } from "./expression/var-ref";
+import { ExpressionShape } from "./expression";
+import { CallBodyShape } from "./internal/call-body";
 
-export class InterpolateShape extends AbstractShape<InterpolateNode> {
-  expandFallible(iterator: TokensIterator): Result<InterpolateNode> {
-    let next = iterator.peek();
+export class HeadShape extends AbstractShape<ast.ExpressionAstNode> {
+  readonly desc = "Head";
 
-    if (next.isEOF) {
-      return err(next, "eof");
-    }
-
-    let token = next.token;
-
-    if (token.type === TokenType.Interpolate) {
-      let inner = iterator.child(token.children);
-      let head = new HeadShape().expandFallible(inner);
-
-      if (head.kind === "err") {
-        return head;
-      }
-
-      next.commit();
-      return ok(ast.interpolate({ head: head.value }, token.span));
-    } else {
-      return err(next, "mismatch");
-    }
+  [EXPAND](iterator: TokensIterator): Result<ast.ExpressionAstNode> {
+    return iterator.expand(ExpressionShape);
   }
 }
 
-export class HeadShape extends AbstractShape<ast.ExpressionAstNode> {
-  expandFallible(iterator: TokensIterator): Result<ast.ExpressionAstNode> {
-    return new VarRefShape().expandFallible(iterator);
+export class InterpolateShape extends AbstractShape<InterpolateNode> {
+  readonly desc = "Interpolate";
+
+  [EXPAND](iterator: TokensIterator): Result<InterpolateNode> {
+    return seq(
+      iterator.consumeParent({ desc: "interpolate", isLeaf: false }, token => {
+        if (token.type === TokenType.Interpolate) {
+          return iterator.processInner(token.children, iterator =>
+            iterator.expand(CallBodyShape)
+          );
+        }
+      })
+    ).map(({ result, token }) => ast.interpolate(result, { span: token.span }));
   }
 }

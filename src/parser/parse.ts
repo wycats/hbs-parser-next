@@ -1,26 +1,49 @@
 import type * as tokens from "../read/tokens";
 import * as ast from "./nodes";
 import BlockBodyShape from "./shapes/block-body";
-import TokensIterator from "./tokens-iterator";
+import TokensIterator, { TOKENS } from "./tokens-iterator";
 import { Result, ok, err } from "./shape";
+import { LoggingType } from "../read/read";
+import { ParseTracer } from "./debug";
 
-export default function parse(
-  input: tokens.RootToken,
-  source: string
-): Result<ast.RootNode> {
-  let iterator = new TokensIterator(input.children, { source });
-  let topLevel = new BlockBodyShape();
+export interface ParseOptions {
+  input: tokens.RootToken;
+  source: string;
+  logging: LoggingType;
+}
 
-  let root = topLevel.expandInfallible(iterator);
+export default function parse({
+  input,
+  source,
+  logging,
+}: ParseOptions): Result<ast.RootNode> {
+  let tracer = new ParseTracer(input);
+  let iterator = new TokensIterator(input.children, {
+    source,
+    tracer,
+  });
 
-  if (iterator.peek().isEOF) {
-    return ok(
-      ast.root(root, {
-        start: 0,
-        end: source.length,
-      })
-    );
-  } else {
-    return err(iterator.peek(), "incomplete");
+  try {
+    let topLevel = new BlockBodyShape();
+
+    let root = iterator.expand(topLevel);
+
+    let maybeEOF = iterator.peek("eof");
+
+    if (maybeEOF.isEOF) {
+      maybeEOF.commit();
+      return ok(
+        ast.root(root, {
+          start: 0,
+          end: source.length,
+        })
+      );
+    } else {
+      return err(maybeEOF.reject(), "incomplete");
+    }
+  } finally {
+    if (logging === LoggingType.Print) {
+      tracer.print(iterator[TOKENS], iterator.source);
+    }
   }
 }

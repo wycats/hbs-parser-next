@@ -1,111 +1,111 @@
-import { b } from "hbs-parser-next";
+import { r } from "hbs-parser-next";
 import { module, test } from "qunit";
 
 module("[READER] Hybrid");
 
 test("content plus interpolation", assert => {
   assert.tree("hello {{world}} goodbye", [
-    b.text("hello "),
-    b.interpolate(b.id("world")),
-    b.text(" goodbye"),
+    r.text("hello "),
+    r.interpolate(r.id("world")),
+    r.text(" goodbye"),
   ]);
 });
 
 test("A named arg invocation", assert => {
-  assert.tree("<@foo></@foo>", [b.startTag(b.arg("@foo")), b.endTag("@foo")]);
+  assert.tree("<@foo></@foo>", [r.startTag(r.arg("@foo")), r.endTag("@foo")]);
 });
 
 test("A path invocation", assert => {
   assert.tree("<f.input></f.input>", [
-    b.startTag([b.id("f"), b.dot, b.id("input")]),
-    b.endTag([b.id("f"), b.dot, b.id("input")]),
+    r.startTag([r.id("f"), r.dot, r.id("input")]),
+    r.endTag([r.id("f"), r.dot, r.id("input")]),
   ]);
 
   assert.tree("<@f.input></@f.input>", [
-    b.startTag([b.arg("@f"), b.dot, b.id("input")]),
-    b.endTag([b.arg("@f"), b.dot, b.id("input")]),
+    r.startTag([r.arg("@f"), r.dot, r.id("input")]),
+    r.endTag([r.arg("@f"), r.dot, r.id("input")]),
   ]);
 });
 
 test("Curly attributes", assert => {
   assert.tree("<div disabled={{disabled}}></div>", [
-    b.startTag({
+    r.startTag({
       name: "div",
       attrs: [
-        b.sp,
-        b.attr({
+        r.sp,
+        r.attr({
           name: "disabled",
-          value: b.attrInterpolate(b.id("disabled")),
+          value: r.attrInterpolate(r.id("disabled")),
         }),
       ],
     }),
-    b.endTag("div"),
+    r.endTag("div"),
   ]);
 });
 
 test("Curlies inside quoted attributes", assert => {
   assert.tree(`<div disabled="{{disabled}}"></div>`, [
-    b.startTag({
+    r.startTag({
       name: "div",
       attrs: [
-        b.sp,
-        b.attr({
+        r.sp,
+        r.attr({
           name: "disabled",
-          value: b.stringInterpolate([b.interpolate(b.id("disabled"))], `"`),
+          value: r.stringInterpolate([r.interpolate(r.id("disabled"))], `"`),
         }),
       ],
     }),
-    b.endTag("div"),
+    r.endTag("div"),
   ]);
 
   assert.tree(`<a href="{{url}}.html"></a>`, [
-    b.startTag({
+    r.startTag({
       name: "a",
       attrs: [
-        b.sp,
-        b.attr({
+        r.sp,
+        r.attr({
           name: "href",
-          value: b.stringInterpolate(
-            [b.interpolate(b.id("url")), b.text(".html")],
+          value: r.stringInterpolate(
+            [r.interpolate(r.id("url")), r.text(".html")],
             `"`
           ),
         }),
       ],
     }),
-    b.endTag("a"),
+    r.endTag("a"),
   ]);
 });
 
 test("Arguments", assert => {
   assert.tree(`<div @disabled="{{disabled}}"></div>`, [
-    b.startTag({
+    r.startTag({
       name: "div",
       attrs: [
-        b.sp,
-        b.attr({
-          name: b.argName("@disabled"),
-          value: b.stringInterpolate([b.interpolate(b.id("disabled"))], `"`),
+        r.sp,
+        r.attr({
+          name: r.argName("@disabled"),
+          value: r.stringInterpolate([r.interpolate(r.id("disabled"))], `"`),
         }),
       ],
     }),
-    b.endTag("div"),
+    r.endTag("div"),
   ]);
 
   assert.tree(`<a @href="{{url}}.html"></a>`, [
-    b.startTag({
+    r.startTag({
       name: "a",
       attrs: [
-        b.sp,
-        b.attr({
-          name: b.argName("@href"),
-          value: b.stringInterpolate(
-            [b.interpolate(b.id("url")), b.text(".html")],
+        r.sp,
+        r.attr({
+          name: r.argName("@href"),
+          value: r.stringInterpolate(
+            [r.interpolate(r.id("url")), r.text(".html")],
             `"`
           ),
         }),
       ],
     }),
-    b.endTag("a"),
+    r.endTag("a"),
   ]);
 });
 
@@ -113,30 +113,30 @@ test("Modifiers", assert => {
   assert.tree(
     `<div disabled {{on "click" (fn this.handleClick @arg)}}></div>`,
     [
-      b.startTag({
+      r.startTag({
         name: "div",
         attrs: [
-          b.sp,
-          b.attr("disabled"),
-          b.sp,
-          b.interpolate(
-            b.id("on"),
-            b.sp,
-            b.str(`"click"`),
-            b.sp,
-            b.sexp([
-              b.id("fn"),
-              b.sp,
-              b.id("this"),
-              b.dot,
-              b.id("handleClick"),
-              b.sp,
-              b.arg("@arg"),
+          r.sp,
+          r.attr("disabled"),
+          r.sp,
+          r.interpolate(
+            r.id("on"),
+            r.sp,
+            r.str(`"click"`),
+            r.sp,
+            r.sexp([
+              r.id("fn"),
+              r.sp,
+              r.id("this"),
+              r.dot,
+              r.id("handleClick"),
+              r.sp,
+              r.arg("@arg"),
             ])
           ),
         ],
       }),
-      b.endTag("div"),
+      r.endTag("div"),
     ]
   );
 });

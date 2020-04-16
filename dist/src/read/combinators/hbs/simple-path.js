@@ -1,17 +1,29 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-const combinator_1 = require("../../combinator");
 const snippet_1 = require("../../../snippet");
-const combinators_1 = require("../../combinators");
-const base_1 = require("../base");
+const combinator_1 = require("../../combinator");
 const hbs_1 = require("../../hbs");
+const base_1 = require("../base");
+const head_1 = __importDefault(require("./head"));
 class SimplePath extends base_1.AbstractCombinator {
-    constructor() {
-        super(...arguments);
-        this.name = "PATH";
+    constructor(disallowedKeywords) {
+        super();
+        this.disallowedKeywords = disallowedKeywords;
+        this.head = new head_1.default(disallowedKeywords);
+    }
+    get name() {
+        if (this.disallowedKeywords) {
+            return `SIMPLE_PATH • not ${JSON.stringify(this.disallowedKeywords)}`;
+        }
+        else {
+            return `SIMPLE_PATH`;
+        }
     }
     invoke(input) {
-        let result = input.invoke(exports.SIMPLE_HEAD);
+        let result = input.invoke(this.head);
         if (result.kind === "err") {
             return result;
         }
@@ -21,7 +33,7 @@ class SimplePath extends base_1.AbstractCombinator {
             if (current.isEOF()) {
                 return snippet_1.ok([current, out]);
             }
-            let resultDot = current.invoke(hbs_1.DOT);
+            let resultDot = current.invoke(hbs_1.DOT, { optional: true });
             if (resultDot.kind === "err") {
                 return snippet_1.ok([current, out]);
             }
@@ -38,6 +50,6 @@ class SimplePath extends base_1.AbstractCombinator {
     }
 }
 exports.default = SimplePath;
-exports.SIMPLE_HEAD = combinator_1.combinator(() => combinators_1.any("HEAD", hbs_1.ARG, hbs_1.ID));
+// export const SIMPLE_HEAD = combinator(() => any("HEAD", ARG, ID));
 // TODO: Allow `[]` or string members
 exports.MEMBER = combinator_1.combinator(() => hbs_1.ID);

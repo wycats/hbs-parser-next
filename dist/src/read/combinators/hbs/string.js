@@ -8,10 +8,10 @@ const base_1 = require("../base");
 class SomeString extends base_1.AbstractCombinator {
     constructor() {
         super(...arguments);
-        this.name = "INTERPOLATE";
+        this.name = "STRING";
     }
     invoke(input) {
-        return input.invoke(combinators_1.any("INTERPOLATE", exports.SINGLE_QUOTED, exports.DOUBLE_QUOTED));
+        return input.invoke(combinators_1.any("QUOTED_STRING", exports.SINGLE_QUOTED, exports.DOUBLE_QUOTED));
     }
 }
 exports.default = SomeString;

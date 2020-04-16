@@ -3,23 +3,26 @@ import type { TextNode } from "../nodes";
 import type TokensIterator from "../tokens-iterator";
 import { TokenType } from "../../read/tokens";
 import * as ast from "../nodes";
-import { Result, ok, err } from "../shape";
+import { Result, ok, err, EXPAND } from "../shape";
 
 export class TextShape extends AbstractShape<TextNode> {
-  expandFallible(iterator: TokensIterator): Result<TextNode> {
-    let next = iterator.peek();
+  readonly desc = "Text";
 
-    if (next.isEOF) {
-      return err(next, "eof");
+  [EXPAND](iterator: TokensIterator): Result<TextNode> {
+    let eof = iterator.assertNotEOF();
+
+    if (eof.kind === "err") {
+      return eof;
     }
 
+    let next = iterator.peek("text");
     let token = next.token;
 
     if (token.type === TokenType.Text) {
       next.commit();
       return ok(ast.text(token));
     } else {
-      return err(next, "mismatch");
+      return err(next.reject(), "mismatch");
     }
   }
 }

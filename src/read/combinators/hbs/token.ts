@@ -11,7 +11,7 @@ export default class SomeToken<
     super();
   }
 
-  get name() {
+  get name(): string {
     return `token • ${combinatorName(this.combinator)}`;
   }
 
@@ -25,10 +25,10 @@ export default class SomeToken<
     } else {
       return ok([
         result.value[0],
-        {
+        ({
           type: this.type,
           span: result.value[1].span,
-        } as LeafTokenMap[T],
+        } as unknown) as LeafTokenMap[T],
       ]);
     }
   }

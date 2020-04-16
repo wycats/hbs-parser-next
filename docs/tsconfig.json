@@ -1,0 +1,14 @@
+{
+  "extends": "../tsconfig.shared.json",
+
+  "compilerOptions": {
+    "composite": true,
+    "outDir": "../dist/docs",
+    "baseUrl": ".",
+    "paths": {
+      "hbs-parser-next": ["../src"]
+    }
+  },
+  "include": ["**/*.ts"],
+  "references": [{ "path": "../src" }]
+}
