@@ -295,57 +295,57 @@ test("paths", assert => {
     a.interpolate(a.path("this", "path"))
   );
 
-  assert.tree(
-    "{{id.with.path}}",
-    r.interpolate(r.id("id"), r.dot, r.id("with"), r.dot, r.id("path")),
-    a.interpolate(a.path("id", "with", "path"))
-  );
+  // assert.tree(
+  //   "{{id.with.path}}",
+  //   r.interpolate(r.id("id"), r.dot, r.id("with"), r.dot, r.id("path")),
+  //   a.interpolate(a.path("id", "with", "path"))
+  // );
 
-  assert.tree(
-    "{{ id.with.path }}",
-    r.interpolate(
-      r.sp,
-      r.id("id"),
-      r.dot,
-      r.id("with"),
-      r.dot,
-      r.id("path"),
-      r.sp
-    ),
-    a.interpolate(" ", a.path("id", "with", "path"), " ")
-  );
+  // assert.tree(
+  //   "{{ id.with.path }}",
+  //   r.interpolate(
+  //     r.sp,
+  //     r.id("id"),
+  //     r.dot,
+  //     r.id("with"),
+  //     r.dot,
+  //     r.id("path"),
+  //     r.sp
+  //   ),
+  //   a.interpolate(" ", a.path("id", "with", "path"), " ")
+  // );
 
-  assert.tree(
-    "{{  id.with.path  }}",
-    r.interpolate(
-      r.ws("  "),
-      r.id("id"),
-      r.dot,
-      r.id("with"),
-      r.dot,
-      r.id("path"),
-      r.ws("  ")
-    ),
-    a.interpolate("  ", a.path("id", "with", "path"), "  ")
-  );
+  // assert.tree(
+  //   "{{  id.with.path  }}",
+  //   r.interpolate(
+  //     r.ws("  "),
+  //     r.id("id"),
+  //     r.dot,
+  //     r.id("with"),
+  //     r.dot,
+  //     r.id("path"),
+  //     r.ws("  ")
+  //   ),
+  //   a.interpolate("  ", a.path("id", "with", "path"), "  ")
+  // );
 
-  assert.tree(
-    "{{@id.with.path}}",
-    r.interpolate(r.arg("@id"), r.dot, r.id("with"), r.dot, r.id("path")),
-    a.interpolate(a.path("@id", "with", "path"))
-  );
+  // assert.tree(
+  //   "{{@id.with.path}}",
+  //   r.interpolate(r.arg("@id"), r.dot, r.id("with"), r.dot, r.id("path")),
+  //   a.interpolate(a.path("@id", "with", "path"))
+  // );
 
-  assert.tree(
-    "{{@dash-id.with-dashed.path}}",
-    r.interpolate(
-      r.arg("@dash-id"),
-      r.dot,
-      r.id("with-dashed"),
-      r.dot,
-      r.id("path")
-    ),
-    a.interpolate(a.path("@dash-id", "with-dashed", "path"))
-  );
+  // assert.tree(
+  //   "{{@dash-id.with-dashed.path}}",
+  //   r.interpolate(
+  //     r.arg("@dash-id"),
+  //     r.dot,
+  //     r.id("with-dashed"),
+  //     r.dot,
+  //     r.id("path")
+  //   ),
+  //   a.interpolate(a.path("@dash-id", "with-dashed", "path"))
+  // );
 });
 
 test("{{id.with.path some other.stuff}}", assert => {

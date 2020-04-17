@@ -37,7 +37,7 @@ export class BlockShape extends AbstractShape<BlockNode> {
 
       throw new Error("not implemented");
     } else {
-      return err(next.reject(), "mismatch", iterator);
+      return err(next.reject().token, "mismatch", iterator);
     }
   }
 }

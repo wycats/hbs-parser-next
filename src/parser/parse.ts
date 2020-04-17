@@ -1,7 +1,7 @@
 import type * as tokens from "../read/tokens";
 import * as ast from "./nodes";
 import BlockBodyShape from "./shapes/block-body";
-import TokensIterator, { TOKENS } from "./tokens-iterator";
+import TokensIterator, { TOKENS, expandInfallible } from "./tokens-iterator";
 import { Result, ok, err } from "./shape";
 import { LoggingType } from "../read/read";
 import { ParseTracer } from "./debug";
@@ -26,7 +26,7 @@ export default function parse({
   try {
     let topLevel = new BlockBodyShape();
 
-    let root = iterator.expandInfallible(topLevel);
+    let root = iterator.start(expandInfallible(topLevel));
 
     let maybeEOF = iterator.peek("eof");
 
@@ -40,7 +40,7 @@ export default function parse({
         iterator
       );
     } else {
-      return err(maybeEOF.reject(), "incomplete", iterator);
+      return err(maybeEOF.reject().token, "incomplete", iterator);
     }
   } finally {
     if (logging === LoggingType.Print) {

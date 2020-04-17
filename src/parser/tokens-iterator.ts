@@ -1,5 +1,4 @@
 import type { Token, TokenType, TokenMap } from "../read/tokens";
-import type { SourceSpan } from "../span";
 import type { ParseTracer } from "./debug";
 import {
   err,
@@ -11,12 +10,14 @@ import {
   Shape,
   ErrSequence,
   ResultObject,
+  OkSequence,
 } from "./shape";
 import type { ShapeConstructor } from "./shapes/abstract";
 
 export const TOKENS = Symbol("TOKENS");
 export const CONTEXT = Symbol("CONTEXT");
 export const POS = Symbol("POS");
+export const SOURCE = Symbol("SOURCE");
 
 export class PeekedToken {
   #committed = false;
@@ -49,6 +50,15 @@ export class PeekedToken {
 
     this.#committed = true;
     return this.iterator.commitPeek(this.desc, this.pos);
+  }
+
+  silentReject(): PeekedToken & { rejected: true } {
+    if (this.finished) {
+      throw new Error(`assert: cannot reject already committed peeked token`);
+    }
+
+    this.#rejected = true;
+    return this as PeekedToken & { rejected: true };
   }
 
   reject(): PeekedToken & { rejected: true } {
@@ -99,10 +109,29 @@ export interface ParseContext {
   tracer: ParseTracer;
 }
 
-export default class TokensIterator {
+export interface CombinatorTokensIterator {
+  // TODO: Figure out how to make this not necessary
+  readonly [SOURCE]: string;
+  start<T>(step: (iterator: CombinatorTokensIterator) => T): T;
+  peek(desc: string, options?: { isLeaf: boolean }): PeekedToken;
+  err<T>(desc: string, reason?: string): ErrSequence<T>;
+  ok<T>(value: T): OkSequence<T>;
+  atomic<T>(
+    callback: (iterator: CombinatorTokensIterator) => Result<T>
+  ): Sequence<T>;
+  expandFallible<T>(
+    shapeOrClass: ShapeConstructor<Result<T>> | Shape<Result<T>>
+  ): Sequence<T>;
+  expandInfallible<T>(shapeOrClass: ShapeConstructor<T> | Shape<T>): T;
+  withChildTokens(tokens: readonly Token[]): CombinatorTokensIterator;
+}
+
+export default class TokensIterator implements CombinatorTokensIterator {
   readonly [TOKENS]: readonly Token[];
   readonly [CONTEXT]: ParseContext;
   [POS]: number;
+
+  protected activeTransaction: TokensIteratorTransaction | null = null;
 
   constructor(tokens: readonly Token[], context: ParseContext, pos = 0) {
     this[TOKENS] = tokens;
@@ -110,70 +139,23 @@ export default class TokensIterator {
     this[POS] = pos;
   }
 
-  assertEOF(): Result<null> {
-    let next = this.peek("eof");
-
-    if (next.isEOF) {
-      return ok(next.ignore(), this);
-    } else {
-      return err(next.reject(), "eof", this);
-    }
+  get [SOURCE](): string {
+    return this[CONTEXT].source;
   }
 
-  start<T>(step: (iterator: TokensIterator) => Sequence<T>): Sequence<T> {
+  start<T>(step: (iterator: CombinatorTokensIterator) => T): T {
     return step(this);
   }
 
-  consumeParent<T>(
-    options: string | { desc: string; isLeaf: boolean },
-    callback: (token: Token) => Result<T> | void
-  ): Sequence<{ result: T; token: Token }> {
-    let eof = notEOF()(this);
-    if (eof.kind === "err") {
-      return seq(eof);
-    }
-
-    let desc = typeof options === "string" ? options : options.desc;
-    let peekOptions = typeof options === "string" ? undefined : options;
-
-    let next = this.peek(desc, peekOptions);
-    let result = callback(next.token);
-
-    if (result === undefined) {
-      return seq(err(next.reject(), "mismatch", this));
-    } else if (result.kind === "err") {
-      next.reject();
-      return seq(result);
-    }
-
-    next.commit();
-
-    return seq(ok({ result: result.value, token: next.token }, this));
-  }
-
-  assertNotNext(
-    desc: string,
-    callback: (token: Token) => boolean
-  ): Sequence<null> & Result<null> {
-    let next = this.peek(desc);
-
-    if (next.token !== undefined && callback(next.token)) {
-      return seq(err(next.reject(), "lookahead", this));
-    } else {
-      next.ignore();
-      return seq(ok(null, this));
-    }
-  }
-
   err<T>(desc: string, reason = "mismatch"): ErrSequence<T> {
-    return seq(err(this.peek(desc).reject(), reason, this)) as ErrSequence<T>;
+    return seq(
+      err(this.silentPeek(desc).token, reason, this),
+      this
+    ) as ErrSequence<T>;
   }
 
-  present<T>(
-    desc: string
-  ): (out: T[], iterator: TokensIterator) => Result<T[]> {
-    return (out, iterator) =>
-      out.length === 0 ? this.err(desc, "empty") : ok(out, iterator);
+  ok<T>(value: T): OkSequence<T> {
+    return seq(ok(value, this), this);
   }
 
   peek(
@@ -187,46 +169,6 @@ export default class TokensIterator {
     return new PeekedToken(this, desc, this[POS]);
   }
 
-  expandShape<T>(shape: Shape<T>): T {
-    this[CONTEXT].tracer.preInvoke(shape, this[TOKENS][this[POS]]);
-    let result = shape[EXPAND](this);
-    this[CONTEXT].tracer.postInvoke(shape, result, this[TOKENS][this[POS]]);
-    return result;
-  }
-
-  expandInfallible<T>(shapeOrClass: { new (): Shape<T> } | Shape<T>): T {
-    let shape =
-      typeof shapeOrClass === "function" ? new shapeOrClass() : shapeOrClass;
-    this[CONTEXT].tracer.preInvoke(shape, this[TOKENS][this[POS]]);
-    let result = shape[EXPAND](this);
-    this[CONTEXT].tracer.postInvoke(shape, result, this[TOKENS][this[POS]]);
-
-    return result;
-  }
-
-  spanned<T>(
-    callback: () => Result<(span: SourceSpan) => Result<T>>
-  ): Result<T> {
-    let start = this[POS];
-    let cb = callback();
-
-    if (cb.kind === "err") {
-      return cb;
-    }
-
-    let end = this[POS];
-
-    return cb.value({ start, end });
-  }
-
-  get source(): string {
-    return this[CONTEXT].source;
-  }
-
-  child(tokens: readonly Token[]): TokensIterator {
-    return new TokensIterator(tokens, this[CONTEXT]);
-  }
-
   commitPeek(desc: string, pos: number): Token {
     if (this[POS] !== pos) {
       throw new Error(
@@ -238,7 +180,7 @@ export default class TokensIterator {
     this[CONTEXT].tracer.postInvoke(
       { desc },
       this[TOKENS][pos],
-      this[TOKENS][pos]
+      this[TOKENS][pos + 1]
     );
     return this[TOKENS][this[POS] - 1];
   }
@@ -250,7 +192,7 @@ export default class TokensIterator {
   ): void {
     this[CONTEXT].tracer.postInvoke(
       { desc },
-      err(peeked, "rejected", this),
+      err(peeked.token, "rejected", this),
       this[TOKENS][pos]
     );
   }
@@ -259,7 +201,43 @@ export default class TokensIterator {
     this[CONTEXT].tracer.postInvokeFailure({ desc }, reason);
   }
 
-  atomic<T>(callback: (iterator: TokensIterator) => Result<T>): Result<T> {
+  silentPeek(desc: string): PeekedToken {
+    return new PeekedToken(this, desc, this[POS]);
+  }
+
+  expandFallible<T>(
+    shapeOrClass: ShapeConstructor<Result<T>> | Shape<Result<T>>
+  ): Sequence<T> {
+    return this.expand(shapeOrClass, expanded => seq(expanded, this));
+  }
+
+  expandInfallible<T>(shapeOrClass: { new (): Shape<T> } | Shape<T>): T {
+    return this.expand(shapeOrClass, expanded => expanded);
+  }
+
+  private expand<T, U>(
+    shapeOrClass: { new (): Shape<T> } | Shape<T>,
+    callback: (result: T) => U
+  ): U {
+    let shape =
+      typeof shapeOrClass === "function" ? new shapeOrClass() : shapeOrClass;
+    this[CONTEXT].tracer.preInvoke(shape, this[TOKENS][this[POS]]);
+    let expanded = shape[EXPAND](this);
+    let result = callback(expanded);
+    this[CONTEXT].tracer.postInvoke(shape, result, this[TOKENS][this[POS]]);
+
+    return result;
+  }
+
+  get source(): string {
+    return this[CONTEXT].source;
+  }
+
+  withChildTokens(tokens: readonly Token[]): TokensIterator {
+    return new TokensIterator(tokens, this[CONTEXT]);
+  }
+
+  atomic<T>(callback: (iterator: TokensIterator) => Result<T>): Sequence<T> {
     let transaction = this.begin();
 
     let result = callback(transaction);
@@ -270,33 +248,62 @@ export default class TokensIterator {
       transaction.rollback();
     }
 
-    return result;
+    return seq(result, this);
   }
 
   begin(): TokensIteratorTransaction {
-    this[CONTEXT].tracer.begin();
-    return new TokensIteratorTransaction(
+    if (this.activeTransaction) {
+      throw new Error(
+        `ASSERT: Can only have one active transaction for a parent at a time`
+      );
+    }
+
+    this[CONTEXT].tracer.begin(this[TOKENS][this[POS]]);
+    let t = new TokensIteratorTransaction(
       this[TOKENS],
       this[CONTEXT],
       this[POS],
       this
     );
+
+    this.activeTransaction = t;
+    return t;
   }
 
-  commitTransaction(pos: number): void {
+  commitTransaction(pos: number, transaction: TokensIteratorTransaction): void {
     if (this[POS] > pos) {
       throw new Error(
         `assert: can't commit a transaction if it rewinds the position`
       );
     }
+
+    if (transaction !== this.activeTransaction) {
+      throw new Error(
+        `ASSERT: Can only commit a transaction if it's the active transaction`
+      );
+    }
+
+    this.activeTransaction = null;
     this[CONTEXT].tracer.commit();
     this[POS] = pos;
   }
 
-  rollbackTransaction(pos: number): void {
+  rollbackTransaction(
+    pos: number,
+    transaction: TokensIteratorTransaction
+  ): void {
     if (this[POS] > pos) {
       throw new Error(`assert: transaction's position is in the past`);
     }
+
+    if (transaction !== this.activeTransaction) {
+      throw new Error(
+        `ASSERT: Can only roll back a transaction if it's the active transaction`
+      );
+    }
+
+    this.activeTransaction = null;
+
     this[CONTEXT].tracer.rollback();
   }
 
@@ -304,18 +311,16 @@ export default class TokensIterator {
     tokens: readonly Token[],
     callback: (t: TokensIterator) => Result<T>
   ): Result<T> {
-    let child = this.child(tokens);
+    let child = this.withChildTokens(tokens);
     let result = callback(child);
 
     if (result.kind === "err") {
-      // parent.reject();
       return result;
     }
 
-    let eof = child.assertEOF();
+    let eof = child.start(assertEOF());
 
     if (eof.kind === "err") {
-      // parent.reject();
       return eof;
     }
 
@@ -323,9 +328,68 @@ export default class TokensIterator {
   }
 }
 
+export function start<T>(
+  step: (iterator: CombinatorTokensIterator) => T
+): (iterator: CombinatorTokensIterator) => T {
+  return iterator => step(iterator);
+}
+
+export function atomic<T>(
+  callback: (iterator: CombinatorTokensIterator) => Result<T>
+): (iterator: CombinatorTokensIterator) => Sequence<T> {
+  return iterator => iterator.atomic(callback);
+}
+
+export function inner<T>(
+  tokens: readonly Token[],
+  callback: (t: CombinatorTokensIterator) => Result<T>
+): (iterator: CombinatorTokensIterator) => Result<T> {
+  return iterator => {
+    let child = iterator.withChildTokens(tokens);
+    let result = callback(child);
+
+    if (result.kind === "err") {
+      // parent.reject();
+      return result;
+    }
+
+    let eof = child.start(assertEOF());
+
+    if (eof.kind === "err") {
+      // parent.reject();
+      return eof;
+    }
+
+    return result;
+  };
+}
+export function assertNotNext(
+  desc: string,
+  callback: (token: Token) => boolean
+): (iterator: CombinatorTokensIterator) => Sequence<null> {
+  return iterator => {
+    let next = iterator.peek(desc);
+
+    if (next.token !== undefined && callback(next.token)) {
+      next.reject();
+      return iterator.err(desc, "lookahead");
+    } else {
+      next.ignore();
+      return iterator.ok(null);
+    }
+  };
+}
+
+export function present<T>(
+  desc: string
+): (out: T[], iterator: CombinatorTokensIterator) => Result<T[]> {
+  return (out, iterator) =>
+    out.length === 0 ? iterator.err(desc, "empty") : iterator.ok(out);
+}
+
 export function repeat<T>(
-  callback: (iterator: TokensIterator) => Result<T>
-): (iterator: TokensIterator) => T[] {
+  callback: (iterator: CombinatorTokensIterator) => Result<T>
+): (iterator: CombinatorTokensIterator) => T[] {
   return iterator => {
     let out: T[] = [];
 
@@ -345,7 +409,7 @@ export function repeat<T>(
 
 export function many<T>(
   Shape: ShapeConstructor<Result<T>>
-): (iterator: TokensIterator) => T[] {
+): (iterator: CombinatorTokensIterator) => T[] {
   return iterator => {
     let out: T[] = [];
 
@@ -364,15 +428,63 @@ export function many<T>(
   };
 }
 
-export function notEOF(): (iterator: TokensIterator) => Sequence<null> {
+export function notEOF(): (
+  iterator: CombinatorTokensIterator
+) => Sequence<null> {
   return iterator => {
     let next = iterator.peek("eof");
 
     if (next.isEOF) {
-      return seq(err(next.reject(), "eof", iterator));
+      return seq(err(next.reject().token, "eof", iterator), iterator);
     } else {
-      return seq(ok(next.ignore(), iterator));
+      return seq(ok(next.ignore(), iterator), iterator);
     }
+  };
+}
+
+function assertEOF(): (iterator: CombinatorTokensIterator) => Result<null> {
+  return iterator => {
+    let next = iterator.peek("eof");
+
+    if (next.isEOF) {
+      return ok(next.ignore(), iterator);
+    } else {
+      return err(next.reject().token, "eof", iterator);
+    }
+  };
+}
+
+export function consumeParent<T>(
+  options: string | { desc: string; isLeaf: boolean },
+  callback: (token: Token) => Result<T> | void
+): (
+  iterator: CombinatorTokensIterator
+) => Sequence<{ result: T; token: Token }> {
+  return iterator => {
+    let eof = notEOF()(iterator);
+    if (eof.kind === "err") {
+      return seq(eof, iterator);
+    }
+
+    let desc = typeof options === "string" ? options : options.desc;
+    let peekOptions = typeof options === "string" ? undefined : options;
+
+    let next = iterator.peek(desc, peekOptions);
+    let result = callback(next.token);
+
+    if (result === undefined) {
+      return seq(err(next.reject().token, "mismatch", iterator), iterator);
+    } else if (result.kind === "err") {
+      next.reject();
+      return seq(result, iterator);
+    }
+
+    next.commit();
+
+    return seq(
+      ok({ result: result.value, token: next.token }, iterator),
+      iterator
+    );
   };
 }
 
@@ -382,10 +494,12 @@ export function consumeToken<
 >(
   name: N,
   tokenType: K
-): (iterator: TokensIterator) => Sequence<ResultObject<N, TokenMap[K]>>;
+): (
+  iterator: CombinatorTokensIterator
+) => Sequence<ResultObject<N, TokenMap[K]>>;
 export function consumeToken<K extends TokenType & keyof TokenMap>(
   tokenType: K
-): (iterator: TokensIterator) => Sequence<TokenMap[K]>;
+): (iterator: CombinatorTokensIterator) => Sequence<TokenMap[K]>;
 export function consumeToken<
   K extends TokenType & keyof TokenMap,
   N extends string
@@ -393,7 +507,7 @@ export function consumeToken<
   nameOrTokenType: N | K,
   maybeTokenType?: K
 ): (
-  iterator: TokensIterator
+  iterator: CombinatorTokensIterator
 ) => Sequence<TokenMap[K]> | Sequence<ResultObject<N, TokenMap[K]>> {
   let name = maybeTokenType === undefined ? undefined : nameOrTokenType;
   let tokenType =
@@ -408,18 +522,24 @@ export function consumeToken<
       }
     }
   }) as (
-    iterator: TokensIterator
+    iterator: CombinatorTokensIterator
   ) => Sequence<TokenMap[K]> | Sequence<ResultObject<N, TokenMap[K]>>;
+}
+
+export function source(): (
+  iterator: CombinatorTokensIterator
+) => Sequence<string> {
+  return iterator => seq(ok(iterator[SOURCE], iterator), iterator);
 }
 
 export function consume<T>(
   options: string | { desc: string; isLeaf: boolean },
   callback: (token: Token) => T | undefined
-): (iterator: TokensIterator) => Sequence<T> {
+): (iterator: CombinatorTokensIterator) => Sequence<T> {
   return iterator => {
     let eof = notEOF()(iterator);
     if (eof.kind === "err") {
-      return seq(eof);
+      return seq(eof, iterator);
     }
 
     let desc = typeof options === "string" ? options : options.desc;
@@ -429,31 +549,25 @@ export function consume<T>(
     let result = callback(next.token);
 
     if (result === undefined) {
-      return seq(err(next.reject(), "mismatch", iterator));
+      return seq(err(next.reject().token, "mismatch", iterator), iterator);
     }
 
     next.commit();
 
-    return seq(ok(result, iterator));
+    return seq(ok(result, iterator), iterator);
   };
 }
 
 export function expand<T>(
   shapeOrClass: ShapeConstructor<Result<T>> | Shape<Result<T>>
-): (iterator: TokensIterator) => Sequence<T> {
-  return iterator => {
-    let shape =
-      typeof shapeOrClass === "function" ? new shapeOrClass() : shapeOrClass;
-    iterator[CONTEXT].tracer.preInvoke(shape, iterator[TOKENS][iterator[POS]]);
-    let result = shape[EXPAND](iterator);
-    iterator[CONTEXT].tracer.postInvoke(
-      shape,
-      result,
-      iterator[TOKENS][iterator[POS]]
-    );
+): (iterator: CombinatorTokensIterator) => Sequence<T> {
+  return iterator => iterator.expandFallible(shapeOrClass);
+}
 
-    return seq(result) as Sequence<T> & Result<T>;
-  };
+export function expandInfallible<T>(
+  shapeOrClass: { new (): Shape<T> } | Shape<T>
+): (iterator: CombinatorTokensIterator) => T {
+  return iterator => iterator.expandInfallible(shapeOrClass);
 }
 
 export class TokensIteratorTransaction extends TokensIterator {
@@ -469,26 +583,75 @@ export class TokensIteratorTransaction extends TokensIterator {
   #committed = false;
   #rolledBack = false;
 
+  get isActive(): boolean {
+    return !this.#committed && !this.#rolledBack;
+  }
+
+  begin(): TokensIteratorTransaction {
+    if (this.#committed || this.#rolledBack) {
+      throw new Error(
+        `ASSERT: can't create a nested transaction for a committed or rolled back parent`
+      );
+    }
+
+    return super.begin();
+  }
+
   commit(): void {
-    if (this.#committed) {
+    if (this.#committed || this.#rolledBack) {
       throw new Error(`ASSERT: can only commit a transaction once`);
+    }
+
+    if (this.activeTransaction) {
+      throw new Error(
+        `ASSERT: can't commit a transaction if it has active nested transactions`
+      );
     }
 
     this.#committed = true;
-    this.transactionParent.commitTransaction(this[POS]);
+    this.transactionParent.commitTransaction(this[POS], this);
   }
 
   rollback(): void {
-    if (this.#committed) {
+    if (this.#committed || this.#rolledBack) {
       throw new Error(`ASSERT: can only commit a transaction once`);
     }
 
+    if (this.activeTransaction) {
+      throw new Error(
+        `ASSERT: can't roll back a transaction if it has active nested transactions`
+      );
+    }
+
     this.#rolledBack = true;
-    this.transactionParent.rollbackTransaction(this[POS]);
+    this.transactionParent.rollbackTransaction(this[POS], this);
+  }
+
+  commitTransaction(pos: number, transaction: TokensIteratorTransaction): void {
+    if (this.#committed || this.#rolledBack) {
+      throw new Error(
+        `ASSERT: Can't commit a nested transaction if the parent is already committed or rolled back`
+      );
+    }
+
+    super.commitTransaction(pos, transaction);
+  }
+
+  rollbackTransaction(
+    pos: number,
+    transaction: TokensIteratorTransaction
+  ): void {
+    if (this.#committed || this.#rolledBack) {
+      throw new Error(
+        `ASSERT: Can't commit a nested transaction if the parent is already committed or rolled back`
+      );
+    }
+
+    super.rollbackTransaction(pos, transaction);
   }
 
   finallyRollback(): void {
-    if (!this.#committed) {
+    if (!this.#committed && !this.#rolledBack) {
       this.rollback();
     }
   }

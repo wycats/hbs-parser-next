@@ -1,17 +1,24 @@
 import { TokenType } from "../../../read/tokens";
 import * as ast from "../../nodes";
-import { mapResult, ok } from "../../shape";
 import { shape } from "../abstract";
 import { CallBodyShape } from "../internal/call-body";
-import { expand } from "../../tokens-iterator";
+import { expand, consumeParent, inner } from "../../tokens-iterator";
 
 export const SexpShape = shape("Sexp", iterator =>
-  mapResult(
-    iterator.consumeParent({ desc: "sexp", isLeaf: false }, token => {
-      if (token.type === TokenType.Sexp) {
-        return iterator.processInner(token.children, expand(CallBodyShape));
-      }
-    }),
-    ({ result, token }) => ok(ast.call(result, { span: token.span }), iterator)
-  )
+  iterator
+    .start(
+      consumeParent({ desc: "sexp", isLeaf: false }, token => {
+        if (token.type === TokenType.Sexp) {
+          return inner(token.children, expand(CallBodyShape))(iterator);
+        }
+      })
+    )
+    .andThen(({ result, token }) => ast.call(result, { span: token.span }))
 );
+//   mapResult(
+//     iterator.consumeParent({ desc: "sexp", isLeaf: false }, token => {
+
+//     }),
+//     ({ result, token }) => ok(ast.call(result, { span: token.span }), iterator)
+//   )
+// );

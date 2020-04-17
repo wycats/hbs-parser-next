@@ -1,13 +1,10 @@
 import { TokenType } from "../../../read/tokens";
 import * as ast from "../../nodes";
 import { shape } from "../abstract";
-import { consume } from "../../tokens-iterator";
+import { consumeToken } from "../../tokens-iterator";
 
-export const ArgRefShape = shape(
-  "ArgRef",
-  consume("arg ref", token => {
-    if (token.type === TokenType.Argument) {
-      return ast.argReference(token);
-    }
-  })
+export const ArgRefShape = shape("ArgRef", iterator =>
+  iterator
+    .start(consumeToken(TokenType.Argument))
+    .andThen(ref => ast.argReference(ref))
 );

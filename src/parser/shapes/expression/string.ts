@@ -1,14 +1,11 @@
 import { TokenType } from "../../../read/tokens";
 import * as ast from "../../nodes";
 import { shape } from "../abstract";
-import { consume } from "../../tokens-iterator";
+import { consumeToken, source } from "../../tokens-iterator";
 
 export const StringShape = shape("String", iterator =>
-  iterator.start(
-    consume("string", token => {
-      if (token.type === TokenType.String) {
-        return ast.string(token, iterator.source);
-      }
-    })
-  )
+  iterator
+    .start(consumeToken("token", TokenType.String))
+    .extend("source", source())
+    .andThen(({ token, source }) => ast.string(token, source))
 );

@@ -41,10 +41,10 @@ export class ParseTracer {
     return this.stack[0];
   }
 
-  begin(): void {
+  begin(preToken: Token): void {
     let trace = {
       shape: { desc: "begin" },
-      preToken: undefined,
+      preToken: preToken,
       postToken: undefined,
       result: null,
       children: [],
@@ -114,7 +114,7 @@ export class ParseTracer {
   postInvoke(
     shape: Shape<unknown> | { desc: string },
     result: unknown,
-    token: Token | undefined
+    postToken: Token | undefined
   ): void {
     let last = unwrap(this.stack.pop());
     if (last.shape.desc !== shape.desc) {
@@ -124,7 +124,7 @@ export class ParseTracer {
     }
 
     last.result = result;
-    last.postToken = token;
+    last.postToken = postToken;
   }
 
   postInvokeFailure(

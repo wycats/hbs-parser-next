@@ -13,7 +13,13 @@ import { any } from "../internal/any";
 import { ArgRefShape } from "./args-ref";
 import { SexpShape } from "./sexp";
 import { VarRefShape } from "./var-ref";
-import { expand, consumeToken, notEOF, many } from "../../tokens-iterator";
+import {
+  expand,
+  consumeToken,
+  notEOF,
+  many,
+  atomic,
+} from "../../tokens-iterator";
 
 export type PathOutput = PathNode | PathHeadOutput;
 
@@ -23,16 +29,16 @@ export type PathHeadOutput =
   | VarReferenceNode
   | ThisReferenceNode;
 
-export const PathMemberShape = shape("PathMember", iterator =>
-  iterator.start(notEOF()).andThen(() => {
-    return iterator.atomic(iterator => {
+export const PathMemberShape = shape("PathMember", iterator => {
+  return iterator.start(notEOF()).next(
+    atomic(iterator => {
       return iterator
         .start(consumeToken("dot", TokenType.Dot))
         .extend("id", consumeToken(TokenType.Identifier))
         .andThen(({ dot, id }) => ast.member(dot, id.span));
-    });
-  })
-);
+    })
+  );
+});
 
 export const PathHeadShape = shape("PathHead", iterator =>
   iterator.start(
@@ -40,16 +46,29 @@ export const PathHeadShape = shape("PathHead", iterator =>
   )
 );
 
-export const PathShape = shape("Path", iterator =>
-  iterator
-    .start(notEOF())
-    .next(expand(PathHeadShape))
-    .andThen(head => {
-      let tail = many(PathMemberShape)(iterator);
-      if (tail.length === 0) {
-        return head;
-      } else {
-        return ast.path({ head, tail }, range(head, ...tail));
-      }
-    })
+export const PathShape = shape(
+  "Path",
+  iterator =>
+    iterator
+      .start(expand(PathHeadShape))
+      .named("head")
+      .andThen(v => {
+        iterator;
+        return v;
+      })
+      .extend("tail", many(PathMemberShape))
+      // .andThen(({ head }) => ({ head, tail: many(PathMemberShape)(iterator) }))
+      .andThen(({ head, tail }) => {
+        return tail.length === 0
+          ? head
+          : ast.path({ head, tail }, range(head, ...tail));
+      })
+  // iterator.start(expand(PathHeadShape)).andThen(head => {
+  //   let tail = many(PathMemberShape)(iterator);
+  //   if (tail.length === 0) {
+  //     return head;
+  //   } else {
+  //     return ast.path({ head, tail }, range(head, ...tail));
+  //   }
+  // })
 );

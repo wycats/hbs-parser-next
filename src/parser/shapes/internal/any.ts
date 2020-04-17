@@ -1,4 +1,4 @@
-import { err, Result, ShapeConstructorResult } from "../../shape";
+import type { Result, ShapeConstructorResult } from "../../shape";
 import { shape, ShapeConstructor } from "../abstract";
 import { expand, notEOF } from "../../tokens-iterator";
 
@@ -16,9 +16,7 @@ export function any<T extends Array<ShapeConstructor<Result<unknown>>>>(
         }
       }
 
-      return err(iterator.peek("any").reject(), "none", iterator) as Result<
-        ShapeConstructorResult<T[number]>
-      >;
+      return iterator.err("any", "none");
     })
   );
 }

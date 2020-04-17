@@ -1,6 +1,9 @@
 import type { Shape, Result } from "../shape";
 import { EXPAND } from "../shape";
-import TokensIterator, { expand } from "../tokens-iterator";
+import TokensIterator, {
+  expand,
+  CombinatorTokensIterator,
+} from "../tokens-iterator";
 
 export abstract class AbstractShape<T> implements Shape<Result<T>> {
   readonly fallible = true;
@@ -14,7 +17,7 @@ export interface ShapeConstructor<T> {
 
 export function shape<T>(
   desc: string,
-  expand: (iterator: TokensIterator) => Result<T>
+  expand: (iterator: CombinatorTokensIterator) => Result<T>
 ): ShapeConstructor<Result<T>> {
   return class extends AbstractShape<T> {
     readonly desc = desc;
@@ -25,7 +28,7 @@ export function shape<T>(
 
 export function infallibleShape<T>(
   desc: string,
-  expand: (iterator: TokensIterator) => T
+  expand: (iterator: CombinatorTokensIterator) => T
 ): ShapeConstructor<T> {
   return class extends AbstractInfallibleShape<T> {
     readonly desc = desc;
@@ -37,7 +40,7 @@ export function infallibleShape<T>(
 export abstract class AbstractInfallibleShape<T> implements Shape<T> {
   readonly fallible = false;
   declare abstract readonly desc: string;
-  abstract [EXPAND](iterator: TokensIterator): T;
+  abstract [EXPAND](iterator: CombinatorTokensIterator): T;
 }
 
 export function or<T, U>(
