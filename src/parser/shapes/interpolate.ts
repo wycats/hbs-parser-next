@@ -27,6 +27,8 @@ export class InterpolateShape extends AbstractShape<InterpolateNode> {
           );
         }
       })
-    ).map(({ result, token }) => ast.interpolate(result, { span: token.span }));
+    ).andThen(({ result, token }) =>
+      ast.interpolate(result, { span: token.span })
+    );
   }
 }

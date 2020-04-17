@@ -1,7 +1,17 @@
 import type { Token } from "../read/tokens";
 import type { SourceSpan } from "../span";
 import type { ParseTracer } from "./debug";
-import { err, EXPAND, ok, Result, seq, Sequence, Shape } from "./shape";
+import {
+  err,
+  EXPAND,
+  ok,
+  Result,
+  seq,
+  Sequence,
+  Shape,
+  ErrSequence,
+} from "./shape";
+import type { ShapeConstructor } from "./shapes/abstract";
 
 export const TOKENS = Symbol("TOKENS");
 
@@ -97,7 +107,7 @@ export default class TokensIterator {
     this[TOKENS] = tokens;
   }
 
-  assertNotEOF(): Result<null> & Sequence<null> {
+  assertNotEOF(): Sequence<null> {
     let next = this.peek("eof");
 
     if (next.isEOF) {
@@ -119,7 +129,7 @@ export default class TokensIterator {
 
   consume<T>(
     options: string | { desc: string; isLeaf: boolean },
-    callback: (token: Token) => T | void | undefined
+    callback: (token: Token) => T | undefined
   ): Sequence<T> {
     let eof = this.assertNotEOF();
     if (eof.kind === "err") {
@@ -182,6 +192,14 @@ export default class TokensIterator {
     }
   }
 
+  err<T>(desc: string, reason = "mismatch"): ErrSequence<T> {
+    return seq(err(this.peek(desc).reject(), reason)) as ErrSequence<T>;
+  }
+
+  present<T>(desc: string): (out: T[]) => Result<T[]> {
+    return out => (out.length === 0 ? this.err(desc, "empty") : ok(out));
+  }
+
   peek(
     desc: string,
     options: { isLeaf: boolean } = { isLeaf: true }
@@ -201,7 +219,7 @@ export default class TokensIterator {
   }
 
   expand<T>(
-    shapeOrClass: { new (): Shape<Result<T>> } | Shape<Result<T>>
+    shapeOrClass: ShapeConstructor<Result<T>> | Shape<Result<T>>
   ): Sequence<T> {
     let shape =
       typeof shapeOrClass === "function" ? new shapeOrClass() : shapeOrClass;
@@ -277,7 +295,24 @@ export default class TokensIterator {
     this.context.tracer.postInvokeFailure({ desc }, reason);
   }
 
-  many<T>(callback: (iterator: TokensIterator) => Result<T>): T[] {
+  many<T>(Shape: ShapeConstructor<Result<T>>): T[] {
+    let out: T[] = [];
+
+    while (true) {
+      let shape = new Shape();
+
+      let result = this.expand(shape);
+      if (result.kind === "err") {
+        break;
+      } else {
+        out.push(result.value);
+      }
+    }
+
+    return out;
+  }
+
+  repeat<T>(callback: (iterator: TokensIterator) => Result<T>): T[] {
     let out: T[] = [];
 
     while (true) {
@@ -293,9 +328,7 @@ export default class TokensIterator {
     return out;
   }
 
-  transaction<T>(
-    callback: (iterator: TokensIteratorTransaction) => Result<T>
-  ): Result<T> {
+  atomic<T>(callback: (iterator: TokensIterator) => Result<T>): Result<T> {
     let transaction = this.begin();
 
     let result = callback(transaction);

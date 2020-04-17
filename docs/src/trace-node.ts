@@ -36,7 +36,7 @@ class TraceNode extends Component {
           </button>
         {{/if}}
         <span class="name" {{on "click" this.toggleExpanded}}>{{@node.name}}</span>
-        <span class="output">➡ {{format this.output}}</span>
+        <span class="output">🠪 {{format this.output}}</span>
         {{#if (not @isDeepExpanded)}}
           {{#if @node.isExpandable}}
             <button class="expand" {{on "click" this.toggleDeepExpanded}}>

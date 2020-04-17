@@ -1,60 +1,20 @@
 import { TokenType } from "../../../read/tokens";
+import { range } from "../../../span";
 import * as ast from "../../nodes";
 import type {
-  PathNode,
-  VarReferenceNode,
   ArgReferenceNode,
-  ThisReferenceNode,
   CallNode,
-  MemberNode,
+  PathNode,
+  ThisReferenceNode,
+  VarReferenceNode,
 } from "../../nodes/expression";
-import { err, ok, Result, EXPAND, Shape } from "../../shape";
-import type TokensIterator from "../../tokens-iterator";
-import { AbstractShape } from "../abstract";
-import { VarRefShape } from "./var-ref";
+import { shape } from "../abstract";
+import { any } from "../internal/any";
 import { ArgRefShape } from "./args-ref";
 import { SexpShape } from "./sexp";
-import { range } from "../../../span";
+import { VarRefShape } from "./var-ref";
 
 export type PathOutput = PathNode | PathHeadOutput;
-
-export class PathShape extends AbstractShape<PathOutput> {
-  readonly desc = "ArgRef";
-
-  [EXPAND](iterator: TokensIterator): Result<PathOutput> {
-    let eof = iterator.assertNotEOF();
-
-    if (eof.kind === "err") {
-      return eof;
-    }
-
-    let head = iterator.expand(PathHeadShape);
-
-    if (head.kind === "err") {
-      return err(iterator.peek("path head").reject(), "mismatch");
-    }
-
-    let tail = [];
-
-    while (true) {
-      let member = iterator.expand(PathMemberShape);
-
-      if (member.kind === "err") {
-        break;
-      } else {
-        tail.push(member.value);
-      }
-    }
-
-    if (tail.length === 0) {
-      return ok(head.value);
-    } else {
-      return ok(
-        ast.path({ head: head.value, tail }, range(head.value, ...tail))
-      );
-    }
-  }
-}
 
 export type PathHeadOutput =
   | CallNode
@@ -62,61 +22,39 @@ export type PathHeadOutput =
   | VarReferenceNode
   | ThisReferenceNode;
 
-export class PathHeadShape extends AbstractShape<PathHeadOutput> {
-  readonly desc = "Expression";
+export const PathMemberShape = shape("PathMember", iterator =>
+  iterator.assertNotEOF().andThen(() => {
+    return iterator.atomic(iterator => {
+      return iterator
+        .consume("dot", token =>
+          token.type === TokenType.Dot ? { dot: token } : undefined
+        )
+        .extend("id", () =>
+          iterator.consume("id", token =>
+            token.type === TokenType.Identifier ? token : undefined
+          )
+        )
+        .andThen(({ dot, id }) => ast.member(dot, id.span));
+    });
+  })
+);
 
-  [EXPAND](iterator: TokensIterator): Result<PathHeadOutput> {
-    let shapes: Shape<Result<PathHeadOutput>>[] = [
-      new SexpShape(),
-      new ArgRefShape(),
-      new VarRefShape(),
-    ];
+export const PathHeadShape = shape("PathHead", iterator => {
+  return iterator.expand(
+    any([SexpShape, ArgRefShape, VarRefShape], "path head")
+  );
+});
 
-    for (let shape of shapes) {
-      let expand = iterator.expand(shape);
-
-      if (expand.kind === "ok") {
-        return expand;
-      }
-    }
-
-    return err(iterator.peek("expression").reject(), "expression");
-  }
-}
-
-export class PathMemberShape extends AbstractShape<MemberNode> {
-  readonly desc = "PathMember";
-
-  [EXPAND](iterator: TokensIterator): Result<ast.MemberNode> {
-    let eof = iterator.assertNotEOF();
-
-    if (eof.kind === "err") {
-      return eof;
-    }
-
-    let transaction = iterator.begin();
-
-    try {
-      let maybeDot = transaction.peek("dot");
-
-      if (maybeDot.token.type === TokenType.Dot) {
-        maybeDot.commit();
+export const PathShape = shape("Path", iterator =>
+  iterator
+    .assertNotEOF()
+    .andThen(() => iterator.expand(PathHeadShape))
+    .andThen(head => {
+      let tail = iterator.many(PathMemberShape);
+      if (tail.length === 0) {
+        return head;
       } else {
-        return err(maybeDot.reject(), "mismatch");
+        return ast.path({ head, tail }, range(head, ...tail));
       }
-
-      let maybeID = transaction.peek("id");
-
-      if (maybeID.token.type === TokenType.Identifier) {
-        maybeID.commit();
-        transaction.commit();
-
-        return ok(ast.member(maybeDot.token, maybeID.token.span));
-      } else {
-        return err(maybeID.reject(), "mismatch");
-      }
-    } finally {
-      transaction.finallyRollback();
-    }
-  }
-}
+    })
+);

@@ -1,29 +1,23 @@
-import { err, Shape, Result, EXPAND, ShapeResult } from "../../shape";
-import type TokensIterator from "../../tokens-iterator";
-import { AbstractShape } from "../abstract";
+import { err, Result, ShapeConstructorResult } from "../../shape";
+import { shape, ShapeConstructor } from "../abstract";
 
-export class Any<T extends Array<Shape<Result<unknown>>>> extends AbstractShape<
-  ShapeResult<T[number]>
-> {
-  constructor(private shapes: T, readonly desc: string) {
-    super();
-  }
+export function any<T extends Array<ShapeConstructor<Result<unknown>>>>(
+  shapes: T,
+  desc: string
+): ShapeConstructor<Result<ShapeConstructorResult<T[number]>>> {
+  return shape(desc, iterator => {
+    return iterator.assertNotEOF().andThen(() => {
+      for (let shape of shapes) {
+        let result = iterator.expand(shape);
 
-  [EXPAND](iterator: TokensIterator): Result<ShapeResult<T[number]>> {
-    let eof = iterator.assertNotEOF();
-
-    if (eof.kind === "err") {
-      return eof;
-    }
-
-    for (let shape of this.shapes) {
-      let result = iterator.expand(shape);
-
-      if (result.kind === "ok") {
-        return result as Result<ShapeResult<T[number]>>;
+        if (result.kind === "ok") {
+          return result as Result<ShapeConstructorResult<T[number]>>;
+        }
       }
-    }
 
-    return err(iterator.peek("any").reject(), "none");
-  }
+      return err(iterator.peek("any").reject(), "none") as Result<
+        ShapeConstructorResult<T[number]>
+      >;
+    });
+  });
 }

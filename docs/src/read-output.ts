@@ -59,7 +59,7 @@ export default class ReadOutput extends Component {
       }
 
       ul.included li:not(:last-child)::after {
-        content: "➡";
+        content: "🠪";
         margin-left: 0.5rem;
         margin-right: 0.5rem;
       }
