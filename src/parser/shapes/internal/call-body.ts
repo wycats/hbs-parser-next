@@ -1,48 +1,44 @@
 import { TokenType } from "../../../read/tokens";
 import { range } from "../../../span";
 import * as ast from "../../nodes";
-import { ok } from "../../shape";
 import { shape } from "../abstract";
 import { ExpressionShape } from "../expression";
 import { HeadShape } from "../interpolate";
 import { maybe } from "./maybe";
 import { MaybeWS, Ws } from "./ws";
+import {
+  expand,
+  consumeToken,
+  notEOF,
+  many,
+  repeat,
+} from "../../tokens-iterator";
 
 export const PositionalShape = shape("Positional", iterator =>
   iterator
-    .assertNotEOF()
-    .andThen(() =>
-      iterator.repeat(iterator =>
+    .start(notEOF())
+    .next(
+      repeat(iterator =>
         iterator.atomic(iterator =>
           iterator
-            .expand(Ws)
-            .andThen(ws => ({ before: ws }))
-            .extend("expr", () => iterator.expand(ExpressionShape))
+            .start(expand(Ws))
+            .named("before")
+            .extend("expr", expand(ExpressionShape))
             .andThen(({ before, expr }) => ast.extendNode(expr, { before }))
         )
       )
     )
     .andCheck(iterator.present("any args"))
-    .andThen(out => ok(ast.positional(out, { span: range(...out) })))
+    .andThen(out => ast.positional(out, { span: range(...out) }))
 );
 
 export const NamedArgumentShape = shape("NamedArgument", iterator =>
-  iterator.assertNotEOF().andThen(() =>
+  iterator.start(notEOF()).andThen(() =>
     iterator.atomic(iterator =>
       iterator
-        .consume("id", token => {
-          if (token.type === TokenType.Identifier) {
-            return { id: token };
-          }
-        })
-        .andCheck(() =>
-          iterator.consume("eq", token => {
-            if (token.type === TokenType.Eq) {
-              return { eq: token };
-            }
-          })
-        )
-        .extend("expr", () => iterator.expand(ExpressionShape))
+        .start(consumeToken("id", TokenType.Identifier))
+        .checkNext(consumeToken(TokenType.Eq))
+        .extend("expr", expand(ExpressionShape))
         .andThen(({ id, expr }) => {
           let trailingWS = iterator.expandInfallible(MaybeWS);
 
@@ -56,13 +52,13 @@ export const NamedArgumentShape = shape("NamedArgument", iterator =>
 );
 
 export const NamedArgumentsShape = shape("NamedArguments", iterator => {
-  return iterator.assertNotEOF().andThen(() =>
+  return iterator.start(notEOF()).andThen(() =>
     iterator.atomic(iterator =>
       iterator
-        .expand(Ws)
-        .andThen(ws => ({ leadingWS: ws }))
-        .extend("args", () => iterator.many(NamedArgumentShape))
-        .andCheck(({ args }) => iterator.present("any args")(args))
+        .start(expand(Ws))
+        .named("leadingWS")
+        .extend("args", many(NamedArgumentShape))
+        .andCheck(({ args }) => iterator.present("any args")(args, iterator))
         .andThen(({ leadingWS, args }) =>
           ast.namedArgs(args, { span: range(...args), before: leadingWS })
         )
@@ -73,7 +69,7 @@ export const NamedArgumentsShape = shape("NamedArguments", iterator => {
 export const CallBodyShape = shape("CallBody", iterator => {
   let before = iterator.expandInfallible(MaybeWS) || undefined;
 
-  return iterator.expand(HeadShape).andThen(head => {
+  return iterator.start(expand(HeadShape)).andThen(head => {
     let positional = iterator.expandInfallible(maybe(new PositionalShape()));
     let named = iterator.expandInfallible(maybe(new NamedArgumentsShape()));
     let after = iterator.expandInfallible(MaybeWS) || undefined;

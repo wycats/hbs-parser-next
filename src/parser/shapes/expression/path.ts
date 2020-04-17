@@ -13,6 +13,7 @@ import { any } from "../internal/any";
 import { ArgRefShape } from "./args-ref";
 import { SexpShape } from "./sexp";
 import { VarRefShape } from "./var-ref";
+import { expand, consumeToken, notEOF, many } from "../../tokens-iterator";
 
 export type PathOutput = PathNode | PathHeadOutput;
 
@@ -23,34 +24,28 @@ export type PathHeadOutput =
   | ThisReferenceNode;
 
 export const PathMemberShape = shape("PathMember", iterator =>
-  iterator.assertNotEOF().andThen(() => {
+  iterator.start(notEOF()).andThen(() => {
     return iterator.atomic(iterator => {
       return iterator
-        .consume("dot", token =>
-          token.type === TokenType.Dot ? { dot: token } : undefined
-        )
-        .extend("id", () =>
-          iterator.consume("id", token =>
-            token.type === TokenType.Identifier ? token : undefined
-          )
-        )
+        .start(consumeToken("dot", TokenType.Dot))
+        .extend("id", consumeToken(TokenType.Identifier))
         .andThen(({ dot, id }) => ast.member(dot, id.span));
     });
   })
 );
 
-export const PathHeadShape = shape("PathHead", iterator => {
-  return iterator.expand(
-    any([SexpShape, ArgRefShape, VarRefShape], "path head")
-  );
-});
+export const PathHeadShape = shape("PathHead", iterator =>
+  iterator.start(
+    expand(any([SexpShape, ArgRefShape, VarRefShape], "path head"))
+  )
+);
 
 export const PathShape = shape("Path", iterator =>
   iterator
-    .assertNotEOF()
-    .andThen(() => iterator.expand(PathHeadShape))
+    .start(notEOF())
+    .next(expand(PathHeadShape))
     .andThen(head => {
-      let tail = iterator.many(PathMemberShape);
+      let tail = many(PathMemberShape)(iterator);
       if (tail.length === 0) {
         return head;
       } else {

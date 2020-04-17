@@ -1,4 +1,4 @@
-import type TokensIterator from "../tokens-iterator";
+import TokensIterator, { expand } from "../tokens-iterator";
 import { AbstractInfallibleShape } from "./abstract";
 import { TopLevelNode, TopLevelShape } from "./top-level";
 import { EXPAND } from "../shape";
@@ -12,7 +12,7 @@ export default class BlockBodyShape extends AbstractInfallibleShape<
     let out: TopLevelNode[] = [];
 
     while (true) {
-      let next = iterator.expand(TopLevelShape);
+      let next = iterator.start(expand(TopLevelShape));
 
       if (next.kind === "err") {
         break;

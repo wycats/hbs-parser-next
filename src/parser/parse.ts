@@ -36,10 +36,11 @@ export default function parse({
         ast.root(root, {
           start: 0,
           end: source.length,
-        })
+        }),
+        iterator
       );
     } else {
-      return err(maybeEOF.reject(), "incomplete");
+      return err(maybeEOF.reject(), "incomplete", iterator);
     }
   } finally {
     if (logging === LoggingType.Print) {

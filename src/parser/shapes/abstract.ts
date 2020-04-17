@@ -1,6 +1,6 @@
 import type { Shape, Result } from "../shape";
 import { EXPAND } from "../shape";
-import type TokensIterator from "../tokens-iterator";
+import TokensIterator, { expand } from "../tokens-iterator";
 
 export abstract class AbstractShape<T> implements Shape<Result<T>> {
   readonly fallible = true;
@@ -48,13 +48,13 @@ export function or<T, U>(
     desc: `${left.desc} OR ${right.desc}`,
     fallible: true,
     [EXPAND](iterator) {
-      let leftResult = iterator.expand(left);
+      let leftResult = expand(left)(iterator);
 
       if (leftResult.kind === "ok") {
         return leftResult;
       }
 
-      return iterator.expand(right);
+      return expand(right)(iterator);
     },
   };
 }

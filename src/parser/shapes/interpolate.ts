@@ -2,7 +2,7 @@ import { TokenType } from "../../read/tokens";
 import * as ast from "../nodes";
 import type { InterpolateNode } from "../nodes/top-level";
 import { EXPAND, Result, seq } from "../shape";
-import type TokensIterator from "../tokens-iterator";
+import TokensIterator, { expand } from "../tokens-iterator";
 import { AbstractShape } from "./abstract";
 import { ExpressionShape } from "./expression";
 import { CallBodyShape } from "./internal/call-body";
@@ -11,7 +11,7 @@ export class HeadShape extends AbstractShape<ast.ExpressionAstNode> {
   readonly desc = "Head";
 
   [EXPAND](iterator: TokensIterator): Result<ast.ExpressionAstNode> {
-    return iterator.expand(ExpressionShape);
+    return expand(ExpressionShape)(iterator);
   }
 }
 
@@ -23,7 +23,7 @@ export class InterpolateShape extends AbstractShape<InterpolateNode> {
       iterator.consumeParent({ desc: "interpolate", isLeaf: false }, token => {
         if (token.type === TokenType.Interpolate) {
           return iterator.processInner(token.children, iterator =>
-            iterator.expand(CallBodyShape)
+            expand(CallBodyShape)(iterator)
           );
         }
       })

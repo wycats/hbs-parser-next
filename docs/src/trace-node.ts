@@ -1,6 +1,5 @@
 import Component, { hbs, tracked } from "@glimmerx/component";
 import {
-  ReadTrace,
   Snippet,
   Result,
   Debuggable,
@@ -11,7 +10,6 @@ import { service } from "@glimmerx/service";
 import type GuidService from "./guid";
 import { not, unwrap } from "./utils";
 import { on, action } from "@glimmerx/modifier";
-import { memoizeTracked } from "@glimmer/validator";
 import type { Details } from "./read-output";
 import type TraceNodeModel from "./models/trace-node";
 
