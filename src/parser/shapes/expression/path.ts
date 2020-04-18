@@ -46,29 +46,14 @@ export const PathHeadShape = shape("PathHead", iterator =>
   )
 );
 
-export const PathShape = shape(
-  "Path",
-  iterator =>
-    iterator
-      .start(expand(PathHeadShape))
-      .named("head")
-      .andThen(v => {
-        iterator;
-        return v;
-      })
-      .extend("tail", many(PathMemberShape))
-      // .andThen(({ head }) => ({ head, tail: many(PathMemberShape)(iterator) }))
-      .andThen(({ head, tail }) => {
-        return tail.length === 0
-          ? head
-          : ast.path({ head, tail }, range(head, ...tail));
-      })
-  // iterator.start(expand(PathHeadShape)).andThen(head => {
-  //   let tail = many(PathMemberShape)(iterator);
-  //   if (tail.length === 0) {
-  //     return head;
-  //   } else {
-  //     return ast.path({ head, tail }, range(head, ...tail));
-  //   }
-  // })
+export const PathShape = shape("Path", iterator =>
+  iterator
+    .start(expand(PathHeadShape))
+    .named("head")
+    .extend("tail", many(PathMemberShape))
+    .andThen(({ head, tail }) => {
+      return tail.length === 0
+        ? head
+        : ast.path({ head, tail }, range(head, ...tail));
+    })
 );

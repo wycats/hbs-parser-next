@@ -1,6 +1,7 @@
 import type { Token } from "../read/tokens";
-import type { ShapeConstructor } from "./shapes/abstract";
+import { ShapeConstructor, AbstractShape } from "./shapes/abstract";
 import type { CombinatorTokensIterator } from "./tokens-iterator";
+import type TokensIterator from "./tokens-iterator";
 
 export const EXPAND = Symbol("EXPAND");
 export const RESULT_KIND = Symbol("RESULT_KIND");
@@ -31,39 +32,28 @@ export type ShapeConstructorResult<
   ? R
   : never;
 
-export function ok<T>(value: T, iterator: CombinatorTokensIterator): Ok<T> {
+export function ok<T>(value: T): Ok<T> {
   return {
     [RESULT_KIND]: "ok",
     kind: "ok",
-    iterator,
     value,
   };
 }
 
-export function err(
-  token: Token,
-  reason: string,
-  iterator: CombinatorTokensIterator
-): Err {
+export function err(token: Token, reason: string): Err {
   return {
     [RESULT_KIND]: "err",
     kind: "err",
-    iterator,
     token,
     reason,
     fatal: false,
   };
 }
 
-export function fatalError(
-  token: Token,
-  reason: string,
-  iterator: CombinatorTokensIterator
-): Err {
+export function fatalError(token: Token, reason: string): Err {
   return {
     [RESULT_KIND]: "err",
     kind: "err",
-    iterator,
     token,
     reason,
     fatal: true,
@@ -74,7 +64,6 @@ export interface Ok<T> {
   [RESULT_KIND]: "ok";
   // compat
   kind: "ok";
-  iterator: CombinatorTokensIterator;
   value: T;
 }
 
@@ -82,7 +71,6 @@ export interface Err {
   [RESULT_KIND]: "err";
   // compat
   kind: "err";
-  iterator: CombinatorTokensIterator;
   token: Token;
   reason: string;
   fatal: boolean;
@@ -115,6 +103,166 @@ export function mapResult<T, U>(
   }
 
   return callback(result.value);
+}
+
+export interface AnySequence<T, U> {
+  run(iterator: CombinatorTokensIterator, prev: Result<T>): Result<U>;
+
+  named<K extends string>(name: K): AnySequence<U, ResultObject<K, U>>;
+
+  andThen<V>(callback: (input: U) => Result<V>): AnySequence<T, V>;
+  andThen<V>(callback: (input: U) => V): AnySequence<T, V>;
+
+  extend<K extends string, V>(
+    key: K,
+    step: SourceStep<V>
+  ): AnySequence<T, U & ResultObject<K, V>>;
+
+  mapErr<V>(callback: (input: Err) => Result<V>): AnySequence<T, U | V>;
+  mapErr<V>(callback: (input: Err) => V): AnySequence<T, U | V>;
+
+  andCheck(callback: (input: U) => Result<unknown>): AnySequence<T, U>;
+}
+
+export type Step<T, U> = (
+  iterator: CombinatorTokensIterator,
+  prev: Result<T>
+) => Result<U>;
+
+export type SourceStep<U> = (iterator: CombinatorTokensIterator) => Result<U>;
+
+export const SOURCE: Result<void> = ok(undefined);
+
+//// TODO: Differentiate SequenceBuilder (with input) from SourceSequenceBuilder (no input) ////
+
+/**
+ * T is the previous result
+ * U is the successful value when executing this step
+ */
+export class SequenceBuilder<T, U> implements AnySequence<T, U> {
+  constructor(private start: Step<T, U>) {}
+
+  run(iterator: CombinatorTokensIterator, prev: Result<T>): Result<U> {
+    return this.start(iterator, prev);
+  }
+
+  named<K extends string>(name: K): AnySequence<U, ResultObject<K, U>> {
+    return new SequenceBuilder<U, ResultObject<K, U>>((iterator, prev) => {
+      if (isOk(prev)) {
+        return (ok({ [name]: prev.value }) as unknown) as Result<
+          ResultObject<K, U>
+        >;
+      } else {
+        return { ...prev, iterator };
+      }
+    });
+  }
+
+  andThen<V>(callback: (input: U) => Result<V>): AnySequence<T, V>;
+  andThen<V>(callback: (input: U) => V): AnySequence<T, V>;
+  andThen<V>(callback: (input: U) => Err | V | Ok<V>): AnySequence<T, V> {
+    return new SequenceBuilder((iterator, last) => {
+      let prev = this.start(iterator, last);
+      if (isOk(prev)) {
+        let result = callback(prev.value);
+        if (isResult(result)) {
+          return { ...result, iterator };
+        } else {
+          return ok(result);
+        }
+      } else {
+        return { ...prev, iterator };
+      }
+    });
+  }
+
+  concat<V>(other: SourceStep<V>): AnySequence<T, [U, V]> {
+    return new SequenceBuilder((iterator, last) => {
+      let lastResult = this.run(iterator, last);
+      let otherResult = other(iterator);
+      if (isOk(lastResult) && isOk(otherResult)) {
+        return ok([lastResult.value, otherResult.value]) as Result<[U, V]>;
+      } else if (isErr(otherResult)) {
+        return { ...otherResult } as Result<[U, V]>;
+      } else {
+        return { ...lastResult } as Result<[U, V]>;
+      }
+    });
+  }
+
+  extend<K extends string, V>(
+    key: K,
+    sequence: SourceStep<V>
+  ): AnySequence<T, U & ResultObject<K, V>> {
+    let concat: AnySequence<T, [U, V]> = this.concat(sequence);
+    let result = concat.andThen(([a, b]) => {
+      let right = { [key]: b } as ResultObject<K, V>;
+      return { ...a, ...right };
+    });
+
+    return result;
+  }
+
+  mapErr<V>(callback: (input: Err) => Result<V>): AnySequence<T, U | V>;
+  mapErr<V>(callback: (input: Err) => V): AnySequence<T, U | V>;
+  mapErr<V>(callback: (input: Err) => V | Result<V>): AnySequence<T, U | V> {
+    return new SequenceBuilder((iterator, last) => {
+      let prev = this.start(iterator, last);
+      if (isErr(prev)) {
+        let result = callback(prev);
+        if (isResult(result)) {
+          return { ...result } as Result<U | V>;
+        } else {
+          return ok(result) as Result<U | V>;
+        }
+      } else {
+        return { ...prev } as Result<U | V>;
+      }
+    });
+  }
+
+  andCheck(callback: (input: U) => Result<unknown>): AnySequence<T, U> {
+    return new SequenceBuilder((iterator, last) => {
+      let prev = this.start(iterator, last);
+
+      if (isOk(prev)) {
+        let check = callback(prev.value);
+
+        if (isOk(check)) {
+          return prev as Result<U>;
+        } else {
+          return check as Result<U>;
+        }
+      } else {
+        return { ...prev, iterator } as Result<U>;
+      }
+    });
+  }
+}
+
+export function start<T>(step: SourceStep<T>): SequenceBuilder<void, T> {
+  return new SequenceBuilder(step);
+}
+
+export function shapeStep<T>(
+  desc: string,
+  step: AnySequence<void, T>
+): ShapeConstructor<Result<T>> {
+  return class Shape extends AbstractShape<T> {
+    readonly desc = desc;
+
+    [EXPAND](iterator: TokensIterator): Result<T> {
+      return step.run(iterator, SOURCE);
+    }
+  };
+}
+
+export function step<T, U>(s: Step<T, U>): Step<T, U>;
+export function step<T, U>(s: SourceStep<U>): SourceStep<U>;
+export function step<T, U>(
+  s: Step<T, U> | SourceStep<U>
+): Step<T, U> | SourceStep<U> {
+  return s;
 }
 
 export abstract class AbstractSequence<T> {
@@ -191,7 +339,7 @@ export class OkSequence<T> extends AbstractSequence<T> implements Ok<T> {
   readonly value: T;
 
   constructor(value: T, iterator: CombinatorTokensIterator) {
-    super({ kind: "ok", [RESULT_KIND]: "ok", value, iterator }, iterator);
+    super({ kind: "ok", [RESULT_KIND]: "ok", value }, iterator);
     this.value = value;
   }
 
@@ -200,10 +348,9 @@ export class OkSequence<T> extends AbstractSequence<T> implements Ok<T> {
   }
 
   named<K extends string>(name: K): Sequence<ResultObject<K, T>> {
-    return seq(
-      ok({ [name]: this.value }, this.iterator),
-      this.iterator
-    ) as Sequence<ResultObject<K, T>>;
+    return seq(ok({ [name]: this.value }), this.iterator) as Sequence<
+      ResultObject<K, T>
+    >;
   }
 
   mapResult<U>(callback: (input: Result<T>) => Result<U>): Sequence<U> {
@@ -256,7 +403,7 @@ export class OkSequence<T> extends AbstractSequence<T> implements Ok<T> {
     if (isResult(result)) {
       if (isOk(result)) {
         return seq(
-          ok({ ...this.value, [key]: result.value }, this.iterator),
+          ok({ ...this.value, [key]: result.value }),
           this.iterator
         ) as Sequence<T & ResultObject<K, U>>;
       } else {
@@ -264,7 +411,7 @@ export class OkSequence<T> extends AbstractSequence<T> implements Ok<T> {
       }
     } else {
       return seq(
-        ok({ ...this.value, [key]: result }, this.iterator),
+        ok({ ...this.value, [key]: result }),
         this.iterator
       ) as Sequence<T & ResultObject<K, U>>;
     }
@@ -336,7 +483,7 @@ export class ErrSequence<T> extends AbstractSequence<T> implements Err {
     iterator: CombinatorTokensIterator
   ) {
     super(
-      { kind: "err", [RESULT_KIND]: "err", token, reason, fatal, iterator },
+      { kind: "err", [RESULT_KIND]: "err", token, reason, fatal },
       iterator
     );
   }

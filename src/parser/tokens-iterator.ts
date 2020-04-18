@@ -11,6 +11,9 @@ import {
   ErrSequence,
   ResultObject,
   OkSequence,
+  Step,
+  isOk,
+  SourceStep,
 } from "./shape";
 import type { ShapeConstructor } from "./shapes/abstract";
 
@@ -148,14 +151,13 @@ export default class TokensIterator implements CombinatorTokensIterator {
   }
 
   err<T>(desc: string, reason = "mismatch"): ErrSequence<T> {
-    return seq(
-      err(this.silentPeek(desc).token, reason, this),
-      this
-    ) as ErrSequence<T>;
+    return seq(err(this.silentPeek(desc).token, reason), this) as ErrSequence<
+      T
+    >;
   }
 
   ok<T>(value: T): OkSequence<T> {
-    return seq(ok(value, this), this);
+    return seq(ok(value), this);
   }
 
   peek(
@@ -192,7 +194,7 @@ export default class TokensIterator implements CombinatorTokensIterator {
   ): void {
     this[CONTEXT].tracer.postInvoke(
       { desc },
-      err(peeked.token, "rejected", this),
+      err(peeked.token, "rejected"),
       this[TOKENS][pos]
     );
   }
@@ -387,6 +389,18 @@ export function present<T>(
     out.length === 0 ? iterator.err(desc, "empty") : iterator.ok(out);
 }
 
+export function presentStep<T>(desc: string): Step<T[], T[]> {
+  return (iterator, prev) => {
+    if (isOk(prev)) {
+      return prev.value.length === 0
+        ? iterator.err(desc, "empty")
+        : iterator.ok(prev.value);
+    } else {
+      return prev;
+    }
+  };
+}
+
 export function repeat<T>(
   callback: (iterator: CombinatorTokensIterator) => Result<T>
 ): (iterator: CombinatorTokensIterator) => T[] {
@@ -404,6 +418,26 @@ export function repeat<T>(
     }
 
     return out;
+  };
+}
+
+export function repeatStep<T>(
+  callback: (iterator: CombinatorTokensIterator) => Result<T>
+): SourceStep<T[]> {
+  return iterator => {
+    let out: T[] = [];
+
+    while (true) {
+      let result = callback(iterator);
+
+      if (result.kind === "err") {
+        break;
+      } else {
+        out.push(result.value);
+      }
+    }
+
+    return ok(out);
   };
 }
 
@@ -428,6 +462,27 @@ export function many<T>(
   };
 }
 
+export function manyStep<T>(
+  Shape: ShapeConstructor<Result<T>>
+): SourceStep<T[]> {
+  return iterator => {
+    let out: T[] = [];
+
+    while (true) {
+      let shape = new Shape();
+
+      let result = expand(shape)(iterator);
+      if (result.kind === "err") {
+        break;
+      } else {
+        out.push(result.value);
+      }
+    }
+
+    return ok(out);
+  };
+}
+
 export function notEOF(): (
   iterator: CombinatorTokensIterator
 ) => Sequence<null> {
@@ -435,9 +490,21 @@ export function notEOF(): (
     let next = iterator.peek("eof");
 
     if (next.isEOF) {
-      return seq(err(next.reject().token, "eof", iterator), iterator);
+      return seq(err(next.reject().token, "eof"), iterator);
     } else {
-      return seq(ok(next.ignore(), iterator), iterator);
+      return seq(ok(next.ignore()), iterator);
+    }
+  };
+}
+
+export function notEOFStep(): SourceStep<null> {
+  return iterator => {
+    let next = iterator.peek("eof");
+
+    if (next.isEOF) {
+      return err(next.reject().token, "eof");
+    } else {
+      return ok(next.ignore());
     }
   };
 }
@@ -447,9 +514,9 @@ function assertEOF(): (iterator: CombinatorTokensIterator) => Result<null> {
     let next = iterator.peek("eof");
 
     if (next.isEOF) {
-      return ok(next.ignore(), iterator);
+      return ok(next.ignore());
     } else {
-      return err(next.reject().token, "eof", iterator);
+      return err(next.reject().token, "eof");
     }
   };
 }
@@ -473,7 +540,7 @@ export function consumeParent<T>(
     let result = callback(next.token);
 
     if (result === undefined) {
-      return seq(err(next.reject().token, "mismatch", iterator), iterator);
+      return seq(err(next.reject().token, "mismatch"), iterator);
     } else if (result.kind === "err") {
       next.reject();
       return seq(result, iterator);
@@ -481,10 +548,7 @@ export function consumeParent<T>(
 
     next.commit();
 
-    return seq(
-      ok({ result: result.value, token: next.token }, iterator),
-      iterator
-    );
+    return seq(ok({ result: result.value, token: next.token }), iterator);
   };
 }
 
@@ -526,10 +590,43 @@ export function consumeToken<
   ) => Sequence<TokenMap[K]> | Sequence<ResultObject<N, TokenMap[K]>>;
 }
 
+export function consumeTokenStep<
+  K extends TokenType & keyof TokenMap,
+  N extends string
+>(name: N, tokenType: K): SourceStep<ResultObject<N, TokenMap[K]>>;
+export function consumeTokenStep<K extends TokenType & keyof TokenMap>(
+  tokenType: K
+): SourceStep<TokenMap[K]>;
+export function consumeTokenStep<
+  K extends TokenType & keyof TokenMap,
+  N extends string
+>(
+  nameOrTokenType: N | K,
+  maybeTokenType?: K
+): SourceStep<ResultObject<N, TokenMap[K]> | TokenMap[K]> {
+  let name = maybeTokenType === undefined ? undefined : nameOrTokenType;
+  let tokenType =
+    maybeTokenType === undefined ? nameOrTokenType : maybeTokenType;
+
+  return consumeStep(tokenType, token => {
+    if (token.type === tokenType) {
+      if (name !== undefined) {
+        return { [name]: token };
+      } else {
+        return token;
+      }
+    }
+  }) as SourceStep<ResultObject<N, TokenMap[K]> | TokenMap[K]>;
+}
+
 export function source(): (
   iterator: CombinatorTokensIterator
 ) => Sequence<string> {
-  return iterator => seq(ok(iterator[SOURCE], iterator), iterator);
+  return iterator => seq(ok(iterator[SOURCE]), iterator);
+}
+
+export function sourceStep(): SourceStep<string> {
+  return iterator => seq(ok(iterator[SOURCE]), iterator);
 }
 
 export function consume<T>(
@@ -549,18 +646,50 @@ export function consume<T>(
     let result = callback(next.token);
 
     if (result === undefined) {
-      return seq(err(next.reject().token, "mismatch", iterator), iterator);
+      return seq(err(next.reject().token, "mismatch"), iterator);
     }
 
     next.commit();
 
-    return seq(ok(result, iterator), iterator);
+    return seq(ok(result), iterator);
+  };
+}
+
+export function consumeStep<T>(
+  options: string | { desc: string; isLeaf: boolean },
+  callback: (token: Token) => T | undefined
+): SourceStep<T> {
+  return iterator => {
+    let eof = notEOFStep()(iterator);
+    if (eof.kind === "err") {
+      return eof;
+    }
+
+    let desc = typeof options === "string" ? options : options.desc;
+    let peekOptions = typeof options === "string" ? undefined : options;
+
+    let next = iterator.peek(desc, peekOptions);
+    let result = callback(next.token);
+
+    if (result === undefined) {
+      return err(next.reject().token, "mismatch");
+    }
+
+    next.commit();
+
+    return ok(result);
   };
 }
 
 export function expand<T>(
   shapeOrClass: ShapeConstructor<Result<T>> | Shape<Result<T>>
 ): (iterator: CombinatorTokensIterator) => Sequence<T> {
+  return iterator => iterator.expandFallible(shapeOrClass);
+}
+
+export function expandStep<T>(
+  shapeOrClass: ShapeConstructor<Result<T>> | Shape<Result<T>>
+): Step<void, T> {
   return iterator => iterator.expandFallible(shapeOrClass);
 }
 

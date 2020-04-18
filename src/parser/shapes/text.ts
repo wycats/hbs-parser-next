@@ -1,10 +1,9 @@
 import { TokenType } from "../../read/tokens";
 import * as ast from "../nodes";
-import { consumeToken } from "../tokens-iterator";
-import { shape } from "./abstract";
+import { shapeStep, start } from "../shape";
+import { consumeTokenStep } from "../tokens-iterator";
 
-export const TextShape = shape("Text", iterator =>
-  iterator
-    .start(consumeToken("text", TokenType.Text))
-    .andThen(({ text }) => ast.text(text))
+export const TextShape = shapeStep(
+  "TextShape",
+  start(consumeTokenStep(TokenType.Text)).andThen(text => ast.text(text))
 );

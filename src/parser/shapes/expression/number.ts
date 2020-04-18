@@ -1,11 +1,11 @@
 import { TokenType } from "../../../read/tokens";
 import * as ast from "../../nodes";
-import { consumeToken, source } from "../../tokens-iterator";
-import { shape } from "../abstract";
+import { shapeStep, start } from "../../shape";
+import { consumeTokenStep, sourceStep } from "../../tokens-iterator";
 
-export const NumberShape = shape("Number", iterator =>
-  iterator
-    .start(consumeToken("token", TokenType.Number))
-    .extend("source", source())
+export const NumberShape = shapeStep(
+  "Number",
+  start(consumeTokenStep("token", TokenType.Number))
+    .extend("source", sourceStep())
     .andThen(({ source, token }) => ast.number(token, source))
 );
