@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.serializeNode = exports.serializeRoot = void 0;
 const tokens_1 = require("./tokens");
 const span_1 = require("../span");
 const utils_1 = require("./utils");

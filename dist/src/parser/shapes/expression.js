@@ -1,20 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const shape_1 = require("../shape");
+exports.ExpressionShape = void 0;
+const tokens_iterator_1 = require("../tokens-iterator");
 const abstract_1 = require("./abstract");
-const var_ref_1 = require("./expression/var-ref");
-const string_1 = require("./expression/string");
 const number_1 = require("./expression/number");
-class ExpressionShape extends abstract_1.AbstractShape {
-    expandFallible(iterator) {
-        let shapes = [new var_ref_1.VarRefShape(), new string_1.StringShape(), new number_1.NumberShape()];
-        for (let shape of shapes) {
-            let expand = shape.expandFallible(iterator);
-            if (expand.kind === "ok") {
-                return expand;
-            }
-        }
-        return shape_1.err(iterator.peek(), "expression");
-    }
-}
-exports.ExpressionShape = ExpressionShape;
+const path_1 = require("./expression/path");
+const sexp_1 = require("./expression/sexp");
+const string_1 = require("./expression/string");
+const any_1 = require("./internal/any");
+exports.ExpressionShape = abstract_1.shape("Expression", tokens_iterator_1.start(tokens_iterator_1.legacyExpand(any_1.any([sexp_1.SexpShape, string_1.StringShape, number_1.NumberShape, path_1.PathShape], "expression"))));

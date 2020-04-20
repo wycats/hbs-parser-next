@@ -3,6 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.EXPRESSION = exports.ARG = exports.DOT = exports.INTERPOLATE = exports.BLOCK = exports.SPACED_TOKENS = exports.SIMPLE_PATH = exports.NAMED = exports.EQ = exports.ID = exports.SEXP = exports.NUMBER = exports.STRING = exports.WS = exports.wrap = exports.token = void 0;
 const snippet_1 = require("../snippet");
 const span_1 = require("../span");
 const combinator_1 = require("./combinator");
@@ -25,14 +26,15 @@ exports.WS = exports.token(combinators_1.pattern(/^[\u0009\u000A\u000C\u0020]+/u
 exports.STRING = new string_1.default();
 exports.NUMBER = new number_1.default();
 exports.SEXP = new sexp_1.default();
+const ID_SNIPPET = new id_1.default();
+exports.ID = exports.token(ID_SNIPPET, "Identifier" /* Identifier */);
+exports.EQ = exports.token(combinators_1.tag("="), "Eq" /* Eq */);
+// eslint-disable-next-line @typescript-eslint/no-use-before-define
 exports.NAMED = combinator_1.combinator(() => combinators_1.seq("NAMED", exports.ID, exports.EQ, exports.EXPRESSION));
 exports.SIMPLE_PATH = new simple_path_1.default();
 exports.SPACED_TOKENS = new spaced_tokens_1.default();
 exports.BLOCK = new block_1.default();
 exports.INTERPOLATE = new interpolate_1.default();
-const ID_SNIPPET = new id_1.default();
-exports.ID = exports.token(ID_SNIPPET, "Identifier" /* Identifier */);
 exports.DOT = exports.token(combinators_1.tag("."), "Dot" /* Dot */);
-exports.EQ = exports.token(combinators_1.tag("="), "Eq" /* Eq */);
 exports.ARG = utils_1.map(combinators_1.seq("@id", combinators_1.tag("@"), ID_SNIPPET), ([at, id]) => snippet_1.ok(tokens_1.arg(span_1.range(at, id))));
 exports.EXPRESSION = combinator_1.combinator(() => combinators_1.any("EXPRESSION", exports.SEXP, exports.SIMPLE_PATH, exports.STRING, exports.NUMBER));

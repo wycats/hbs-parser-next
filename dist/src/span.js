@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.slice = exports.getSpan = exports.isSpan = exports.range = exports.span = void 0;
 function span(start, end) {
     return { start, end };
 }

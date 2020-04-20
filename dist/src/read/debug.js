@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.indentWS = exports.outdent = exports.indent = exports.printTrace = exports.getTrace = exports.truncString = exports.trunc = exports.afterSnippet = exports.outputString = exports.outputStyle = exports.postInvoke = exports.preInvoke = void 0;
 const logger_1 = require("./logger");
 const ERROR = "color: red";
 const SUCCESS = "color: green";
@@ -30,56 +31,6 @@ function postInvoke(result) {
     }
 }
 exports.postInvoke = postInvoke;
-// export function row(
-//   {
-//     result,
-//     arrow,
-//     combinator,
-//     context,
-//   }: {
-//     result: RowResult;
-//     arrow: string;
-//     combinator: CombinatorType;
-//     context?: string;
-//   },
-//   a: any,
-//   b: string
-// ) {
-//   let name = combinatorName(combinator);
-//   if (context) {
-//     name = `${context}: ${name}`;
-//   }
-//   table.push({
-//     style: { result, kind: combinatorDebugType(combinator) },
-//     data: [arrow, name, a, b],
-//   });
-// }
-// export function snippetStyle(style: RowStyle) {
-//   switch (style.result) {
-//     case "start":
-//       return "color: #333";
-//     case "success":
-//       return "color: green";
-//     case "error":
-//       return "color: red";
-//   }
-// }
-// export function armStyle(style: RowStyle) {
-//   switch (style.result) {
-//     case "start":
-//       switch (style.kind) {
-//         case "transparent":
-//         case "arm":
-//           return "color: #bbb";
-//         case "normal":
-//           return "color: #333";
-//       }
-//     case "success":
-//       return "color: green";
-//     case "error":
-//       return "color: red";
-//   }
-// }
 function outputStyle({ output, optional }, weight) {
     if (output === undefined) {
         throw new Error(`assert: unexpected undefined output (should be a result)`);
@@ -132,6 +83,15 @@ function trunc(snippet) {
     }
 }
 exports.trunc = trunc;
+function truncString(snippet, length = 13) {
+    if (snippet.length > length) {
+        return `${snippet.slice(0, length - 3)}...`;
+    }
+    else {
+        return snippet.padEnd(length);
+    }
+}
+exports.truncString = truncString;
 function getTrace() {
     let current = root;
     if (current === undefined) {

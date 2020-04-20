@@ -9,17 +9,22 @@ import type {
   VarReferenceNode,
 } from "../../nodes/expression";
 import { shape } from "../abstract";
-import { any } from "../internal/any";
-import { ArgRefShape } from "./args-ref";
-import { SexpShape } from "./sexp";
-import { VarRefShape } from "./var-ref";
+import { legacyAny, any } from "../internal/any";
+import { ArgRefShape, ArgRefSequence } from "./args-ref";
+import { SexpShape, SexpSequence } from "./sexp";
+import { VarRefShape, VarRefSequence } from "./var-ref";
 import {
-  expand,
+  legacyExpand,
+  legacyConsumeToken,
+  legacyNotEOF,
+  legacyMany,
+  legacyAtomic,
+  label,
   consumeToken,
-  notEOF,
-  many,
   atomic,
+  repeat,
 } from "../../tokens-iterator";
+import type { SequenceBuilder } from "../../shape";
 
 export type PathOutput = PathNode | PathHeadOutput;
 
@@ -30,30 +35,57 @@ export type PathHeadOutput =
   | ThisReferenceNode;
 
 export const PathMemberShape = shape("PathMember", iterator => {
-  return iterator.start(notEOF()).next(
-    atomic(iterator => {
+  return iterator.start(legacyNotEOF()).next(
+    legacyAtomic(iterator => {
       return iterator
-        .start(consumeToken("dot", TokenType.Dot))
-        .extend("id", consumeToken(TokenType.Identifier))
+        .start(legacyConsumeToken("dot", TokenType.Dot))
+        .extend("id", legacyConsumeToken(TokenType.Identifier))
         .andThen(({ dot, id }) => ast.member(dot, id.span));
     })
   );
 });
 
+export const PathMemberSequence = label(
+  "PathMember",
+  atomic(
+    consumeToken("dot", TokenType.Dot).extend(
+      "id",
+      consumeToken(TokenType.Identifier)
+    )
+  ).andThen(({ dot, id }) => ast.member(dot, id.span))
+);
+
 export const PathHeadShape = shape("PathHead", iterator =>
   iterator.start(
-    expand(any([SexpShape, ArgRefShape, VarRefShape], "path head"))
+    legacyExpand(legacyAny([SexpShape, ArgRefShape, VarRefShape], "path head"))
   )
+);
+
+export const PathHeadSequence: SequenceBuilder<
+  void,
+  ast.ExpressionAstNode
+> = label(
+  "PathHead",
+  any("any path head", [SexpSequence, ArgRefSequence, VarRefSequence])
 );
 
 export const PathShape = shape("Path", iterator =>
   iterator
-    .start(expand(PathHeadShape))
+    .start(legacyExpand(PathHeadShape))
     .named("head")
-    .extend("tail", many(PathMemberShape))
+    .extend("tail", legacyMany(PathMemberShape))
     .andThen(({ head, tail }) => {
       return tail.length === 0
         ? head
         : ast.path({ head, tail }, range(head, ...tail));
     })
+);
+
+export const PathSequence = label(
+  "Path",
+  PathHeadSequence.named("head")
+    .extend("tail", repeat(PathMemberSequence))
+    .andThen(({ head, tail }) =>
+      tail.length === 0 ? head : ast.path({ head, tail }, range(head, ...tail))
+    )
 );

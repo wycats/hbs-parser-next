@@ -122,6 +122,7 @@ export interface ArgumentToken extends BaseToken {
 }
 export interface SexpToken extends BaseToken {
     type: TokenType.Sexp;
+    inner: SourceSpan;
     children: readonly Token[];
 }
 export interface UntrustedInterpolateToken extends BaseToken {
@@ -240,7 +241,10 @@ export declare function endTag({ name, trailing }: {
     trailing?: Token | null;
 }, span: SourceSpan): EndTagToken;
 export declare type AttributeToken = AttributeNameToken | ArgNameToken | ValuedAttributeToken | UntrustedInterpolateToken | TrustedInterpolateToken | WSToken;
-export declare function sexp(children: readonly Token[], span: SourceSpan): SexpToken;
+export declare function sexp({ children, inner }: {
+    children: readonly Token[];
+    inner: SourceSpan;
+}, span: SourceSpan): SexpToken;
 export declare function interpolate(children: readonly Token[], span: SourceSpan): UntrustedInterpolateToken;
 export declare function trustedInterpolate(children: readonly Token[], span: SourceSpan): TrustedInterpolateToken;
 export interface RootToken extends BaseToken {

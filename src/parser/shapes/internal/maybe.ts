@@ -1,17 +1,25 @@
-import type { Result, Shape, ShapeResult } from "../../shape";
-import { infallibleShape, ShapeConstructor } from "../abstract";
+import {
+  Result,
+  Shape,
+  ShapeResult,
+  start,
+  step,
+  ResultValue,
+  isOk,
+} from "../../shape";
+import { ShapeConstructor, shape, infallibleShape } from "../abstract";
 import { expand } from "../../tokens-iterator";
 
 export function maybe<T extends Shape<Result<unknown>>>(
   input: T
 ): ShapeConstructor<ShapeResult<T> | null> {
   return infallibleShape(`maybe • ${input.desc}`, iterator => {
-    let result = iterator.start(expand(input));
+    let result = expand(input)(iterator);
 
-    if (result.kind === "err") {
+    if (isOk(result)) {
+      return result.value;
+    } else {
       return null;
     }
-
-    return result.value as ShapeResult<T>;
-  });
+  }) as ShapeConstructor<ShapeResult<T> | null>;
 }

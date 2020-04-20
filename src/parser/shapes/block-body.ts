@@ -1,26 +1,20 @@
-import TokensIterator, { expand } from "../tokens-iterator";
-import { AbstractInfallibleShape } from "./abstract";
-import { TopLevelNode, TopLevelShape } from "./top-level";
-import { EXPAND } from "../shape";
+import TokensIterator, { legacyExpand, repeat } from "../tokens-iterator";
+import { TopLevelNode, TopLevelSequence } from "./top-level";
+import { EXPAND, start, ok, isOk } from "../shape";
+import { AbstractShape } from "./abstract";
 
-export default class BlockBodyShape extends AbstractInfallibleShape<
+export default class BlockBodyShape extends AbstractShape<
   readonly TopLevelNode[]
 > {
   readonly desc = "BlockBody";
 
   [EXPAND](iterator: TokensIterator): readonly TopLevelNode[] {
-    let out: TopLevelNode[] = [];
+    let result = repeat(TopLevelSequence).run(iterator, ok(undefined));
 
-    while (true) {
-      let next = iterator.start(expand(TopLevelShape));
-
-      if (next.kind === "err") {
-        break;
-      }
-
-      out.push(next.value);
+    if (isOk(result)) {
+      return result.value;
+    } else {
+      throw new Error("ASSERT: unreachable error from TopLevelSequence");
     }
-
-    return out;
   }
 }

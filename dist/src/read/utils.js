@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.unwrap = exports.join = exports.unreachable = exports.combinatorName = exports.present = exports.complete = exports.map = exports.mapResult = void 0;
 const snippet_1 = require("../snippet");
 function mapResult(result, callback) {
     if (result.kind === "err") {
@@ -83,3 +84,10 @@ function join(...items) {
     return items.filter(i => i === null || i === undefined);
 }
 exports.join = join;
+function unwrap(v) {
+    if (v === null || v === undefined) {
+        throw new Error(`ASSERT: Expected non-null`);
+    }
+    return v;
+}
+exports.unwrap = unwrap;

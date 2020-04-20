@@ -2,23 +2,23 @@ import { TokenType } from "../../read/tokens";
 import type * as ast from "../nodes";
 import type { BlockNode } from "../nodes/top-level";
 import { err, EXPAND, Result } from "../shape";
-import TokensIterator, { expand, notEOF } from "../tokens-iterator";
+import TokensIterator, { legacyExpand, legacyNotEOF } from "../tokens-iterator";
 import { AbstractShape } from "./abstract";
 import { ExpressionShape } from "./expression";
 
-export class HeadShape extends AbstractShape<ast.ExpressionAstNode> {
+export class HeadShape extends AbstractShape<Result<ast.ExpressionAstNode>> {
   readonly desc = "Head";
 
   [EXPAND](iterator: TokensIterator): Result<ast.ExpressionAstNode> {
-    return expand(ExpressionShape)(iterator);
+    return legacyExpand(ExpressionShape)(iterator);
   }
 }
 
-export class BlockShape extends AbstractShape<BlockNode> {
+export class BlockShape extends AbstractShape<Result<BlockNode>> {
   readonly desc = "Interpolate";
 
   [EXPAND](iterator: TokensIterator): Result<BlockNode> {
-    let eof = notEOF()(iterator);
+    let eof = legacyNotEOF()(iterator);
 
     if (eof.kind === "err") {
       return eof;
@@ -32,7 +32,7 @@ export class BlockShape extends AbstractShape<BlockNode> {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       let _open = iterator.processInner(
         token.open.name,
-        expand(ExpressionShape)
+        legacyExpand(ExpressionShape)
       );
 
       throw new Error("not implemented");

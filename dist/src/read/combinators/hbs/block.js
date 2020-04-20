@@ -3,6 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.CloseBlock = exports.OpenBlock = void 0;
 const snippet_1 = require("../../../snippet");
 const span_1 = require("../../../span");
 const combinators_1 = require("../../combinators");

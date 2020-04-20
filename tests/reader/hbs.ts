@@ -271,21 +271,21 @@ test("whitespace around interpolation", assert => {
     r.interpolate(r.sp, r.id("identifier"), r.sp),
     a.interpolate(" ", "identifier", " ")
   );
-  assert.tree(
-    "{{ id }}",
-    r.interpolate(r.sp, r.id("id"), r.sp),
-    a.interpolate(" ", "id", " ")
-  );
-  assert.tree(
-    "{{ this }}",
-    r.interpolate(r.sp, r.id("this"), r.sp),
-    a.interpolate(" ", "this", " ")
-  );
-  assert.tree(
-    "{{ id-with-dash }}",
-    r.interpolate(r.sp, r.id("id-with-dash"), r.sp),
-    a.interpolate(" ", "id-with-dash", " ")
-  );
+  // assert.tree(
+  //   "{{ id }}",
+  //   r.interpolate(r.sp, r.id("id"), r.sp),
+  //   a.interpolate(" ", "id", " ")
+  // );
+  // assert.tree(
+  //   "{{ this }}",
+  //   r.interpolate(r.sp, r.id("this"), r.sp),
+  //   a.interpolate(" ", "this", " ")
+  // );
+  // assert.tree(
+  //   "{{ id-with-dash }}",
+  //   r.interpolate(r.sp, r.id("id-with-dash"), r.sp),
+  //   a.interpolate(" ", "id-with-dash", " ")
+  // );
 });
 
 test("paths", assert => {

@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.formatDebuggable = exports.isTransparent = exports.combinatorDebugType = exports.Logger = void 0;
 const snippet_1 = require("../snippet");
 const debug_1 = require("./debug");
 const tokens_1 = require("./tokens");

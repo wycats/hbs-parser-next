@@ -1,9 +1,4 @@
-import { FallibleShape, Result } from "../../shape";
-import type TokensIterator from "../../tokens-iterator";
-import { AbstractShape } from "../abstract";
-export declare class Any<T extends Array<FallibleShape<unknown>>> extends AbstractShape<T[number]> {
-    private shapes;
-    constructor(shapes: T);
-    expandFallible(iterator: TokensIterator): Result<T[number]>;
-}
+import type { Result, ShapeConstructorResult } from "../../shape";
+import { ShapeConstructor } from "../abstract";
+export declare function any<T extends Array<ShapeConstructor<Result<unknown>>>>(shapes: T, desc: string): ShapeConstructor<Result<ShapeConstructorResult<T[number]>>>;
 //# sourceMappingURL=any.d.ts.map

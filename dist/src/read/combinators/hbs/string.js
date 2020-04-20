@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.DOUBLE_QUOTED = exports.SINGLE_QUOTED = void 0;
 const snippet_1 = require("../../../snippet");
 const span_1 = require("../../../span");
 const combinators_1 = require("../../combinators");

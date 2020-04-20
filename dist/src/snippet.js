@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.fatalError = exports.err = exports.ok = exports.Snippet = void 0;
 class Snippet {
     constructor(source, offset, length, logger) {
         this.source = source;

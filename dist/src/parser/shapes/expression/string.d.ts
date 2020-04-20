@@ -1,8 +1,3 @@
-import type { StringNode } from "../../nodes/expression";
-import { Result } from "../../shape";
-import type TokensIterator from "../../tokens-iterator";
-import { AbstractShape } from "../abstract";
-export declare class StringShape extends AbstractShape<StringNode> {
-    expandFallible(iterator: TokensIterator): Result<StringNode>;
-}
+import * as ast from "../../nodes";
+export declare const StringShape: import("../abstract").ShapeConstructor<import("../../shape").Result<ast.StringNode>>;
 //# sourceMappingURL=string.d.ts.map

@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.ATTRIBUTES = exports.ATTRIBUTE_VALUE = exports.StringInterpolation = exports.SQ_STRING_INTERPOLATE = exports.DQ_STRING_INTERPOLATE = exports.ANY_ATTR_NAME = exports.ARG_NAME = exports.ATTRIBUTE_NAME = exports.ATTRIBUTE = void 0;
 const snippet_1 = require("../../../snippet");
 const span_1 = require("../../../span");
 const combinator_1 = require("../../combinator");

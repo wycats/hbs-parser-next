@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.read = exports.TOP_LEVEL = exports.CONTENT = void 0;
 const snippet_1 = require("../snippet");
 const span_1 = require("../span");
 const combinator_1 = require("./combinator");

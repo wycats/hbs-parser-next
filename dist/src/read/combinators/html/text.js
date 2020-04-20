@@ -10,7 +10,7 @@ class HTMLText extends base_1.AbstractCombinator {
         this.name = "TEXT";
     }
     invoke(input) {
-        let result = input.invoke(combinators_1.takeUntil("{{"));
+        let result = input.invoke(combinators_1.pattern(/^[\s\S]*?(?=[{<}]|$)/u, "TEXT"));
         if (result.kind === "err") {
             return result;
         }

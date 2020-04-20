@@ -20,4 +20,5 @@ export * from "./read/serialize";
 export * from "./read/read";
 export { default as parse } from "./parser/parse";
 export type { StateRow as ReadTrace } from "./read/debug";
+export { trunc } from "./read/debug";
 //# sourceMappingURL=index.d.ts.map

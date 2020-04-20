@@ -3,11 +3,15 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.MEMBER = void 0;
 const snippet_1 = require("../../../snippet");
 const combinator_1 = require("../../combinator");
 const hbs_1 = require("../../hbs");
 const base_1 = require("../base");
 const head_1 = __importDefault(require("./head"));
+// export const SIMPLE_HEAD = combinator(() => any("HEAD", ARG, ID));
+// TODO: Allow `[]` or string members
+exports.MEMBER = combinator_1.combinator(() => hbs_1.ID);
 class SimplePath extends base_1.AbstractCombinator {
     constructor(disallowedKeywords) {
         super();
@@ -50,6 +54,3 @@ class SimplePath extends base_1.AbstractCombinator {
     }
 }
 exports.default = SimplePath;
-// export const SIMPLE_HEAD = combinator(() => any("HEAD", ARG, ID));
-// TODO: Allow `[]` or string members
-exports.MEMBER = combinator_1.combinator(() => hbs_1.ID);

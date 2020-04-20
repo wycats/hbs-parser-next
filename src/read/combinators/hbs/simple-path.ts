@@ -33,7 +33,7 @@ export default class SimplePath extends AbstractCombinator<PresentTokens> {
     }
 
     let [current, head] = result.value;
-    let out: Token[] & PresentTokens = [head];
+    let out: PresentTokens = [head];
 
     while (true) {
       if (current.isEOF()) {

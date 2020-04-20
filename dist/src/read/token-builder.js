@@ -1,14 +1,28 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
 var __importStar = (this && this.__importStar) || function (mod) {
     if (mod && mod.__esModule) return mod;
     var result = {};
-    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
-    result["default"] = mod;
+    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.root = exports.TokenBuilder = exports.attr = exports.argName = exports.endTag = exports.startTag = exports.comment = exports.text = exports.sexp = exports.attrInterpolate = exports.stringInterpolate = exports.interpolate = exports.as = exports.block = exports.ws = exports.sp = exports.eq = exports.dot = exports.arg = exports.id = exports.decimal = exports.int = exports.str = exports.buildPresentTokens = void 0;
 const tokens = __importStar(require("./tokens"));
 const span_1 = require("../span");
+const utils_1 = require("./utils");
 function buildPresentTokens(tok, builder) {
     return tok.map(token => token(builder));
 }
@@ -40,7 +54,7 @@ function int(num) {
 }
 exports.int = int;
 function decimal(num) {
-    let [, negative, head, tail] = num.match(/^(-?)([0-9]+)\.([0-9]+)$/);
+    let [, negative, head, tail] = utils_1.unwrap(num.match(/^(-?)([0-9]+)\.([0-9]+)$/));
     return builder => {
         let negativeSpan = negative ? builder.consume("-") : null;
         let headSpan = builder.consume(head);
@@ -145,9 +159,11 @@ exports.attrInterpolate = attrInterpolate;
 function sexp(children) {
     return builder => {
         let open = builder.consume("(");
+        let innerStart = builder.pos;
         let out = children.map(child => child(builder));
+        let innerEnd = builder.pos;
         let close = builder.consume(")");
-        return tokens.sexp(out, span_1.range(open, close));
+        return tokens.sexp({ children: out, inner: span_1.span(innerStart, innerEnd) }, span_1.range(open, close));
     };
 }
 exports.sexp = sexp;
@@ -321,14 +337,6 @@ function quoteType(quote) {
             return "Unquoted" /* Unquoted */;
     }
 }
-function root(...children) {
-    let builder = new TokenBuilder();
-    let start = builder.pos;
-    let out = children.map(child => child(builder));
-    let end = builder.pos;
-    return { root: tokens.root(out, span_1.span(start, end)), source: builder.source };
-}
-exports.root = root;
 class TokenBuilder {
     constructor(pos = 0) {
         this.pos = pos;
@@ -351,3 +359,11 @@ class TokenBuilder {
     }
 }
 exports.TokenBuilder = TokenBuilder;
+function root(...children) {
+    let builder = new TokenBuilder();
+    let start = builder.pos;
+    let out = children.map(child => child(builder));
+    let end = builder.pos;
+    return { root: tokens.root(out, span_1.span(start, end)), source: builder.source };
+}
+exports.root = root;

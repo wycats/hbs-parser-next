@@ -27,6 +27,7 @@ export declare function outputStyle({ output, optional }: StateRow, weight: stri
 export declare function outputString(output: Result<[Snippet, Debuggable]> | undefined): string;
 export declare function afterSnippet(output: Result<[Snippet, Debuggable]> | undefined): Snippet;
 export declare function trunc(snippet: Snippet): string;
+export declare function truncString(snippet: string, length?: number): string;
 export declare function getTrace(): StateRow;
 export declare function printTrace(indent?: number, nestedError?: number, parentStatus?: "success" | "error" | "optional" | undefined, row?: StateRow | undefined): void;
 export declare function indent(): void;

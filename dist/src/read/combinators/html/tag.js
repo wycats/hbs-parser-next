@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.TAG_OR_COMPONENT_NAME = exports.TAG_NAME_TOKEN = exports.TAG_NAME = void 0;
 const combinator_1 = require("../../combinator");
 const tokens_1 = require("../../tokens");
 const combinators_1 = require("../../combinators");

@@ -12,7 +12,7 @@ class Sexp extends base_1.AbstractCombinator {
         this.name = "SEXP";
     }
     invoke(input) {
-        return input.invoke(combinators_1.seq("SEXP", combinators_1.tag("("), hbs_1.SPACED_TOKENS, combinators_1.tag(")")).map(([open, path, close]) => snippet_1.ok(tokens_1.sexp(path, span_1.range(open, close)))));
+        return input.invoke(combinators_1.seq("SEXP", combinators_1.tag("("), hbs_1.SPACED_TOKENS, combinators_1.tag(")")).map(([open, path, close]) => snippet_1.ok(tokens_1.sexp({ children: path, inner: span_1.range(...path) }, span_1.range(open, close)))));
     }
 }
 exports.default = Sexp;

@@ -1,24 +1,17 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const shape_1 = require("../../shape");
+exports.any = void 0;
 const abstract_1 = require("../abstract");
-class Any extends abstract_1.AbstractShape {
-    constructor(shapes) {
-        super();
-        this.shapes = shapes;
-    }
-    expandFallible(iterator) {
-        let next = iterator.peek();
-        if (next.isEOF) {
-            return shape_1.err(next, "eof");
-        }
-        for (let shape of this.shapes) {
-            let result = shape.expandFallible(iterator);
+const tokens_iterator_1 = require("../../tokens-iterator");
+function any(shapes, desc) {
+    return abstract_1.shape(desc, iterator => iterator.start(tokens_iterator_1.legacyNotEOF()).andThen(() => {
+        for (let shape of shapes) {
+            let result = iterator.start(tokens_iterator_1.legacyExpand(shape));
             if (result.kind === "ok") {
                 return result;
             }
         }
-        return shape_1.err(next, "none");
-    }
+        return iterator.err("any", "none");
+    }));
 }
-exports.Any = Any;
+exports.any = any;

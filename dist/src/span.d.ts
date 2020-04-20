@@ -2,10 +2,7 @@ export interface SourceSpan {
     start: number;
     end: number;
 }
-export declare function span(start: number, end: number): {
-    start: number;
-    end: number;
-};
+export declare function span(start: number, end: number): SourceSpan;
 export declare type HasSpan = SourceSpan | {
     span: SourceSpan;
 };

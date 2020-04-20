@@ -9,11 +9,11 @@ export declare function str(name: string): CurriedToken<tokens.StringToken>;
 export declare function int(num: string): CurriedToken<tokens.NumberToken>;
 export declare function decimal(num: string): CurriedToken<tokens.NumberToken>;
 export declare function id(name: string): CurriedToken<tokens.IdentifierToken>;
-export declare function arg(name: string): CurriedToken;
-export declare const dot: CurriedToken;
-export declare const eq: CurriedToken;
+export declare function arg(name: string): CurriedToken<tokens.ArgumentToken>;
+export declare const dot: CurriedToken<tokens.DotToken>;
+export declare const eq: CurriedToken<tokens.EqToken>;
 export declare const sp: CurriedToken<tokens.WSToken>;
-export declare function ws(space: string): CurriedAttributeToken;
+export declare function ws(space: string): CurriedToken<tokens.WSToken>;
 export declare function block(name: string | CurriedPresentTokens, head: CurriedToken[], ...body: CurriedToken[]): CurriedToken<tokens.BlockToken>;
 export declare function as(...params: Array<string | CurriedToken<tokens.BlockParamToken>>): CurriedToken<tokens.BlockParamsToken>;
 export declare function interpolate(...children: CurriedToken[]): CurriedToken<tokens.InterpolateToken>;
@@ -38,10 +38,6 @@ export declare function attr(options: string | CurriedToken<tokens.AnyAttrNameTo
     value: string | CurriedToken<tokens.AttributeValueToken>;
     arg?: true;
 }): CurriedAttributeToken;
-export declare function root(...children: CurriedToken[]): {
-    root: tokens.RootToken;
-    source: string;
-};
 export declare class TokenBuilder {
     pos: number;
     private output;
@@ -53,4 +49,8 @@ export declare class TokenBuilder {
     updateOutput(output: string): void;
     get source(): string;
 }
+export declare function root(...children: CurriedToken[]): {
+    root: tokens.RootToken;
+    source: string;
+};
 //# sourceMappingURL=token-builder.d.ts.map

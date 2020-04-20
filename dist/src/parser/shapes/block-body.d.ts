@@ -1,7 +1,9 @@
-import type TokensIterator from "../tokens-iterator";
-import { AbstractInfallibleShape } from "./abstract";
+import TokensIterator from "../tokens-iterator";
 import { TopLevelNode } from "./top-level";
-export default class BlockBodyShape extends AbstractInfallibleShape<readonly TopLevelNode[]> {
-    expandInfallible(iterator: TokensIterator): readonly TopLevelNode[];
+import { EXPAND } from "../shape";
+import { AbstractShape } from "./abstract";
+export default class BlockBodyShape extends AbstractShape<readonly TopLevelNode[]> {
+    readonly desc = "BlockBody";
+    [EXPAND](iterator: TokensIterator): readonly TopLevelNode[];
 }
 //# sourceMappingURL=block-body.d.ts.map

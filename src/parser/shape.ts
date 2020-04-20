@@ -8,7 +8,6 @@ export const RESULT_KIND = Symbol("RESULT_KIND");
 
 export interface Shape<T> {
   readonly desc: string;
-  readonly fallible: boolean;
   [EXPAND](iterator: CombinatorTokensIterator): T;
 }
 
@@ -105,29 +104,16 @@ export function mapResult<T, U>(
   return callback(result.value);
 }
 
-export interface AnySequence<T, U> {
-  run(iterator: CombinatorTokensIterator, prev: Result<T>): Result<U>;
-
-  named<K extends string>(name: K): AnySequence<U, ResultObject<K, U>>;
-
-  andThen<V>(callback: (input: U) => Result<V>): AnySequence<T, V>;
-  andThen<V>(callback: (input: U) => V): AnySequence<T, V>;
-
-  extend<K extends string, V>(
-    key: K,
-    step: SourceStep<V>
-  ): AnySequence<T, U & ResultObject<K, V>>;
-
-  mapErr<V>(callback: (input: Err) => Result<V>): AnySequence<T, U | V>;
-  mapErr<V>(callback: (input: Err) => V): AnySequence<T, U | V>;
-
-  andCheck(callback: (input: U) => Result<unknown>): AnySequence<T, U>;
-}
+export type Thunk<T> = () => T;
 
 export type Step<T, U> = (
   iterator: CombinatorTokensIterator,
   prev: Result<T>
 ) => Result<U>;
+
+export type SequenceResult<
+  T extends SequenceBuilder<any, any>
+> = T extends SequenceBuilder<unknown, infer R> ? R : never;
 
 export type SourceStep<U> = (iterator: CombinatorTokensIterator) => Result<U>;
 
@@ -136,31 +122,47 @@ export const SOURCE: Result<void> = ok(undefined);
 //// TODO: Differentiate SequenceBuilder (with input) from SourceSequenceBuilder (no input) ////
 
 /**
- * T is the previous result
- * U is the successful value when executing this step
+ * InnerT is the previous result
+ * InnerU is the successful value when executing this step
  */
-export class SequenceBuilder<T, U> implements AnySequence<T, U> {
-  constructor(private start: Step<T, U>) {}
+export class SequenceBuilder<InnerT, InnerU> {
+  constructor(private start: Step<InnerT, InnerU>) {
+    if (start instanceof SequenceBuilder) {
+      debugger;
+    }
+  }
 
-  run(iterator: CombinatorTokensIterator, prev: Result<T>): Result<U> {
+  run(
+    iterator: CombinatorTokensIterator,
+    prev: Result<InnerT>
+  ): Result<InnerU> {
     return this.start(iterator, prev);
   }
 
-  named<K extends string>(name: K): AnySequence<U, ResultObject<K, U>> {
-    return new SequenceBuilder<U, ResultObject<K, U>>((iterator, prev) => {
-      if (isOk(prev)) {
-        return (ok({ [name]: prev.value }) as unknown) as Result<
-          ResultObject<K, U>
-        >;
-      } else {
-        return { ...prev, iterator };
+  named<K extends string>(
+    name: K
+  ): SequenceBuilder<InnerT, ResultObject<K, InnerU>> {
+    return new SequenceBuilder<InnerT, ResultObject<K, InnerU>>(
+      (iterator, last) => {
+        let prev = this.start(iterator, last);
+        if (isOk(prev)) {
+          return (ok({ [name]: prev.value }) as unknown) as Result<
+            ResultObject<K, InnerU>
+          >;
+        } else {
+          return { ...prev, iterator };
+        }
       }
-    });
+    );
   }
 
-  andThen<V>(callback: (input: U) => Result<V>): AnySequence<T, V>;
-  andThen<V>(callback: (input: U) => V): AnySequence<T, V>;
-  andThen<V>(callback: (input: U) => Err | V | Ok<V>): AnySequence<T, V> {
+  andThen<V>(
+    callback: (input: InnerU) => Result<V>
+  ): SequenceBuilder<InnerT, V>;
+  andThen<V>(callback: (input: InnerU) => V): SequenceBuilder<InnerT, V>;
+  andThen<V>(
+    callback: (input: InnerU) => Err | V | Ok<V>
+  ): SequenceBuilder<InnerT, V> {
     return new SequenceBuilder((iterator, last) => {
       let prev = this.start(iterator, last);
       if (isOk(prev)) {
@@ -176,25 +178,45 @@ export class SequenceBuilder<T, U> implements AnySequence<T, U> {
     });
   }
 
-  concat<V>(other: SourceStep<V>): AnySequence<T, [U, V]> {
+  next<V>(sequence: SequenceBuilder<InnerU, V>): SequenceBuilder<InnerT, V> {
     return new SequenceBuilder((iterator, last) => {
-      let lastResult = this.run(iterator, last);
-      let otherResult = other(iterator);
-      if (isOk(lastResult) && isOk(otherResult)) {
-        return ok([lastResult.value, otherResult.value]) as Result<[U, V]>;
-      } else if (isErr(otherResult)) {
-        return { ...otherResult } as Result<[U, V]>;
+      let prev = this.start(iterator, last);
+
+      if (isOk(prev)) {
+        let result: Result<V> = sequence.run(iterator, prev);
+        return result as Result<V>;
       } else {
-        return { ...lastResult } as Result<[U, V]>;
+        return prev as Result<V>;
+      }
+    });
+  }
+
+  concat<V>(
+    other: SequenceBuilder<void, V>
+  ): SequenceBuilder<InnerT, [InnerU, V]> {
+    return new SequenceBuilder((iterator, last) => {
+      if (isOk(last)) {
+        let lastResult = this.run(iterator, last);
+        let otherResult = other.run(iterator, ok(undefined));
+
+        if (isOk(lastResult) && isOk(otherResult)) {
+          return ok([lastResult.value, otherResult.value]);
+        } else if (isErr(otherResult)) {
+          return { ...otherResult } as Result<[InnerU, V]>;
+        } else {
+          return { ...lastResult } as Result<[InnerU, V]>;
+        }
+      } else {
+        return last;
       }
     });
   }
 
   extend<K extends string, V>(
     key: K,
-    sequence: SourceStep<V>
-  ): AnySequence<T, U & ResultObject<K, V>> {
-    let concat: AnySequence<T, [U, V]> = this.concat(sequence);
+    sequence: SequenceBuilder<void, V>
+  ): SequenceBuilder<InnerT, InnerU & ResultObject<K, V>> {
+    let concat = this.concat(sequence);
     let result = concat.andThen(([a, b]) => {
       let right = { [key]: b } as ResultObject<K, V>;
       return { ...a, ...right };
@@ -203,25 +225,65 @@ export class SequenceBuilder<T, U> implements AnySequence<T, U> {
     return result;
   }
 
-  mapErr<V>(callback: (input: Err) => Result<V>): AnySequence<T, U | V>;
-  mapErr<V>(callback: (input: Err) => V): AnySequence<T, U | V>;
-  mapErr<V>(callback: (input: Err) => V | Result<V>): AnySequence<T, U | V> {
+  mapErr<V>(
+    callback: (input: Err) => Result<V>
+  ): SequenceBuilder<InnerT, InnerU | V>;
+  mapErr<V>(callback: (input: Err) => V): SequenceBuilder<InnerT, InnerU | V>;
+  mapErr<V>(
+    callback: (input: Err) => V | Result<V>
+  ): SequenceBuilder<InnerT, InnerU | V> {
     return new SequenceBuilder((iterator, last) => {
       let prev = this.start(iterator, last);
       if (isErr(prev)) {
         let result = callback(prev);
         if (isResult(result)) {
-          return { ...result } as Result<U | V>;
+          return { ...result } as Result<InnerU | V>;
         } else {
-          return ok(result) as Result<U | V>;
+          return ok(result) as Result<InnerU | V>;
         }
       } else {
-        return { ...prev } as Result<U | V>;
+        return { ...prev } as Result<InnerU | V>;
       }
     });
   }
 
-  andCheck(callback: (input: U) => Result<unknown>): AnySequence<T, U> {
+  or<V>(value: V | Thunk<V>): SequenceBuilder<InnerT, InnerU | V> {
+    return new SequenceBuilder((iterator, last) => {
+      let prev = this.start(iterator, last);
+
+      if (isOk(prev)) {
+        return prev as Result<InnerU | V>;
+      } else if (typeof value === "function") {
+        return ok((value as Thunk<V>)()) as Result<V>;
+      } else {
+        return ok(value) as Result<V>;
+      }
+    });
+  }
+
+  check(
+    sequence: SequenceBuilder<InnerU, InnerU>
+  ): SequenceBuilder<InnerT, InnerU> {
+    return new SequenceBuilder((iterator, last) => {
+      let prev = this.start(iterator, last);
+
+      if (isOk(prev)) {
+        let check = sequence.run(iterator, prev);
+
+        if (isOk(check)) {
+          return prev as Result<InnerU>;
+        } else {
+          return check as Result<InnerU>;
+        }
+      } else {
+        return prev as Result<InnerU>;
+      }
+    });
+  }
+
+  andCheck(
+    callback: (input: InnerU) => Result<unknown>
+  ): SequenceBuilder<InnerT, InnerU> {
     return new SequenceBuilder((iterator, last) => {
       let prev = this.start(iterator, last);
 
@@ -229,12 +291,12 @@ export class SequenceBuilder<T, U> implements AnySequence<T, U> {
         let check = callback(prev.value);
 
         if (isOk(check)) {
-          return prev as Result<U>;
+          return prev as Result<InnerU>;
         } else {
-          return check as Result<U>;
+          return check as Result<InnerU>;
         }
       } else {
-        return { ...prev, iterator } as Result<U>;
+        return { ...prev, iterator } as Result<InnerU>;
       }
     });
   }
@@ -244,22 +306,22 @@ export function start<T>(step: SourceStep<T>): SequenceBuilder<void, T> {
   return new SequenceBuilder(step);
 }
 
-export function shapeStep<T>(
+export function step<T>(
   desc: string,
-  step: AnySequence<void, T>
-): ShapeConstructor<Result<T>> {
-  return class Shape extends AbstractShape<T> {
+  step: SequenceBuilder<void, T>
+): ShapeConstructor<T | Result<T>> {
+  return class Shape extends AbstractShape<T | Result<T>> {
     readonly desc = desc;
 
-    [EXPAND](iterator: TokensIterator): Result<T> {
+    [EXPAND](iterator: TokensIterator): T | Result<T> {
       return step.run(iterator, SOURCE);
     }
   };
 }
 
-export function step<T, U>(s: Step<T, U>): Step<T, U>;
-export function step<T, U>(s: SourceStep<U>): SourceStep<U>;
-export function step<T, U>(
+export function legacyStep<T, U>(s: Step<T, U>): Step<T, U>;
+export function legacyStep<T, U>(s: SourceStep<U>): SourceStep<U>;
+export function legacyStep<T, U>(
   s: Step<T, U> | SourceStep<U>
 ): Step<T, U> | SourceStep<U> {
   return s;
@@ -567,7 +629,7 @@ export class ErrSequence<T> extends AbstractSequence<T> implements Err {
   }
 }
 
-export type Sequence<T> = Result<T> & (OkSequence<T> | ErrSequence<T>);
+export type Sequence<T> = OkSequence<T> | ErrSequence<T>;
 
 export function isSequence<T>(input: Result<T>): input is Sequence<T>;
 export function isSequence(input: unknown): input is Sequence<unknown>;

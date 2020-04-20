@@ -1,8 +1,6 @@
 import * as ast from "../../nodes";
-import { Result } from "../../shape";
-import type TokensIterator from "../../tokens-iterator";
-import { AbstractShape } from "../abstract";
-export declare class CallBody extends AbstractShape<ast.CallBodyNode> {
-    expandFallible(iterator: TokensIterator): Result<ast.CallBodyNode>;
-}
+export declare const PositionalShape: import("../abstract").ShapeConstructor<import("../../shape").Result<ast.PositionalArgumentsNode>>;
+export declare const NamedArgumentShape: import("../abstract").ShapeConstructor<import("../../shape").Result<ast.NamedArgumentNode>>;
+export declare const NamedArgumentsShape: import("../abstract").ShapeConstructor<import("../../shape").Result<ast.NamedArgumentsNode>>;
+export declare const CallBodyShape: import("../abstract").ShapeConstructor<import("../../shape").Result<ast.CallBodyNode>>;
 //# sourceMappingURL=call-body.d.ts.map

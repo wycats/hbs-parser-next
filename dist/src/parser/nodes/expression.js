@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.member = exports.path = exports.call = exports.argReference = exports.varReference = exports.thisReference = exports.number = exports.string = void 0;
 require("../nodes");
 const span_1 = require("../../span");
 require("../../read/tokens");
@@ -37,6 +38,13 @@ function number(token, source) {
     };
 }
 exports.number = number;
+function thisReference(token) {
+    return {
+        type: "ThisReference" /* ThisReference */,
+        span: token.span,
+    };
+}
+exports.thisReference = thisReference;
 function varReference(token) {
     return {
         type: "VarReference" /* VarReference */,
@@ -52,11 +60,30 @@ function argReference(token) {
     };
 }
 exports.argReference = argReference;
-function call(body, span) {
+function call(body, { span, before, after }) {
     return {
         type: "Call" /* Call */,
         span,
+        before,
+        after,
         body,
     };
 }
 exports.call = call;
+function path({ head, tail }, span) {
+    return {
+        type: "Path" /* Path */,
+        span,
+        head,
+        tail,
+    };
+}
+exports.path = path;
+function member(dot, span) {
+    return {
+        type: "Member" /* Member */,
+        dot,
+        span,
+    };
+}
+exports.member = member;

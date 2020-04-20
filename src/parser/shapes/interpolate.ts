@@ -1,36 +1,38 @@
 import { TokenType } from "../../read/tokens";
 import * as ast from "../nodes";
 import type { InterpolateNode } from "../nodes/top-level";
-import { EXPAND, Result } from "../shape";
-import TokensIterator, { expand, consumeParent } from "../tokens-iterator";
-import { AbstractShape } from "./abstract";
+import { EXPAND, Result, start } from "../shape";
+import TokensIterator, {
+  legacyExpand,
+  legacyConsumeParent,
+  consumeParent,
+  processInner,
+  expand,
+  label,
+} from "../tokens-iterator";
+import { AbstractShape, recurse } from "./abstract";
 import { ExpressionShape } from "./expression";
-import { CallBodyShape } from "./internal/call-body";
+import { CallBodyShape, CallBodySequence } from "./internal/call-body";
 
-export class HeadShape extends AbstractShape<ast.ExpressionAstNode> {
+export class HeadShape extends AbstractShape<Result<ast.ExpressionAstNode>> {
   readonly desc = "Head";
 
   [EXPAND](iterator: TokensIterator): Result<ast.ExpressionAstNode> {
-    return expand(ExpressionShape)(iterator);
+    return legacyExpand(ExpressionShape)(iterator);
   }
 }
 
-export class InterpolateShape extends AbstractShape<InterpolateNode> {
-  readonly desc = "Interpolate";
+export const HeadSequence = recurse(() =>
+  label("Head", start(expand(ExpressionShape)))
+);
 
-  [EXPAND](iterator: TokensIterator): Result<InterpolateNode> {
-    return iterator
-      .start(
-        consumeParent({ desc: "interpolate", isLeaf: false }, token => {
-          if (token.type === TokenType.Interpolate) {
-            return iterator.processInner(token.children, iterator =>
-              expand(CallBodyShape)(iterator)
-            );
-          }
-        })
-      )
-      .andThen(({ result, token }) =>
-        ast.interpolate(result, { span: token.span })
-      );
-  }
-}
+export const InterpolateSequence = label(
+  "Interpolate",
+  consumeParent(
+    { desc: "interpolate", isLeaf: false },
+    TokenType.Interpolate,
+    CallBodySequence
+  ).andThen(({ result, token }) =>
+    ast.interpolate(result, { span: token.span })
+  )
+);

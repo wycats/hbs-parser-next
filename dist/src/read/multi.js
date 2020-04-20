@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.many = void 0;
 const snippet_1 = require("../snippet");
 const utils_1 = require("./utils");
 function many(source) {

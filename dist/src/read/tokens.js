@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.debugFormatToken = exports.root = exports.trustedInterpolate = exports.interpolate = exports.sexp = exports.endTag = exports.startTag = exports.valuedAttr = exports.attrValue = exports.isInterpolateAttribute = exports.stringInterpolation = exports.argName = exports.closeBlock = exports.openBlock = exports.block = exports.blockParams = exports.equalPath = exports.arg = exports.comment = exports.numberToken = exports.stringToken = exports.attrName = exports.text = exports.ws = exports.eq = exports.dot = exports.id = exports.leaf = void 0;
 const span_1 = require("../span");
 function leaf(type) {
     return span => ({ type, span });
@@ -162,10 +163,11 @@ function endTag({ name, trailing }, span) {
     };
 }
 exports.endTag = endTag;
-function sexp(children, span) {
+function sexp({ children, inner }, span) {
     return {
         type: "Sexp" /* Sexp */,
         span,
+        inner,
         children,
     };
 }

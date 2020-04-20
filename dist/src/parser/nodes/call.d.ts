@@ -1,24 +1,34 @@
-import { AstNodeType, ExpressionNode, ExpressionAstNode, BaseNode } from "../nodes";
+import { AstNodeType, ExpressionAstNode, BaseNode } from "../nodes";
 import type { SourceSpan } from "../../span";
 import type { IdentifierToken } from "../../read/tokens";
 export interface CallBodyNode extends BaseNode {
     type: AstNodeType.CallBody;
-    head: ExpressionNode;
-    positional: ExpressionNode[] | null;
-    named: NamedNode | null;
+    head: ExpressionAstNode;
+    positional: PositionalArgumentsNode | null;
+    named: NamedArgumentsNode | null;
 }
 export declare function callBody({ head, positional, named, }: {
-    head: ExpressionNode;
-    positional?: ExpressionNode[] | null;
-    named?: NamedNode | null;
-}, span: SourceSpan): CallBodyNode;
-export interface NamedNode extends BaseNode {
-    type: AstNodeType.Named;
+    head: ExpressionAstNode;
+    positional?: PositionalArgumentsNode | null;
+    named?: NamedArgumentsNode | null;
+}, base: BaseNode): CallBodyNode;
+export interface NamedArgumentNode extends BaseNode {
+    type: AstNodeType.NamedArgument;
     name: SourceSpan;
-    value: ExpressionNode;
+    value: ExpressionAstNode;
 }
-export declare function named({ name, value }: {
+export declare function namedArg({ name, value }: {
     name: IdentifierToken;
     value: ExpressionAstNode;
-}, span: SourceSpan): NamedNode;
+}, base: BaseNode): NamedArgumentNode;
+export interface NamedArgumentsNode extends BaseNode {
+    type: AstNodeType.NamedArguments;
+    args: readonly NamedArgumentNode[];
+}
+export declare function namedArgs(args: NamedArgumentNode[], base: BaseNode): NamedArgumentsNode;
+export interface PositionalArgumentsNode extends BaseNode {
+    type: AstNodeType.PositionalArguments;
+    args: ExpressionAstNode[];
+}
+export declare function positional(args: ExpressionAstNode[], base: BaseNode): PositionalArgumentsNode;
 //# sourceMappingURL=call.d.ts.map

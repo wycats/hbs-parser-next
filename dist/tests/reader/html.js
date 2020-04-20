@@ -9,6 +9,19 @@ qunit_1.test("simple content", assert => {
 qunit_1.test("a simple tag", assert => {
     assert.tree("<div>", hbs_parser_next_1.r.startTag("div"));
 });
+qunit_1.test("a simple tag with closing tag", assert => {
+    assert.tree("<div></div>", [hbs_parser_next_1.r.startTag("div"), hbs_parser_next_1.r.endTag("div")]);
+    assert.tree("<div>hello</div>", [
+        hbs_parser_next_1.r.startTag("div"),
+        hbs_parser_next_1.r.text("hello"),
+        hbs_parser_next_1.r.endTag("div"),
+    ]);
+    assert.tree("<div>hello\nworld</div>", [
+        hbs_parser_next_1.r.startTag("div"),
+        hbs_parser_next_1.r.text("hello\nworld"),
+        hbs_parser_next_1.r.endTag("div"),
+    ]);
+});
 qunit_1.test("A simple tag with trailing spaces", assert => {
     assert.tree("<div   \t\n>", hbs_parser_next_1.r.startTag({ name: "div", attrs: [hbs_parser_next_1.r.ws("   \t\n")] }));
 });
