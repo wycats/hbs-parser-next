@@ -1,7 +1,7 @@
 import { TokenType } from "../../read/tokens";
 import * as ast from "../nodes";
 import type { InterpolateNode } from "../nodes/top-level";
-import { EXPAND, Result, start } from "../shape";
+import { EXPAND, Result, start, ok } from "../shape";
 import TokensIterator, {
   legacyExpand,
   legacyConsumeParent,
@@ -11,20 +11,18 @@ import TokensIterator, {
   label,
 } from "../tokens-iterator";
 import { AbstractShape, recurse } from "./abstract";
-import { ExpressionShape } from "./expression";
-import { CallBodyShape, CallBodySequence } from "./internal/call-body";
+import { ExpressionSequence } from "./expression";
+import { CallBodySequence } from "./internal/call-body";
 
 export class HeadShape extends AbstractShape<Result<ast.ExpressionAstNode>> {
   readonly desc = "Head";
 
   [EXPAND](iterator: TokensIterator): Result<ast.ExpressionAstNode> {
-    return legacyExpand(ExpressionShape)(iterator);
+    return ExpressionSequence.run(iterator, ok(undefined));
   }
 }
 
-export const HeadSequence = recurse(() =>
-  label("Head", start(expand(ExpressionShape)))
-);
+export const HeadSequence = recurse(() => label("Head", ExpressionSequence));
 
 export const InterpolateSequence = label(
   "Interpolate",

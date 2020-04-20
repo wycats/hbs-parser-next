@@ -8,23 +8,23 @@ import type {
   ThisReferenceNode,
   VarReferenceNode,
 } from "../../nodes/expression";
-import { shape } from "../abstract";
-import { legacyAny, any } from "../internal/any";
-import { ArgRefShape, ArgRefSequence } from "./args-ref";
-import { SexpShape, SexpSequence } from "./sexp";
-import { VarRefShape, VarRefSequence } from "./var-ref";
+import { ok, SequenceBuilder } from "../../shape";
 import {
-  legacyExpand,
-  legacyConsumeToken,
-  legacyNotEOF,
-  legacyMany,
-  legacyAtomic,
-  label,
-  consumeToken,
   atomic,
+  consumeToken,
+  label,
+  legacyAtomic,
+  legacyConsumeToken,
+  legacyExpand,
+  legacyMany,
+  legacyNotEOF,
   repeat,
 } from "../../tokens-iterator";
-import type { SequenceBuilder } from "../../shape";
+import { shape } from "../abstract";
+import { any } from "../internal/any";
+import { ArgRefSequence } from "./args-ref";
+import { SexpSequence } from "./sexp";
+import { VarRefSequence } from "./var-ref";
 
 export type PathOutput = PathNode | PathHeadOutput;
 
@@ -56,9 +56,7 @@ export const PathMemberSequence = label(
 );
 
 export const PathHeadShape = shape("PathHead", iterator =>
-  iterator.start(
-    legacyExpand(legacyAny([SexpShape, ArgRefShape, VarRefShape], "path head"))
-  )
+  PathHeadSequence.run(iterator, ok(undefined))
 );
 
 export const PathHeadSequence: SequenceBuilder<
