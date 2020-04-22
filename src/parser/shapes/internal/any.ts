@@ -1,33 +1,12 @@
 import {
-  Result,
-  ShapeConstructorResult,
-  Step,
-  err,
   isOk,
+  Result,
   SequenceBuilder,
   SequenceResult,
+  ParserArrow,
+  ArrowResult,
+  FallibleArrowResult,
 } from "../../shape";
-import { shape, ShapeConstructor } from "../abstract";
-import { legacyExpand, legacyNotEOF } from "../../tokens-iterator";
-
-export function legacyAny<T extends Array<ShapeConstructor<Result<unknown>>>>(
-  shapes: T,
-  desc: string
-): ShapeConstructor<Result<ShapeConstructorResult<T[number]>>> {
-  return shape(desc, iterator =>
-    iterator.start(legacyNotEOF()).andThen(() => {
-      for (let shape of shapes) {
-        let result = iterator.start(legacyExpand(shape));
-
-        if (result.kind === "ok") {
-          return result as Result<ShapeConstructorResult<T[number]>>;
-        }
-      }
-
-      return iterator.err("any", "none");
-    })
-  );
-}
 
 export function any<Prev, T extends Array<SequenceBuilder<Prev, unknown>>>(
   desc: string,
@@ -46,4 +25,26 @@ export function any<Prev, T extends Array<SequenceBuilder<Prev, unknown>>>(
 
     return iterator.err(desc, desc) as Result<SequenceResult<T[number]>>;
   });
+}
+
+export type UnionResult<
+  T extends ReadonlyArray<ParserArrow<void, Result<any>>>
+> = {
+  [P in keyof T]: P extends number
+    ? T[P] extends ParserArrow<any, Result<infer R>>
+      ? R
+      : never
+    : never;
+}[number];
+
+export function anyArrow<
+  T extends ReadonlyArray<ParserArrow<void, Result<unknown>>>
+>(sequences: T): ParserArrow<void, Result<UnionResult<T>>> {
+  let [current, ...tail] = sequences;
+
+  for (let item of tail) {
+    current = current.orElse(item);
+  }
+
+  return (current as unknown) as ParserArrow<void, Result<UnionResult<T>>>;
 }

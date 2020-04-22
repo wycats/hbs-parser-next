@@ -1,39 +1,13 @@
-import { TokenType, WSToken } from "../../../read/tokens";
-import { infallibleShape, shape, ShapeConstructor } from "../abstract";
-import {
-  legacyConsumeToken,
-  legacyNotEOF,
-  consumeToken,
-  label,
-} from "../../tokens-iterator";
-import { step, start, isErr } from "../../shape";
+import { TokenType } from "../../../read/tokens";
+import { token, label } from "../../tokens-iterator";
+import { ParserArrow } from "../../shape";
 
-export const Ws = shape("WS", iterator =>
-  iterator.start(legacyConsumeToken(TokenType.WS))
-);
+export const MaybeWsSequence = label("WS?", token(TokenType.WS).or(undefined));
+export const WsSequence = label("WS", token(TokenType.WS));
 
-export const MaybeWs: ShapeConstructor<WSToken | undefined> = infallibleShape(
-  "MaybeWS",
-  iterator => {
-    let next = iterator.peek("eof");
-    next.ignore();
+export const MaybeWsArrow = ParserArrow.start()
+  .token(TokenType.WS)
+  .or(undefined)
+  .label("WS?");
 
-    if (next.token === undefined) {
-      return undefined;
-    }
-
-    let token = legacyConsumeToken(TokenType.WS)(iterator);
-
-    if (isErr(token)) {
-      return undefined;
-    } else {
-      return token.value;
-    }
-  }
-);
-
-export const MaybeWsSequence = label(
-  "WS?",
-  consumeToken(TokenType.WS).or(undefined)
-);
-export const WsSequence = label("WS", consumeToken(TokenType.WS));
+export const WsArrow = ParserArrow.start().token(TokenType.WS).label("WS");

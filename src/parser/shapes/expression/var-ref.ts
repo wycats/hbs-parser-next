@@ -1,38 +1,18 @@
 import { TokenType } from "../../../read/tokens";
 import { slice } from "../../../span";
 import * as ast from "../../nodes";
-import { shape } from "../abstract";
+import { SequenceBuilder, ParserArrow, Result, ok, err } from "../../shape";
 import {
-  legacyAssertNotNext,
-  legacyAtomic,
-  legacyConsumeToken,
-  legacySource,
   atomic,
-  consumeToken,
+  token,
+  label,
   notNext,
   source,
-  label,
+  lookahead,
+  isToken,
 } from "../../tokens-iterator";
-import type { SequenceBuilder } from "../../shape";
 
-export const VarRefShape = shape(
-  "VarRef",
-  legacyAtomic(iterator =>
-    iterator
-      .start(legacyConsumeToken("id", TokenType.Identifier))
-      .checkNext(
-        legacyAssertNotNext("eq", token => token.type === TokenType.Eq)
-      )
-      .extend("source", legacySource())
-      .andThen(({ id, source }) => {
-        if (slice(id.span, source) === "this") {
-          return ast.thisReference(id);
-        } else {
-          return ast.varReference(id);
-        }
-      })
-  )
-);
+const notEQ = lookahead().next(isToken(TokenType.Eq)).not;
 
 export const VarRefSequence: SequenceBuilder<
   void,
@@ -40,8 +20,8 @@ export const VarRefSequence: SequenceBuilder<
 > = label(
   "VarRef",
   atomic(
-    consumeToken("id", TokenType.Identifier)
-      .check(notNext("eq", token => token.type === TokenType.Eq))
+    token("id", TokenType.Identifier)
+      .andCheck(notEQ)
       .extend("source", source())
       .andThen(({ id, source }) => {
         if (slice(id.span, source) === "this") {
@@ -52,3 +32,28 @@ export const VarRefSequence: SequenceBuilder<
       })
   )
 );
+
+export const VarRefArrow: ParserArrow<
+  void,
+  Result<ast.VarReferenceNode | ast.ThisReferenceNode>
+> = ParserArrow.start()
+  .token(TokenType.Identifier)
+  .named("id")
+  .checkNext(
+    ParserArrow.start()
+      .lookahead()
+      .map(token =>
+        token === undefined || token.type !== TokenType.Eq
+          ? ok(undefined)
+          : err(undefined, "lookahead")
+      )
+  )
+  .extend("source", ParserArrow.start().source().fallible())
+  .ifOk(({ id, source }) => {
+    if (slice(id.span, source) === "this") {
+      return ast.thisReference(id);
+    } else {
+      return ast.varReference(id);
+    }
+  })
+  .label("VarRef");

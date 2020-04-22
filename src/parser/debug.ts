@@ -3,7 +3,7 @@ import type { Token, RootToken } from "../read/tokens";
 import { unwrap } from "../read/utils";
 import { slice } from "../span";
 import { AstNode, formatAstNode } from "./nodes";
-import type { Result, Shape } from "./shape";
+import { Result, Shape, isErr } from "./shape";
 
 export interface ParseTrace {
   shape: Shape<unknown> | { desc: string };
@@ -226,26 +226,7 @@ class PrintTracer {
   }
 
   private get formattedResult(): string {
-    let result = this.trace.result as
-      | (Partial<AstNode> & Partial<Result<Partial<AstNode>>>)
-      | null
-      | undefined;
-
-    if (isResult(result)) {
-      if (result.kind === "err") {
-        return `ERR reason=${result.reason}`;
-      } else {
-        if (isNodeish(result.value)) {
-          return formatAstNode(result.value);
-        } else {
-          return this.trace.result + "";
-        }
-      }
-    } else if (isNodeish(result)) {
-      return formatAstNode(result);
-    } else {
-      return this.trace.result + "";
-    }
+    return formatResult(this.trace.result);
   }
 
   private get descStyle(): string {
@@ -269,26 +250,50 @@ class PrintTracer {
   }
 }
 
-function isNodeish(item: Partial<AstNode> | null | undefined): item is AstNode {
+function formatResult(result: unknown): string {
+  if (typeof result !== "object" || result === null) {
+    return String(result);
+  } else if (Array.isArray(result)) {
+    if (result.length > 3) {
+      return `[${result.slice(0, 2).map(formatResult).join(", ")}...]`;
+    } else {
+      return `[${result.map(formatResult).join(", ")}]`;
+    }
+  } else if (isResult(result)) {
+    if (isErr(result)) {
+      return `ERR reason=${result.reason}`;
+    } else {
+      return formatResult(result.value);
+    }
+  } else if (isNodeish(result)) {
+    return formatAstNode(result);
+  } else {
+    console.log("not debuggable", result);
+    return result + "";
+  }
+}
+
+function isNodeish(item: unknown | null | undefined): item is AstNode {
   if (typeof item === "object" && item !== null) {
+    let obj = item as Partial<AstNode>;
+
     return (
-      "type" in item &&
-      typeof item.type === "string" &&
-      typeof item.span === "object" &&
-      item.span !== null &&
-      typeof item.span.start === "number" &&
-      typeof item.span.end === "number"
+      "type" in obj &&
+      typeof obj.type === "string" &&
+      typeof obj.span === "object" &&
+      obj.span !== null &&
+      typeof obj.span.start === "number" &&
+      typeof obj.span.end === "number"
     );
   } else {
     return false;
   }
 }
 
-function isResult(
-  item: Partial<Result<unknown>> | null | undefined
-): item is Result<unknown> {
+function isResult(item: unknown | null | undefined): item is Result<unknown> {
   if (typeof item === "object" && item !== null) {
-    return ("kind" in item && item.kind === "ok") || item.kind === "err";
+    let obj = item as Partial<Result<unknown>>;
+    return ("kind" in obj && obj.kind === "ok") || obj.kind === "err";
   } else {
     return false;
   }

@@ -1,20 +1,24 @@
 import type * as ast from "../nodes";
-import type { SequenceBuilder } from "../shape";
-import { recurse } from "./abstract";
-import { NumberSequence } from "./expression/number";
-import { PathSequence } from "./expression/path";
-import { SexpSequence } from "./expression/sexp";
-import { StringSequence } from "./expression/string";
-import { any } from "./internal/any";
+import { SequenceBuilder, ParserArrow, Result, recurse } from "../shape";
+import { recurse as recurseLegacy } from "./abstract";
+import { NumberSequence, NumberArrow } from "./expression/number";
+import { PathSequence, PathArrow } from "./expression/path";
+import { SexpSequence, SexpArrow } from "./expression/sexp";
+import { StringSequence, StringArrow } from "./expression/string";
+import { any, anyArrow } from "./internal/any";
 
 export const ExpressionSequence: SequenceBuilder<
   void,
   ast.ExpressionAstNode
-> = recurse(() =>
+> = recurseLegacy(() =>
   any("expression", [
     SexpSequence,
     StringSequence,
     NumberSequence,
     PathSequence,
   ])
+);
+
+export const ExpressionArrow = recurse(() =>
+  anyArrow([SexpArrow, StringArrow, NumberArrow, PathArrow]).label("Expression")
 );

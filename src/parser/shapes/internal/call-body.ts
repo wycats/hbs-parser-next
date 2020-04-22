@@ -1,19 +1,22 @@
 import { TokenType } from "../../../read/tokens";
 import { range } from "../../../span";
 import * as ast from "../../nodes";
+import { atomic, token, label, present, repeat } from "../../tokens-iterator";
+import { recurse as recurseLegacy } from "../abstract";
+import { ExpressionSequence, ExpressionArrow } from "../expression";
+import { HeadSequence, HeadArrow } from "../interpolate";
+import { MaybeWsSequence, WsSequence, MaybeWsArrow, WsArrow } from "./ws";
 import {
-  atomic,
-  consumeToken,
-  label,
-  present,
-  repeat,
-} from "../../tokens-iterator";
-import { recurse } from "../abstract";
-import { ExpressionSequence } from "../expression";
-import { HeadSequence } from "../interpolate";
-import { MaybeWsSequence, WsSequence } from "./ws";
+  ParserArrow,
+  recurse,
+  ParserArrowEvaluateCore,
+  Result,
+  err,
+  ok,
+} from "../../shape";
+import { NamedArgumentNode } from "../../nodes/call";
 
-export const PositionalSequence = recurse(() =>
+export const PositionalSequence = recurseLegacy(() =>
   label(
     "Positional",
     repeat(
@@ -28,12 +31,23 @@ export const PositionalSequence = recurse(() =>
   )
 );
 
-export const NamedArgumentSequence = recurse(() =>
+export const PositionalArrow = recurse(() =>
+  WsArrow.named("before")
+    .extend("expr", ExpressionArrow)
+    .ifOk(({ before, expr }) => ast.extendNode(expr, { before }))
+    .atomic()
+    .repeat()
+    .andThen(assertPresent())
+    .ifOk(out => ast.positional(out, { span: range(...out) }))
+    .label("Positional")
+);
+
+export const NamedArgumentSequence = recurseLegacy(() =>
   label(
     "NamedArgument",
     atomic(
-      consumeToken("id", TokenType.Identifier)
-        .extend("eq", consumeToken(TokenType.Eq))
+      token("id", TokenType.Identifier)
+        .extend("eq", token(TokenType.Eq))
         .extend("expr", ExpressionSequence)
         .extend("trailingWS", MaybeWsSequence)
         .andThen(({ id, expr, trailingWS }) => {
@@ -49,6 +63,39 @@ export const NamedArgumentSequence = recurse(() =>
   )
 );
 
+export const NamedArgumentArrow = recurse(() =>
+  ParserArrow.start()
+    .token(TokenType.Identifier)
+    .named("id")
+    .extend("eq", ParserArrow.start().token(TokenType.Eq))
+    .extend("expr", ExpressionArrow)
+    .extend("trailingWS", MaybeWsArrow.fallible())
+    .ifOk(({ id, expr, trailingWS }) =>
+      ast.namedArg(
+        { name: id, value: expr },
+        {
+          span: range(id, expr),
+          after: trailingWS || undefined,
+        }
+      )
+    )
+    .label("NamedArgument")
+);
+
+function assertPresent<T>(): ParserArrow<T[], Result<T[]>> {
+  return ParserArrow.start().lift<T[], Result<T[]>>(list =>
+    list.length > 0 ? ok(list) : err(undefined, "empty")
+  );
+}
+
+export const NamedArgumentsArrow = WsArrow.named("leadingWS")
+  .extend("args", NamedArgumentArrow.repeat().andThen(assertPresent()))
+  .atomic()
+  .ifOk(({ leadingWS, args }) =>
+    ast.namedArgs(args, { span: range(...args), before: leadingWS })
+  )
+  .label("NamedArguments");
+
 export const NamedArgumentsSequence = label(
   "NamedArguments",
   atomic(
@@ -60,7 +107,7 @@ export const NamedArgumentsSequence = label(
   )
 );
 
-export const CallBodySequence = recurse(() =>
+export const CallBodySequence = recurseLegacy(() =>
   label(
     "CallBody",
     MaybeWsSequence.named("before")
@@ -79,4 +126,24 @@ export const CallBodySequence = recurse(() =>
         )
       )
   )
+);
+
+export const CallBodyArrow = recurse(() =>
+  MaybeWsArrow.fallible()
+    .named("before")
+    .extend("head", HeadArrow)
+    .extend("positional", PositionalArrow.or(null).fallible())
+    .extend("named", NamedArgumentsArrow.or(null).fallible())
+    .extend("after", MaybeWsArrow.fallible())
+    .ifOk(({ before, after, head, positional, named }) =>
+      ast.callBody(
+        { head, positional, named },
+        {
+          span: range(head, positional, named),
+          before,
+          after,
+        }
+      )
+    )
+    .label("CallBody")
 );

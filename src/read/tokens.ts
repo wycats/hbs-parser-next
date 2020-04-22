@@ -14,7 +14,7 @@ import { SourceSpan, range, slice } from "../span";
 
 export const enum TokenType {
   Root = "Root",
-  Interpolate = "Interpolate",
+  UntrustedInterpolate = "Interpolate",
   TrustedInterpolate = "TrustedInterpolate",
   // TODO: Either we should have Block and Element or StartBlock/EndBlock and StartElement/EndElement
   Block = "Block",
@@ -188,7 +188,7 @@ export interface SexpToken extends BaseToken {
 }
 
 export interface UntrustedInterpolateToken extends BaseToken {
-  type: TokenType.Interpolate;
+  type: TokenType.UntrustedInterpolate;
   children: readonly Token[];
 }
 
@@ -490,7 +490,7 @@ export function interpolate(
   span: SourceSpan
 ): UntrustedInterpolateToken {
   return {
-    type: TokenType.Interpolate,
+    type: TokenType.UntrustedInterpolate,
     span,
     children,
   };
@@ -526,7 +526,7 @@ export interface HBSTokenMap extends LeafTokenMap {
   [TokenType.Comment]: CommentToken;
   [TokenType.Argument]: ArgumentToken;
   [TokenType.Sexp]: SexpToken;
-  [TokenType.Interpolate]: UntrustedInterpolateToken;
+  [TokenType.UntrustedInterpolate]: UntrustedInterpolateToken;
   [TokenType.TrustedInterpolate]: TrustedInterpolateToken;
   [TokenType.Block]: BlockToken;
   [TokenType.OpenBlock]: OpenBlockToken;
@@ -543,6 +543,23 @@ export interface HTMLTokenMap {
   [TokenType.AttributeValue]: AttributeValueToken;
   [TokenType.ValuedAttribute]: ValuedAttributeToken;
   [TokenType.StringInterpolation]: StringInterpolationToken;
+}
+
+export type ParentToken = Extract<Token, { children: readonly Token[] }>;
+
+export function isParentToken(token: Token): token is ParentToken {
+  switch (token.type) {
+    case TokenType.TrustedInterpolate:
+    case TokenType.UntrustedInterpolate:
+    case TokenType.Sexp:
+      return true;
+    default:
+      if ("children" in token && Array.isArray(token["children"])) {
+        throw new Error(`Missing parent token in isParentToken`);
+      }
+
+      return false;
+  }
 }
 
 export type HTMLToken = HTMLTokenMap[keyof HTMLTokenMap];

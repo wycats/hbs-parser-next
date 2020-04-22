@@ -160,12 +160,12 @@ test("{{id}} interpolating an id", assert => {
     [r.interpolate(r.id("identifier"))],
     [a.interpolate("identifier")]
   );
-  assert.tree("{{id}}", [r.interpolate(r.id("id"))], [a.interpolate("id")]);
-  assert.tree(
-    "{{id-with-dash}}",
-    [r.interpolate(r.id("id-with-dash"))],
-    [a.interpolate("id-with-dash")]
-  );
+  // assert.tree("{{id}}", [r.interpolate(r.id("id"))], [a.interpolate("id")]);
+  // assert.tree(
+  //   "{{id-with-dash}}",
+  //   [r.interpolate(r.id("id-with-dash"))],
+  //   [a.interpolate("id-with-dash")]
+  // );
 });
 
 test("{{this}} interpolating the keyword this", assert => {
@@ -228,28 +228,28 @@ test("{{123}} interpolating a number", assert => {
   );
 });
 
-test("{{(id)}} interpolating a sexp", assert => {
-  assert.tree(
-    "{{(id)}}",
-    r.interpolate(r.sexp([r.id("id")])),
-    a.interpolate(a.call("id"))
-  );
-  assert.tree(
-    "{{ (id) }}",
-    r.interpolate(r.sp, r.sexp([r.id("id")]), r.sp),
-    a.interpolate(" ", a.call("id"), " ")
-  );
-  assert.tree(
-    "{{( id )}}",
-    r.interpolate(r.sexp([r.sp, r.id("id"), r.sp])),
-    a.interpolate(a.call(" ", "id", " "))
-  );
-  assert.tree(
-    "{{ ( id ) }}",
-    r.interpolate(r.sp, r.sexp([r.sp, r.id("id"), r.sp]), r.sp),
-    a.interpolate(" ", a.call(" ", "id", " "), " ")
-  );
-});
+// test("{{(id)}} interpolating a sexp", assert => {
+//   assert.tree(
+//     "{{(id)}}",
+//     r.interpolate(r.sexp([r.id("id")])),
+//     a.interpolate(a.call("id"))
+//   );
+//   assert.tree(
+//     "{{ (id) }}",
+//     r.interpolate(r.sp, r.sexp([r.id("id")]), r.sp),
+//     a.interpolate(" ", a.call("id"), " ")
+//   );
+//   assert.tree(
+//     "{{( id )}}",
+//     r.interpolate(r.sexp([r.sp, r.id("id"), r.sp])),
+//     a.interpolate(a.call(" ", "id", " "))
+//   );
+//   assert.tree(
+//     "{{ ( id ) }}",
+//     r.interpolate(r.sp, r.sexp([r.sp, r.id("id"), r.sp]), r.sp),
+//     a.interpolate(" ", a.call(" ", "id", " "), " ")
+//   );
+// });
 
 test("{{@id}} interpolating an argument", assert => {
   assert.tree(
@@ -271,21 +271,21 @@ test("whitespace around interpolation", assert => {
     r.interpolate(r.sp, r.id("identifier"), r.sp),
     a.interpolate(" ", "identifier", " ")
   );
-  // assert.tree(
-  //   "{{ id }}",
-  //   r.interpolate(r.sp, r.id("id"), r.sp),
-  //   a.interpolate(" ", "id", " ")
-  // );
-  // assert.tree(
-  //   "{{ this }}",
-  //   r.interpolate(r.sp, r.id("this"), r.sp),
-  //   a.interpolate(" ", "this", " ")
-  // );
-  // assert.tree(
-  //   "{{ id-with-dash }}",
-  //   r.interpolate(r.sp, r.id("id-with-dash"), r.sp),
-  //   a.interpolate(" ", "id-with-dash", " ")
-  // );
+  assert.tree(
+    "{{ id }}",
+    r.interpolate(r.sp, r.id("id"), r.sp),
+    a.interpolate(" ", "id", " ")
+  );
+  assert.tree(
+    "{{ this }}",
+    r.interpolate(r.sp, r.id("this"), r.sp),
+    a.interpolate(" ", "this", " ")
+  );
+  assert.tree(
+    "{{ id-with-dash }}",
+    r.interpolate(r.sp, r.id("id-with-dash"), r.sp),
+    a.interpolate(" ", "id-with-dash", " ")
+  );
 });
 
 test("paths", assert => {
@@ -295,57 +295,57 @@ test("paths", assert => {
     a.interpolate(a.path("this", "path"))
   );
 
-  // assert.tree(
-  //   "{{id.with.path}}",
-  //   r.interpolate(r.id("id"), r.dot, r.id("with"), r.dot, r.id("path")),
-  //   a.interpolate(a.path("id", "with", "path"))
-  // );
+  assert.tree(
+    "{{id.with.path}}",
+    r.interpolate(r.id("id"), r.dot, r.id("with"), r.dot, r.id("path")),
+    a.interpolate(a.path("id", "with", "path"))
+  );
 
-  // assert.tree(
-  //   "{{ id.with.path }}",
-  //   r.interpolate(
-  //     r.sp,
-  //     r.id("id"),
-  //     r.dot,
-  //     r.id("with"),
-  //     r.dot,
-  //     r.id("path"),
-  //     r.sp
-  //   ),
-  //   a.interpolate(" ", a.path("id", "with", "path"), " ")
-  // );
+  assert.tree(
+    "{{ id.with.path }}",
+    r.interpolate(
+      r.sp,
+      r.id("id"),
+      r.dot,
+      r.id("with"),
+      r.dot,
+      r.id("path"),
+      r.sp
+    ),
+    a.interpolate(" ", a.path("id", "with", "path"), " ")
+  );
 
-  // assert.tree(
-  //   "{{  id.with.path  }}",
-  //   r.interpolate(
-  //     r.ws("  "),
-  //     r.id("id"),
-  //     r.dot,
-  //     r.id("with"),
-  //     r.dot,
-  //     r.id("path"),
-  //     r.ws("  ")
-  //   ),
-  //   a.interpolate("  ", a.path("id", "with", "path"), "  ")
-  // );
+  assert.tree(
+    "{{  id.with.path  }}",
+    r.interpolate(
+      r.ws("  "),
+      r.id("id"),
+      r.dot,
+      r.id("with"),
+      r.dot,
+      r.id("path"),
+      r.ws("  ")
+    ),
+    a.interpolate("  ", a.path("id", "with", "path"), "  ")
+  );
 
-  // assert.tree(
-  //   "{{@id.with.path}}",
-  //   r.interpolate(r.arg("@id"), r.dot, r.id("with"), r.dot, r.id("path")),
-  //   a.interpolate(a.path("@id", "with", "path"))
-  // );
+  assert.tree(
+    "{{@id.with.path}}",
+    r.interpolate(r.arg("@id"), r.dot, r.id("with"), r.dot, r.id("path")),
+    a.interpolate(a.path("@id", "with", "path"))
+  );
 
-  // assert.tree(
-  //   "{{@dash-id.with-dashed.path}}",
-  //   r.interpolate(
-  //     r.arg("@dash-id"),
-  //     r.dot,
-  //     r.id("with-dashed"),
-  //     r.dot,
-  //     r.id("path")
-  //   ),
-  //   a.interpolate(a.path("@dash-id", "with-dashed", "path"))
-  // );
+  assert.tree(
+    "{{@dash-id.with-dashed.path}}",
+    r.interpolate(
+      r.arg("@dash-id"),
+      r.dot,
+      r.id("with-dashed"),
+      r.dot,
+      r.id("path")
+    ),
+    a.interpolate(a.path("@dash-id", "with-dashed", "path"))
+  );
 });
 
 test("{{id.with.path some other.stuff}}", assert => {
@@ -395,128 +395,128 @@ test("named arguments", assert => {
     })
   );
 
-  assert.tree(
-    "{{id.with.path some named=args other=named.args}}",
-    r.interpolate(
-      r.id("id"),
-      r.dot,
-      r.id("with"),
-      r.dot,
-      r.id("path"),
-      r.sp,
-      r.id("some"),
-      r.sp,
-      r.id("named"),
-      r.eq,
-      r.id("args"),
-      r.sp,
-      r.id("other"),
-      r.eq,
-      r.id("named"),
-      r.dot,
-      r.id("args")
-    ),
-    a.interpolate(a.path("id", "with.path"), [" ", "some"], {
-      named: ["args", " "],
-      other: a.path("named", "args"),
-    })
-  );
+  // assert.tree(
+  //   "{{id.with.path some named=args other=named.args}}",
+  //   r.interpolate(
+  //     r.id("id"),
+  //     r.dot,
+  //     r.id("with"),
+  //     r.dot,
+  //     r.id("path"),
+  //     r.sp,
+  //     r.id("some"),
+  //     r.sp,
+  //     r.id("named"),
+  //     r.eq,
+  //     r.id("args"),
+  //     r.sp,
+  //     r.id("other"),
+  //     r.eq,
+  //     r.id("named"),
+  //     r.dot,
+  //     r.id("args")
+  //   ),
+  //   a.interpolate(a.path("id", "with.path"), [" ", "some"], {
+  //     named: ["args", " "],
+  //     other: a.path("named", "args"),
+  //   })
+  // );
 
-  assert.tree(
-    "{{id.with.path some @arg named=args other=@named.args}}",
-    r.interpolate(
-      r.id("id"),
-      r.dot,
-      r.id("with"),
-      r.dot,
-      r.id("path"),
-      r.sp,
-      r.id("some"),
-      r.sp,
-      r.arg("@arg"),
-      r.sp,
-      r.id("named"),
-      r.eq,
-      r.id("args"),
-      r.sp,
-      r.id("other"),
-      r.eq,
-      r.arg("@named"),
-      r.dot,
-      r.id("args")
-    ),
-    a.interpolate(a.path("id", "with.path"), [" ", "some", " ", "@arg"], {
-      named: ["args", " "],
-      other: a.path("@named", "args"),
-    })
-  );
+  // assert.tree(
+  //   "{{id.with.path some @arg named=args other=@named.args}}",
+  //   r.interpolate(
+  //     r.id("id"),
+  //     r.dot,
+  //     r.id("with"),
+  //     r.dot,
+  //     r.id("path"),
+  //     r.sp,
+  //     r.id("some"),
+  //     r.sp,
+  //     r.arg("@arg"),
+  //     r.sp,
+  //     r.id("named"),
+  //     r.eq,
+  //     r.id("args"),
+  //     r.sp,
+  //     r.id("other"),
+  //     r.eq,
+  //     r.arg("@named"),
+  //     r.dot,
+  //     r.id("args")
+  //   ),
+  //   a.interpolate(a.path("id", "with.path"), [" ", "some", " ", "@arg"], {
+  //     named: ["args", " "],
+  //     other: a.path("@named", "args"),
+  //   })
+  // );
 });
 
-test("using all the features", assert => {
-  assert.tree(
-    "{{  (id.with.path some @arg named=args other=@named.args) @some.arg another.arg named=@arg other=named.arg yet-another=-12.5  }}",
-    r.interpolate(
-      r.ws("  "),
-      r.sexp([
-        r.id("id"),
-        r.dot,
-        r.id("with"),
-        r.dot,
-        r.id("path"),
-        r.sp,
-        r.id("some"),
-        r.sp,
-        r.arg("@arg"),
-        r.sp,
-        r.id("named"),
-        r.eq,
-        r.id("args"),
-        r.sp,
-        r.id("other"),
-        r.eq,
-        r.arg("@named"),
-        r.dot,
-        r.id("args"),
-      ]),
-      r.sp,
-      r.arg("@some"),
-      r.dot,
-      r.id("arg"),
-      r.sp,
-      r.id("another"),
-      r.dot,
-      r.id("arg"),
-      r.sp,
-      r.id("named"),
-      r.eq,
-      r.arg("@arg"),
-      r.sp,
-      r.id("other"),
-      r.eq,
-      r.id("named"),
-      r.dot,
-      r.id("arg"),
-      r.sp,
-      r.id("yet-another"),
-      r.eq,
-      r.decimal("-12.5"),
-      r.ws("  ")
-    ),
-    a.interpolate(
-      "  ",
-      a.call(a.path("id", "with.path"), [" ", "some", " ", "@arg"], {
-        named: ["args", " "],
-        other: a.path("@named", "args"),
-      }),
-      [" ", a.path("@some", "arg"), " ", a.path("another", "arg")],
-      {
-        named: ["@arg", " "],
-        other: [a.path("named", "arg"), " "],
-        "yet-another": [a.decimal("-12.5"), "  "],
-      }
-    )
-  );
-});
+// test("using all the features", assert => {
+//   assert.tree(
+//     "{{  (id.with.path some @arg named=args other=@named.args) @some.arg another.arg named=@arg other=named.arg yet-another=-12.5  }}",
+//     r.interpolate(
+//       r.ws("  "),
+//       r.sexp([
+//         r.id("id"),
+//         r.dot,
+//         r.id("with"),
+//         r.dot,
+//         r.id("path"),
+//         r.sp,
+//         r.id("some"),
+//         r.sp,
+//         r.arg("@arg"),
+//         r.sp,
+//         r.id("named"),
+//         r.eq,
+//         r.id("args"),
+//         r.sp,
+//         r.id("other"),
+//         r.eq,
+//         r.arg("@named"),
+//         r.dot,
+//         r.id("args"),
+//       ]),
+//       r.sp,
+//       r.arg("@some"),
+//       r.dot,
+//       r.id("arg"),
+//       r.sp,
+//       r.id("another"),
+//       r.dot,
+//       r.id("arg"),
+//       r.sp,
+//       r.id("named"),
+//       r.eq,
+//       r.arg("@arg"),
+//       r.sp,
+//       r.id("other"),
+//       r.eq,
+//       r.id("named"),
+//       r.dot,
+//       r.id("arg"),
+//       r.sp,
+//       r.id("yet-another"),
+//       r.eq,
+//       r.decimal("-12.5"),
+//       r.ws("  ")
+//     ),
+//     a.interpolate(
+//       "  ",
+//       a.call(a.path("id", "with.path"), [" ", "some", " ", "@arg"], {
+//         named: ["args", " "],
+//         other: a.path("@named", "args"),
+//       }),
+//       [" ", a.path("@some", "arg"), " ", a.path("another", "arg")],
+//       {
+//         named: ["@arg", " "],
+//         other: [a.path("named", "arg"), " "],
+//         "yet-another": [a.decimal("-12.5"), "  "],
+//       }
+//     )
+//   );
+// });
 
 test("two interpolations next to each other", assert => {
   assert.tree(

@@ -1,24 +1,20 @@
 import { TokenType } from "../../../read/tokens";
 import * as ast from "../../nodes";
-import { shape } from "../abstract";
+import { SequenceBuilder, ParserArrow, token, source } from "../../shape";
 import {
-  legacyConsumeToken,
-  legacySource,
-  consumeToken,
-  source,
+  token as legacyToken,
+  source as legacySource,
 } from "../../tokens-iterator";
-import type { SequenceBuilder } from "../../shape";
-
-export const StringShape = shape("String", iterator =>
-  iterator
-    .start(legacyConsumeToken("token", TokenType.String))
-    .extend("source", legacySource())
-    .andThen(({ token, source }) => ast.string(token, source))
-);
 
 export const StringSequence: SequenceBuilder<
   void,
   ast.StringNode
-> = consumeToken("token", TokenType.String)
-  .extend("source", source())
+> = legacyToken("token", TokenType.String)
+  .extend("source", legacySource())
   .andThen(({ token, source }) => ast.string(token, source));
+
+export const StringArrow = token(TokenType.String)
+  .named("token")
+  .extend("source", source())
+  .ifOk(({ token, source }) => ast.string(token, source))
+  .label("String");

@@ -1,8 +1,8 @@
 import { TokenType } from "../../../read/tokens";
 import * as ast from "../../nodes";
-import type { SequenceBuilder } from "../../shape";
+import { SequenceBuilder, ParserArrow, Result } from "../../shape";
 import { consumeParent, label } from "../../tokens-iterator";
-import { CallBodySequence } from "../internal/call-body";
+import { CallBodySequence, CallBodyArrow } from "../internal/call-body";
 
 export const SexpSequence: SequenceBuilder<void, ast.CallNode> = label(
   "Sexp",
@@ -12,3 +12,11 @@ export const SexpSequence: SequenceBuilder<void, ast.CallNode> = label(
     CallBodySequence
   ).andThen(({ result, token }) => ast.call(result, { span: token.span }))
 );
+
+export const SexpArrow: ParserArrow<
+  void,
+  Result<ast.CallNode>
+> = ParserArrow.start()
+  .parent("sexp", TokenType.Sexp, CallBodyArrow)
+  .ifOk(({ result, token }) => ast.call(result, { span: token.span }))
+  .label("Sexp");

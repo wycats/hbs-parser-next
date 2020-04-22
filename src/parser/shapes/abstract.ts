@@ -1,7 +1,6 @@
-import { Shape, Result, SequenceBuilder } from "../shape";
-import { EXPAND } from "../shape";
-import TokensIterator, {
-  legacyExpand,
+import { EXPAND, Result, SequenceBuilder, Shape } from "../shape";
+import type {
+  default as TokensIterator,
   CombinatorTokensIterator,
 } from "../tokens-iterator";
 
@@ -41,23 +40,5 @@ export function infallibleShape<T>(
     readonly desc = desc;
 
     [EXPAND] = expand;
-  };
-}
-
-export function or<T, U>(
-  left: Shape<Result<T>>,
-  right: Shape<Result<U>>
-): Shape<Result<T | U>> {
-  return {
-    desc: `${left.desc} OR ${right.desc}`,
-    [EXPAND](iterator) {
-      let leftResult = legacyExpand(left)(iterator);
-
-      if (leftResult.kind === "ok") {
-        return leftResult;
-      }
-
-      return legacyExpand(right)(iterator);
-    },
   };
 }

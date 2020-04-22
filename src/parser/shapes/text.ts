@@ -1,9 +1,14 @@
 import { TokenType, TextToken } from "../../read/tokens";
 import * as ast from "../nodes";
-import type { SequenceBuilder } from "../shape";
-import { consumeToken, label } from "../tokens-iterator";
+import { SequenceBuilder, isOk, ok, ParserArrow } from "../shape";
+import { token, label } from "../tokens-iterator";
 
 export const TextSequence: SequenceBuilder<void, ast.TextNode> = label(
   "Text",
-  consumeToken(TokenType.Text).andThen(text => ast.text(text))
+  token(TokenType.Text).andThen(text => ast.text(text))
 );
+
+export const TextArrow = ParserArrow.start()
+  .token(TokenType.Text)
+  .ifOk(text => ast.text(text))
+  .label("Text");

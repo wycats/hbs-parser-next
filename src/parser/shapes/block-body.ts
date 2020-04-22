@@ -1,7 +1,7 @@
-import TokensIterator, { legacyExpand, repeat } from "../tokens-iterator";
-import { TopLevelNode, TopLevelSequence } from "./top-level";
-import { EXPAND, start, ok, isOk } from "../shape";
+import { EXPAND, isOk, ok } from "../shape";
+import TokensIterator, { repeat } from "../tokens-iterator";
 import { AbstractShape } from "./abstract";
+import { TopLevelNode, TopLevelSequence } from "./top-level";
 
 export default class BlockBodyShape extends AbstractShape<
   readonly TopLevelNode[]

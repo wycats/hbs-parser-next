@@ -1,8 +1,8 @@
 import { TokenType } from "../../read/tokens";
 import type * as ast from "../nodes";
 import type { BlockNode } from "../nodes/top-level";
-import { err, EXPAND, Result, ok } from "../shape";
-import TokensIterator, { legacyExpand, legacyNotEOF } from "../tokens-iterator";
+import { err, EXPAND, ok, Result } from "../shape";
+import TokensIterator, { notEOF } from "../tokens-iterator";
 import { AbstractShape } from "./abstract";
 import { ExpressionSequence } from "./expression";
 
@@ -18,7 +18,7 @@ export class BlockShape extends AbstractShape<Result<BlockNode>> {
   readonly desc = "Interpolate";
 
   [EXPAND](iterator: TokensIterator): Result<BlockNode> {
-    let eof = legacyNotEOF()(iterator);
+    let eof = notEOF().run(iterator, ok(undefined));
 
     if (eof.kind === "err") {
       return eof;

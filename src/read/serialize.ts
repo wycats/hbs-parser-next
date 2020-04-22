@@ -61,7 +61,7 @@ export function serializeNode(token: Token | null, source: string): string[] {
       return ["@", slice(token.name, source)];
     case TokenType.Sexp:
       return ["(", ...serializeList(token.children, source), ")"];
-    case TokenType.Interpolate:
+    case TokenType.UntrustedInterpolate:
       return ["{{", ...serializeList(token.children, source), "}}"];
     case TokenType.TrustedInterpolate:
       return ["{{{", ...serializeList(token.children, source), "}}}"];
