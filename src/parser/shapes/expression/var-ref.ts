@@ -1,37 +1,7 @@
 import { TokenType } from "../../../read/tokens";
 import { slice } from "../../../span";
 import * as ast from "../../nodes";
-import { SequenceBuilder, ParserArrow, Result, ok, err } from "../../shape";
-import {
-  atomic,
-  token,
-  label,
-  notNext,
-  source,
-  lookahead,
-  isToken,
-} from "../../tokens-iterator";
-
-const notEQ = lookahead().next(isToken(TokenType.Eq)).not;
-
-export const VarRefSequence: SequenceBuilder<
-  void,
-  ast.VarReferenceNode | ast.ThisReferenceNode
-> = label(
-  "VarRef",
-  atomic(
-    token("id", TokenType.Identifier)
-      .andCheck(notEQ)
-      .extend("source", source())
-      .andThen(({ id, source }) => {
-        if (slice(id.span, source) === "this") {
-          return ast.thisReference(id);
-        } else {
-          return ast.varReference(id);
-        }
-      })
-  )
-);
+import { err, ok, ParserArrow, Result } from "../../shape";
 
 export const VarRefArrow: ParserArrow<
   void,
@@ -45,7 +15,11 @@ export const VarRefArrow: ParserArrow<
       .map(token =>
         token === undefined || token.type !== TokenType.Eq
           ? ok(undefined)
-          : err(undefined, "lookahead")
+          : err("unknown", {
+              type: "lookahead",
+              expected: TokenType.Eq,
+              actual: token,
+            })
       )
   )
   .extend("source", ParserArrow.start().source().fallible())

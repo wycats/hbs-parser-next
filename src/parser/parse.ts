@@ -1,16 +1,11 @@
-import type * as tokens from "../read/tokens";
-import * as ast from "./nodes";
-import BlockBodyShape from "./shapes/block-body";
-import TokensIterator, {
-  TOKENS,
-  expandInfallible,
-  TokensIteratorState,
-} from "./tokens-iterator";
-import { Result, ok, err, ParserArrow } from "./shape";
-import { LoggingType } from "../read/read";
-import { ParseTracer } from "./debug";
-import { TopLevelArrow } from "./shapes/top-level";
 import { range } from "..";
+import { LoggingType } from "../read/read";
+import type * as tokens from "../read/tokens";
+import { ParseTracer } from "./debug";
+import * as ast from "./nodes";
+import { ParserArrow, Result } from "./shape";
+import { TopLevelArrow } from "./shapes/top-level";
+import TokensIterator, { TOKENS } from "./tokens-iterator";
 
 export interface ParseOptions {
   input: tokens.RootToken;

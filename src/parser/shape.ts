@@ -1,32 +1,10 @@
 import type { Token, TokenType, TokenMap } from "../read/tokens";
-import type { ShapeConstructor } from "./shapes/abstract";
-import { CombinatorTokensIterator, ITERATOR_SOURCE } from "./tokens-iterator";
+import TokensIterator, { ITERATOR_SOURCE } from "./tokens-iterator";
 
 export const EXPAND = Symbol("EXPAND");
 export const RESULT_KIND = Symbol("RESULT_KIND");
 
-export interface Shape<T> {
-  readonly desc: string;
-  [EXPAND](iterator: CombinatorTokensIterator): T;
-}
-
 export type ResultValue<T extends Result<unknown>> = T extends Result<infer R>
-  ? R
-  : never;
-
-export type ShapeResult<T extends Shape<Result<unknown>>> = T extends Shape<
-  Result<infer R>
->
-  ? R
-  : T extends Shape<infer R>
-  ? R
-  : never;
-
-export type ShapeConstructorResult<
-  T extends ShapeConstructor<Result<unknown>>
-> = T extends { new (): Shape<Result<infer R>> }
-  ? R
-  : T extends ShapeConstructor<infer R>
   ? R
   : never;
 
@@ -38,7 +16,10 @@ export function ok<T>(value: T): Result<T> {
   };
 }
 
-export function err<T>(token: Token | undefined, reason: string): Result<T> {
+export function err<T>(
+  token: Token | "EOF" | "unknown",
+  reason: ErrorReason
+): Result<T> {
   return {
     [RESULT_KIND]: "err",
     kind: "err",
@@ -48,7 +29,10 @@ export function err<T>(token: Token | undefined, reason: string): Result<T> {
   };
 }
 
-export function fatalError(token: Token, reason: string): Result<unknown> {
+export function fatalError<T>(
+  token: Token,
+  reason: ErrorReason
+): Result<unknown> {
   return {
     [RESULT_KIND]: "err",
     kind: "err",
@@ -65,12 +49,32 @@ export interface Ok<T> {
   value: T;
 }
 
+export type ErrorReason =
+  | {
+      type: "rejected";
+      token: Token | "EOF";
+    }
+  | {
+      type: "unexpected-eof";
+    }
+  | {
+      type: "mismatch";
+      expected: TokenType | "EOF";
+      actual: Token | "EOF";
+    }
+  | {
+      type: "not";
+      result: unknown;
+    }
+  | { type: "empty" }
+  | { type: "lookahead"; expected: TokenType | "EOF"; actual: Token | "EOF" };
+
 export interface Err {
   [RESULT_KIND]: "err";
   // compat
   kind: "err";
-  token: Token | undefined;
-  reason: string;
+  token: Token | "EOF" | "unknown";
+  reason: ErrorReason;
   fatal: boolean;
 }
 
@@ -104,7 +108,7 @@ export function mapResult<T, U>(
   result: Result<T>,
   callback: (input: T) => Result<U>
 ): Result<U> {
-  if (result.kind === "err") {
+  if (isErr(result)) {
     return result;
   }
 
@@ -114,13 +118,9 @@ export function mapResult<T, U>(
 export type Thunk<T> = () => T;
 
 export type Step<T, U> = (
-  iterator: CombinatorTokensIterator,
+  iterator: TokensIterator,
   prev: Result<T>
 ) => Result<U>;
-
-export type SequenceResult<
-  T extends SequenceBuilder<any, any>
-> = T extends SequenceBuilder<unknown, infer R> ? R : never;
 
 export type ArrowResult<
   T extends ParserArrow<any, any>
@@ -130,17 +130,14 @@ export type FallibleArrowResult<
   T extends ParserArrow<any, Result<any>>
 > = T extends ParserArrow<unknown, Result<infer R>> ? Result<R> : never;
 
-export type SourceStep<U> = (iterator: CombinatorTokensIterator) => Result<U>;
+export type SourceStep<U> = (iterator: TokensIterator) => Result<U>;
 
 export const SOURCE: Result<void> = ok(undefined);
 
-//// TODO: Differentiate SequenceBuilder (with input) from SourceSequenceBuilder (no input) ////
-
-export interface ParserArrowCore<EvalT, EvalU> {
+export interface ParserArrowCore {
   Id<T>(): ParserArrow<T, T>;
   Arr<T, U>(callback: (input: T) => U): ParserArrow<T, U>;
   recurse<T, U>(callback: () => ParserArrow<T, U>): ParserArrow<T, U>;
-  invoke: <S extends ArrowState>(state: S, prev: EvalT) => [S, EvalU];
   zip<T, U, T2, U2>(
     left: ParserArrow<T, U>,
     right: ParserArrow<T2, U2>
@@ -159,8 +156,7 @@ export interface ParserArrowCore<EvalT, EvalU> {
   ): ParserArrow<T, [U, V]>;
 }
 
-export interface IterateParserArrow<EvalT, EvalU>
-  extends ParserArrowCore<EvalT, EvalU> {
+export interface IterateParserArrow extends ParserArrowCore {
   iterate<T, U>(left: ParserArrow<T, U>): ParserArrow<T[], U[]>;
   repeat<Pre, InnerU>(
     arrow: ParserArrow<Pre, Result<InnerU>>
@@ -168,8 +164,7 @@ export interface IterateParserArrow<EvalT, EvalU>
   Reduce<T, U>(callback: (list: T[]) => U): ParserArrow<T[], U>;
 }
 
-export interface ChoiceParserArrowCore<EvalT, EvalU>
-  extends ParserArrowCore<EvalT, EvalU> {
+export interface ChoiceParserArrowCore extends ParserArrowCore {
   FallibleArr<T, U>(
     ok: (input: T) => U,
     err: (input: Err) => U
@@ -189,8 +184,7 @@ export interface ChoiceParserArrowCore<EvalT, EvalU>
   ): ParserArrow<Result<T>, Result<U>>;
 }
 
-export interface IteratorParserArrowCore<EvalT, EvalU>
-  extends ParserArrowCore<EvalT, EvalU> {
+export interface IteratorParserArrowCore extends ParserArrowCore {
   Source(): ParserArrow<void, string>;
   Atomic<T, InnerU>(
     step: ParserArrow<T, Result<InnerU>>
@@ -208,11 +202,11 @@ export interface IteratorParserArrowCore<EvalT, EvalU>
   eof<T>(): ParserArrow<T, Result<void>>;
 }
 
-export interface ParserArrowFullCore<EvalT, EvalU>
-  extends ParserArrowCore<EvalT, EvalU>,
-    IterateParserArrow<EvalT, EvalU>,
-    ChoiceParserArrowCore<EvalT, EvalU>,
-    IteratorParserArrowCore<EvalT, EvalU> {}
+export interface ParserArrowFullCore
+  extends ParserArrowCore,
+    IterateParserArrow,
+    ChoiceParserArrowCore,
+    IteratorParserArrowCore {}
 
 export interface Evaluator<S, T, U> {
   evaluate(prev: T): U;
@@ -237,10 +231,10 @@ export interface ArrowState {
 }
 
 export class ParseEvaluator<S extends ArrowState, T, U> {
-  constructor(private state: S, private core: ParserArrowEvaluateCore<T, U>) {}
+  constructor(private state: S, private arrow: ParserArrow<T, U>) {}
 
   evaluate(prev: T): U {
-    return this.core.evaluate(this, prev);
+    return this.arrow.evaluate(this, prev);
   }
 
   withState<V>(callback: (state: S) => [S, V]): V {
@@ -254,28 +248,12 @@ export class ParseEvaluator<S extends ArrowState, T, U> {
 export function evalArr<T, U>(
   callback: <S extends ArrowState>(state: S, prev: T) => [S, U]
 ): ParserArrow<T, U> {
-  return new ParserArrow(new ParserArrowEvaluateCore(callback));
+  return new ParserArrow(new ParserArrowEvaluateCore(), callback);
 }
 
-export class ParserArrowEvaluateCore<EvalT, EvalU>
-  implements ParserArrowFullCore<EvalT, EvalU> {
-  static start<T, U = T>(): ParserArrowEvaluateCore<T, U> {
-    return new ParserArrowEvaluateCore((s, t) => [s, (t as unknown) as U]);
-  }
-
-  constructor(
-    readonly invoke: <S extends ArrowState>(state: S, prev: EvalT) => [S, EvalU]
-  ) {}
-
-  evaluate<S extends ArrowState>(
-    evaluator: ParseEvaluator<S, EvalT, EvalU>,
-    prev: EvalT
-  ): EvalU {
-    return evaluator.withState(state => this.invoke(state, prev));
-  }
-
+export class ParserArrowEvaluateCore implements ParserArrowFullCore {
   Id<T>(): ParserArrow<T, T> {
-    return new ParserArrow(ParserArrowEvaluateCore.start());
+    return new ParserArrow(new ParserArrowEvaluateCore(), (s, t) => [s, t]);
   }
 
   recurse<T, U>(callback: () => ParserArrow<T, U>): ParserArrow<T, U> {
@@ -365,7 +343,7 @@ export class ParserArrowEvaluateCore<EvalT, EvalU>
       let out: InnerU[] = [nextInput.value];
       currentState = nextState;
 
-      loop(i => {
+      loop(() => {
         let [nextState, nextInput] = arrow.invoke(currentState, input);
 
         if (isErr(nextInput)) {
@@ -477,13 +455,17 @@ export class ParserArrowEvaluateCore<EvalT, EvalU>
       state,
       state.next(tokenType, token => {
         if (token === undefined) {
-          return err(token, "eof");
+          return err("EOF", { type: "unexpected-eof" });
         }
 
         if (token.type === tokenType) {
           return ok(token) as Result<TokenMap[K]>;
         } else {
-          return err(token, "mismatch");
+          return err(token, {
+            type: "mismatch",
+            expected: tokenType,
+            actual: token,
+          });
         }
       }),
     ]);
@@ -500,7 +482,11 @@ export class ParserArrowEvaluateCore<EvalT, EvalU>
         if (token === undefined) {
           return ok(undefined);
         } else {
-          return err(token, "mismatch");
+          return err(token, {
+            type: "mismatch",
+            expected: "EOF",
+            actual: token,
+          });
         }
       }),
     ]);
@@ -520,20 +506,31 @@ export function source(): ParserArrow<void, Result<string>> {
 export function recurse<T>(
   callback: () => ParserArrow<void, T>
 ): ParserArrow<void, T> {
-  return ParserArrowEvaluateCore.start().recurse(callback);
+  return new ParserArrowEvaluateCore().recurse(callback);
 }
 
 export class ParserArrow<T, U> {
   static start<T, U = T>(): ParserArrow<T, U> {
-    return new ParserArrow(ParserArrowEvaluateCore.start());
+    return new ParserArrow(new ParserArrowEvaluateCore(), (s, t) => [
+      s,
+      (t as unknown) as U,
+    ]);
   }
 
   constructor(
-    private core: ParserArrowFullCore<T, U> // readonly start: (iterator: CombinatorTokensIterator, prev: T) => U
+    private core: ParserArrowFullCore,
+    private start: <S extends ArrowState>(state: S, prev: T) => [S, U]
   ) {}
 
+  evaluate<S extends ArrowState>(
+    evaluator: ParseEvaluator<S, T, U>,
+    prev: T
+  ): U {
+    return evaluator.withState(state => this.invoke(state, prev));
+  }
+
   invoke<S extends ArrowState>(state: S, prev: T): [S, U] {
-    return this.core.invoke(state, prev);
+    return this.start(state, prev);
   }
 
   iterate(): ParserArrow<T[], U[]> {
@@ -663,7 +660,7 @@ export class ParserArrow<T, U> {
       this.core.Arr(list =>
         list.length > 0
           ? (ok(undefined) as Result<void>)
-          : (err(undefined, "not present") as Result<void>)
+          : (err("unknown", { type: "empty" }) as Result<void>)
       )
     );
   }
@@ -674,7 +671,7 @@ export class ParserArrow<T, U> {
     return this.core.andThen(
       this,
       this.core.FallibleArr(
-        _ => err(undefined, "not"),
+        input => err("unknown", { type: "not", result: input }),
         _ => ok(undefined)
       )
     );
@@ -730,209 +727,6 @@ export class ParserArrow<T, U> {
 }
 
 export type Inner<T> = T extends Result<infer R> ? R : never;
-
-/**
- * InnerT is the previous result
- * InnerU is the successful value when executing this step
- */
-export class SequenceBuilder<InnerT, InnerU> {
-  static arr<T, U>(callback: (input: T) => U): SequenceBuilder<T, U> {
-    return new SequenceBuilder((_, last) => {
-      if (isOk(last)) {
-        return ok(callback(last.value));
-      } else {
-        return last;
-      }
-    });
-  }
-
-  constructor(private start: Step<InnerT, InnerU>) {
-    if (start instanceof SequenceBuilder) {
-      debugger;
-    }
-  }
-
-  run(
-    iterator: CombinatorTokensIterator,
-    prev: Result<InnerT>
-  ): Result<InnerU> {
-    return this.start(iterator, prev);
-  }
-
-  named<K extends string>(
-    name: K
-  ): SequenceBuilder<InnerT, ResultObject<K, InnerU>> {
-    return new SequenceBuilder<InnerT, ResultObject<K, InnerU>>(
-      (iterator, last) => {
-        let prev = this.start(iterator, last);
-        if (isOk(prev)) {
-          return (ok({ [name]: prev.value }) as unknown) as Result<
-            ResultObject<K, InnerU>
-          >;
-        } else {
-          return { ...prev, iterator };
-        }
-      }
-    );
-  }
-
-  andThen<V>(
-    callback: (input: InnerU) => Result<V>
-  ): SequenceBuilder<InnerT, V>;
-  andThen<V>(callback: (input: InnerU) => V): SequenceBuilder<InnerT, V>;
-  andThen<V>(
-    callback: (input: InnerU) => Err | V | Ok<V>
-  ): SequenceBuilder<InnerT, V> {
-    return new SequenceBuilder((iterator, last) => {
-      let prev = this.start(iterator, last);
-      if (isOk(prev)) {
-        let result = callback(prev.value);
-        if (isResult(result)) {
-          return { ...result, iterator };
-        } else {
-          return ok(result);
-        }
-      } else {
-        return { ...prev, iterator };
-      }
-    });
-  }
-
-  next<V>(sequence: SequenceBuilder<InnerU, V>): SequenceBuilder<InnerT, V> {
-    return new SequenceBuilder((iterator, last) => {
-      let prev = this.start(iterator, last);
-
-      if (isOk(prev)) {
-        let result: Result<V> = sequence.run(iterator, prev);
-        return result as Result<V>;
-      } else {
-        return prev as Result<V>;
-      }
-    });
-  }
-
-  concat<V>(
-    other: SequenceBuilder<void, V>
-  ): SequenceBuilder<InnerT, [InnerU, V]> {
-    return new SequenceBuilder((iterator, last) => {
-      if (isOk(last)) {
-        let lastResult = this.run(iterator, last);
-        let otherResult = other.run(iterator, ok(undefined));
-
-        if (isOk(lastResult) && isOk(otherResult)) {
-          return ok([lastResult.value, otherResult.value]);
-        } else if (isErr(otherResult)) {
-          return { ...otherResult } as Result<[InnerU, V]>;
-        } else {
-          return { ...lastResult } as Result<[InnerU, V]>;
-        }
-      } else {
-        return last;
-      }
-    });
-  }
-
-  extend<K extends string, V>(
-    key: K,
-    sequence: SequenceBuilder<void, V>
-  ): SequenceBuilder<InnerT, InnerU & ResultObject<K, V>> {
-    let concat = this.concat(sequence);
-    let result = concat.andThen(([a, b]) => {
-      let right = { [key]: b } as ResultObject<K, V>;
-      return { ...a, ...right };
-    });
-
-    return result;
-  }
-
-  mapErr<V>(
-    callback: (input: Err) => Result<V>
-  ): SequenceBuilder<InnerT, InnerU | V>;
-  mapErr<V>(callback: (input: Err) => V): SequenceBuilder<InnerT, InnerU | V>;
-  mapErr<V>(
-    callback: (input: Err) => V | Result<V>
-  ): SequenceBuilder<InnerT, InnerU | V> {
-    return new SequenceBuilder((iterator, last) => {
-      let prev = this.start(iterator, last);
-      if (isErr(prev)) {
-        let result = callback(prev);
-        if (isResult(result)) {
-          return { ...result } as Result<InnerU | V>;
-        } else {
-          return ok(result) as Result<InnerU | V>;
-        }
-      } else {
-        return { ...prev } as Result<InnerU | V>;
-      }
-    });
-  }
-
-  or<V>(value: V | Thunk<V>): SequenceBuilder<InnerT, InnerU | V> {
-    return new SequenceBuilder((iterator, last) => {
-      let prev = this.start(iterator, last);
-
-      if (isOk(prev)) {
-        return prev as Result<InnerU | V>;
-      } else if (typeof value === "function") {
-        return ok((value as Thunk<V>)()) as Result<V>;
-      } else {
-        return ok(value) as Result<V>;
-      }
-    });
-  }
-
-  get not(): SequenceBuilder<InnerT, void> {
-    return new SequenceBuilder((iterator, last) => {
-      let prev = this.start(iterator, last);
-
-      if (isOk(prev)) {
-        return iterator.err("not");
-      } else {
-        return ok(undefined);
-      }
-    });
-  }
-
-  check(
-    sequence: SequenceBuilder<InnerU, InnerU>
-  ): SequenceBuilder<InnerT, InnerU> {
-    return new SequenceBuilder((iterator, last) => {
-      let prev = this.start(iterator, last);
-
-      if (isOk(prev)) {
-        let check = sequence.run(iterator, prev);
-
-        if (isOk(check)) {
-          return prev as Result<InnerU>;
-        } else {
-          return check as Result<InnerU>;
-        }
-      } else {
-        return prev as Result<InnerU>;
-      }
-    });
-  }
-
-  andCheck(
-    sequence: SequenceBuilder<void, void>
-  ): SequenceBuilder<InnerT, InnerU> {
-    return new SequenceBuilder((iterator, last) => {
-      let prev = this.start(iterator, last);
-
-      if (isOk(prev)) {
-        let check = sequence.run(iterator, ok(undefined));
-
-        if (isOk(check)) {
-          return prev as Result<InnerU>;
-        } else {
-          return check as Result<InnerU>;
-        }
-      } else {
-        return prev;
-      }
-    });
-  }
-}
 
 export type ResultObject<K extends string, T> = {
   [P in K]: T;

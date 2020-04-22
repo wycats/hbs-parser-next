@@ -1,31 +1,4 @@
-import {
-  isOk,
-  Result,
-  SequenceBuilder,
-  SequenceResult,
-  ParserArrow,
-  ArrowResult,
-  FallibleArrowResult,
-} from "../../shape";
-
-export function any<Prev, T extends Array<SequenceBuilder<Prev, unknown>>>(
-  desc: string,
-  sequences: T
-): SequenceBuilder<Prev, SequenceResult<T[number]>> {
-  return new SequenceBuilder((iterator, prev) => {
-    for (let sequence of sequences) {
-      let result = sequence.run(iterator, prev) as Result<
-        SequenceResult<T[number]>
-      >;
-
-      if (isOk(result)) {
-        return result;
-      }
-    }
-
-    return iterator.err(desc, desc) as Result<SequenceResult<T[number]>>;
-  });
-}
+import type { ParserArrow, Result } from "../../shape";
 
 export type UnionResult<
   T extends ReadonlyArray<ParserArrow<void, Result<any>>>

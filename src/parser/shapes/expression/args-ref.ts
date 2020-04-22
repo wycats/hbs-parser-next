@@ -1,12 +1,6 @@
 import { TokenType } from "../../../read/tokens";
 import * as ast from "../../nodes";
-import { SequenceBuilder, ok, ParserArrow, Result } from "../../shape";
-import { token, label } from "../../tokens-iterator";
-
-export const ArgRefSequence: SequenceBuilder<
-  void,
-  ast.ArgReferenceNode
-> = label("ArgRef", token(TokenType.Argument).andThen(ast.argReference));
+import { ParserArrow, Result } from "../../shape";
 
 export const ArgRefArrow: ParserArrow<
   void,

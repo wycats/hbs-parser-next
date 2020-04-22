@@ -3,10 +3,10 @@ import type { Token, RootToken } from "../read/tokens";
 import { unwrap } from "../read/utils";
 import { slice } from "../span";
 import { AstNode, formatAstNode } from "./nodes";
-import { Result, Shape, isErr } from "./shape";
+import { Result, isErr, ErrorReason } from "./shape";
 
 export interface ParseTrace {
-  shape: Shape<unknown> | { desc: string };
+  shape: { desc: string };
   preToken: Token | RootToken | undefined;
   postToken: Token | undefined;
   result: unknown;
@@ -66,26 +66,16 @@ export class ParseTracer {
   }
 
   commit(): void {
-    let last = unwrap(this.stack.pop());
-    if (last.shape.desc !== "begin") {
-      throw new Error(
-        `ASSERT: unbalanced stack: stack=${last.shape.desc}, expected=begin`
-      );
-    }
+    this.stackCheck("begin");
   }
 
   rollback(): void {
-    let last = unwrap(this.stack.pop());
-    if (last.shape.desc !== "begin") {
-      throw new Error(
-        `ASSERT: unbalanced stack: stack=${last.shape.desc}, expected=begin`
-      );
-    }
+    let last = this.stackCheck("begin");
     last.failure = "rollback";
   }
 
   preInvoke(
-    shape: Shape<unknown> | { desc: string; isLeaf: boolean },
+    shape: { desc: string; isLeaf: boolean },
     token: Token | undefined
   ): void {
     let trace = {
@@ -112,31 +102,39 @@ export class ParseTracer {
   }
 
   postInvoke(
-    shape: Shape<unknown> | { desc: string },
+    shape: { desc: string },
     result: unknown,
     postToken: Token | undefined
   ): void {
-    let last = unwrap(this.stack.pop());
-    if (last.shape.desc !== shape.desc) {
-      throw new Error(
-        `ASSERT: unbalanced stack: stack=${last.shape.desc}, expected=${shape.desc}`
-      );
-    }
-
+    let last = this.stackCheck(shape.desc);
     last.result = result;
     last.postToken = postToken;
   }
 
-  postInvokeFailure(
-    shape: Shape<unknown> | { desc: string },
-    reason: "ignored" | "optional"
-  ): void {
+  private stackCheck(expected: string): ParseTrace {
     let last = unwrap(this.stack.pop());
-    if (last.shape.desc !== shape.desc) {
+    if (last.shape.desc !== expected) {
+      console.warn(
+        "unbalanced stack",
+        "stack =",
+        this.stack.map(s => s.shape.desc),
+        "last =",
+        last.shape.desc,
+        "expected =",
+        expected
+      );
       throw new Error(
-        `ASSERT: unbalanced stack: stack=${last.shape.desc}, expected=${shape.desc}`
+        `ASSERT: unbalanced stack: stack=${last.shape.desc}, expected=${expected}`
       );
     }
+    return last;
+  }
+
+  postInvokeFailure(
+    shape: { desc: string },
+    reason: "ignored" | "optional"
+  ): void {
+    let last = this.stackCheck(shape.desc);
     last.result = undefined;
     last.postToken = undefined;
     last.failure = reason;
@@ -174,7 +172,7 @@ class PrintTracer {
     }
 
     console.log(
-      `%c| ${this.preSlice} | ${truncString(this.details, 60)} | ${
+      `%c| ${this.preSlice} | ${truncString(this.details, 80)} | ${
         this.postSlice
       }`,
       NORMAL,
@@ -261,7 +259,7 @@ function formatResult(result: unknown): string {
     }
   } else if (isResult(result)) {
     if (isErr(result)) {
-      return `ERR reason=${result.reason}`;
+      return formatReason(result.reason);
     } else {
       return formatResult(result.value);
     }
@@ -270,6 +268,33 @@ function formatResult(result: unknown): string {
   } else {
     console.log("not debuggable", result);
     return result + "";
+  }
+}
+
+function formatReason(reason: ErrorReason): string {
+  switch (reason.type) {
+    case "empty":
+      return `empty`;
+    case "lookahead":
+      return `lookahead was ${formatToken(reason.actual)}, expected ${
+        reason.expected
+      }`;
+    case "mismatch":
+      return `expected ${formatToken(reason.actual)}, got ${reason.expected}`;
+    case "not":
+      return `expected not ${formatResult(reason.result)}`;
+    case "rejected":
+      return `rejected ${formatToken(reason.token)}`;
+    case "unexpected-eof":
+      return `unexpected eof`;
+  }
+}
+
+function formatToken(token: Token | "EOF"): string {
+  if (token === "EOF") {
+    return "EOF";
+  } else {
+    return token.type;
   }
 }
 

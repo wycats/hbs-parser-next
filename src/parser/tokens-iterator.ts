@@ -1,22 +1,7 @@
-import type { ParentToken, Token, TokenMap, TokenType } from "../read/tokens";
-import type { ParseTracer } from "./debug";
-import {
-  err,
-  EXPAND,
-  isErr,
-  isOk,
-  ok,
-  Result,
-  ResultObject,
-  SequenceBuilder,
-  Shape,
-  ArrowState,
-  ParserArrow,
-  evalArr,
-  isResult,
-} from "./shape";
-import type { ShapeConstructor } from "./shapes/abstract";
+import type { ParentToken, Token } from "../read/tokens";
 import { unwrap } from "../read/utils";
+import type { ParseTracer } from "./debug";
+import { ArrowState, err, isErr, isOk, ok, ParserArrow, Result } from "./shape";
 
 export const TOKENS = Symbol("TOKENS");
 export const CONTEXT = Symbol("CONTEXT");
@@ -103,7 +88,7 @@ export class PeekedToken {
     return null;
   }
 
-  get token(): Token {
+  get token(): Token | undefined {
     return this.iterator[TOKENS][this.pos];
   }
 }
@@ -113,39 +98,8 @@ export interface ParseContext {
   tracer: ParseTracer;
 }
 
-export interface CombinatorTokensIterator {
-  // TODO: Figure out how to make this not necessary
-  readonly [ITERATOR_SOURCE]: string;
-  arrowState: TokensIteratorState;
-  start<T>(step: (iterator: CombinatorTokensIterator) => T): T;
-  peek(desc: string, options?: { isLeaf: boolean }): PeekedToken;
-  err<T>(desc: string, reason?: string): Result<T>;
-  ok<T>(value: T): Result<T>;
-  next<T>(
-    desc: string,
-    callback: (token: Token | undefined) => Result<T>
-  ): Result<T>;
-  atomic<T>(
-    callback: (iterator: CombinatorTokensIterator) => Result<T>
-  ): Result<T>;
-  expandFallible<T>(
-    shapeOrClass: ShapeConstructor<Result<T>> | Shape<Result<T>>
-  ): Result<T>;
-  expandInfallible<T>(shapeOrClass: ShapeConstructor<T> | Shape<T>): T;
-  withChildTokens(tokens: readonly Token[]): CombinatorTokensIterator;
-  processChildren<T, K extends ParentToken["type"]>(
-    desc: string,
-    tokenType: K,
-    step: (iterator: CombinatorTokensIterator) => Result<T>
-  ): Result<{ result: T; token: Token }>;
-  label<T>(
-    desc: string,
-    callback: (iterator: CombinatorTokensIterator) => T
-  ): T;
-}
-
 export class TokensIteratorState implements ArrowState {
-  constructor(private iterator: CombinatorTokensIterator) {
+  constructor(private iterator: TokensIterator) {
     if (new.target !== TokensIteratorState) {
       throw new Error(`TokensIteratorState is final`);
     }
@@ -214,7 +168,7 @@ export class TokensIteratorState implements ArrowState {
   }
 }
 
-export default class TokensIterator implements CombinatorTokensIterator {
+export default class TokensIterator {
   readonly [TOKENS]: readonly Token[];
   readonly [CONTEXT]: ParseContext;
   [POS]: number;
@@ -238,29 +192,24 @@ export default class TokensIterator implements CombinatorTokensIterator {
   assertNotEOF(): Result<void> {
     let next = this.peek("eof");
     if (next.isEOF) {
-      return err(next.reject().token, "eof") as Result<void>;
+      return err(next.reject().token || "EOF", {
+        type: "unexpected-eof",
+      }) as Result<void>;
     } else {
       next.ignore();
       return ok(undefined);
     }
   }
 
-  start<T>(step: (iterator: CombinatorTokensIterator) => T): T {
+  start<T>(step: (iterator: TokensIterator) => T): T {
     return step(this);
-  }
-
-  err<T>(desc: string, reason = "mismatch"): Result<T> {
-    return err(this.silentPeek(desc).token, reason) as Result<T>;
   }
 
   ok<T>(value: T): Result<T> {
     return ok(value);
   }
 
-  label<T>(
-    desc: string,
-    callback: (iterator: CombinatorTokensIterator) => T
-  ): T {
+  label<T>(desc: string, callback: (iterator: TokensIterator) => T): T {
     this[CONTEXT].tracer.preInvoke(
       { desc, isLeaf: false },
       this[TOKENS][this[POS]]
@@ -307,7 +256,10 @@ export default class TokensIterator implements CombinatorTokensIterator {
   ): void {
     this[CONTEXT].tracer.postInvoke(
       { desc },
-      err(peeked.token, "rejected"),
+      err(peeked.token || "EOF", {
+        type: "rejected",
+        token: peeked.token || "EOF",
+      }),
       this[TOKENS][pos]
     );
   }
@@ -320,30 +272,6 @@ export default class TokensIterator implements CombinatorTokensIterator {
     return new PeekedToken(this, desc, this[POS]);
   }
 
-  expandFallible<T>(
-    shapeOrClass: ShapeConstructor<Result<T>> | Shape<Result<T>>
-  ): Result<T> {
-    return this.expand(shapeOrClass, expanded => expanded);
-  }
-
-  expandInfallible<T>(shapeOrClass: { new (): Shape<T> } | Shape<T>): T {
-    return this.expand(shapeOrClass, expanded => expanded);
-  }
-
-  private expand<T, U>(
-    shapeOrClass: { new (): Shape<T> } | Shape<T>,
-    callback: (result: T) => U
-  ): U {
-    let shape =
-      typeof shapeOrClass === "function" ? new shapeOrClass() : shapeOrClass;
-    this[CONTEXT].tracer.preInvoke(shape, this[TOKENS][this[POS]]);
-    let expanded = shape[EXPAND](this);
-    let result = callback(expanded);
-    this[CONTEXT].tracer.postInvoke(shape, result, this[TOKENS][this[POS]]);
-
-    return result;
-  }
-
   get source(): string {
     return this[CONTEXT].source;
   }
@@ -352,9 +280,7 @@ export default class TokensIterator implements CombinatorTokensIterator {
     return new TokensIterator(tokens, this[CONTEXT]);
   }
 
-  atomic<T>(
-    callback: (iterator: CombinatorTokensIterator) => Result<T>
-  ): Result<T> {
+  atomic<T>(callback: (iterator: TokensIterator) => Result<T>): Result<T> {
     let transaction = this.begin();
 
     let result = callback(transaction);
@@ -435,10 +361,17 @@ export default class TokensIterator implements CombinatorTokensIterator {
       return result;
     }
 
-    let eof = assertEOF().run(child, ok(undefined));
+    let eof = child.peek("eof");
 
-    if (eof.kind === "err") {
-      return eof;
+    if (eof.token === undefined) {
+      eof.ignore();
+    } else {
+      eof.reject();
+      return err(eof.token, {
+        type: "mismatch",
+        expected: "EOF",
+        actual: eof.token,
+      });
     }
 
     return result;
@@ -447,32 +380,32 @@ export default class TokensIterator implements CombinatorTokensIterator {
   processChildren<T, K extends ParentToken["type"]>(
     desc: string,
     tokenType: K,
-    step: (iterator: CombinatorTokensIterator) => Result<T>
+    step: (iterator: TokensIterator) => Result<T>
   ): Result<{ result: T; token: Token }> {
-    let eof = this.assertNotEOF();
-
-    if (isErr(eof)) {
-      return eof;
-    }
-
     let next = this.peek(desc, { isLeaf: false });
 
-    if (next.token.type !== tokenType) {
-      return err(next.reject().token, "mismatch") as Result<{
-        result: T;
-        token: Token;
-      }>;
-    }
-
-    let result = this.processInner(next.token.children, step);
-    if (result.kind === "err") {
+    if (next.token === undefined) {
       next.reject();
-      return result;
+      return err("EOF", { type: "unexpected-eof" });
+    } else if (next.token.type !== tokenType) {
+      next.reject();
+      return err(next.token, {
+        type: "mismatch",
+        expected: tokenType,
+        actual: next.token,
+      });
+    } else {
+      let result = this.processInner(next.token.children, step);
+
+      if (isErr(result)) {
+        next.reject();
+        return result;
+      }
+
+      next.commit();
+
+      return ok({ result: result.value, token: next.token });
     }
-
-    next.commit();
-
-    return ok({ result: result.value, token: next.token });
   }
 
   next<T>(
@@ -483,249 +416,14 @@ export default class TokensIterator implements CombinatorTokensIterator {
     let result = callback(next.token);
 
     if (isErr(result)) {
-      return err(next.reject().token, "mismatch");
+      let token = next.reject().token;
+      return err(token || "EOF", { type: "rejected", token: token || "EOF" });
     }
 
     next.commit();
 
     return ok(result.value);
   }
-}
-
-export function label<T, U>(
-  label: string,
-  step: SequenceBuilder<T, U>
-): SequenceBuilder<T, U> {
-  return new SequenceBuilder((iterator, prev) => {
-    return iterator.label(label, iterator => step.run(iterator, prev));
-  });
-}
-
-export function atomic<T>(
-  step: SequenceBuilder<void, T>
-): SequenceBuilder<void, T> {
-  return new SequenceBuilder(iterator =>
-    iterator.atomic(iterator => step.run(iterator, ok(undefined)))
-  );
-}
-export function processInner<T>(
-  tokens: readonly Token[],
-  sequence: SequenceBuilder<void, T>
-): SequenceBuilder<void, T> {
-  return new SequenceBuilder(iterator => {
-    let childIterator = iterator.withChildTokens(tokens);
-    return notEOF()
-      .next(sequence)
-      .next(assertEOF())
-      .run(childIterator, ok(undefined));
-  });
-}
-
-export function produceErr<T, U>(
-  desc: string,
-  reason = desc
-): SequenceBuilder<T, U> {
-  return new SequenceBuilder(iterator => iterator.err(desc, reason));
-}
-
-export function notNext<T>(
-  desc: string,
-  tokenType: TokenType
-): SequenceBuilder<T, T> {
-  return new SequenceBuilder((iterator, prev) => {
-    let next = iterator.peek(desc);
-
-    if (next.token !== undefined && next.token.type !== tokenType) {
-      next.reject();
-      return iterator.err(desc, "lookahead");
-    } else {
-      next.ignore();
-      return prev;
-    }
-  });
-}
-
-export function lookahead<T>(): SequenceBuilder<T, Token | undefined> {
-  return new SequenceBuilder(iterator => {
-    let next = iterator.peek("ignore");
-    next.ignore();
-
-    return ok(next.token);
-  });
-}
-
-export function isToken(
-  tokenType: TokenType
-): SequenceBuilder<Token | undefined, void> {
-  return new SequenceBuilder((iterator, prev) => {
-    if (isOk(prev)) {
-      if (prev.value?.type === tokenType) {
-        return ok(undefined);
-      } else {
-        return iterator.err(tokenType, "mismatch");
-      }
-    } else {
-      return prev;
-    }
-  });
-}
-
-export function present<T>(desc: string): SequenceBuilder<T[], T[]> {
-  return new SequenceBuilder<T[], T[]>((iterator, prev) => {
-    if (isOk(prev)) {
-      return prev.value.length === 0
-        ? iterator.err(desc, "empty")
-        : iterator.ok(prev.value);
-    } else {
-      return prev;
-    }
-  });
-}
-
-export function repeat<T>(
-  step: SequenceBuilder<void, T>
-): SequenceBuilder<void, T[]> {
-  return new SequenceBuilder(iterator => {
-    let out: T[] = [];
-
-    while (true) {
-      let result = step.run(iterator, ok(undefined));
-
-      if (result.kind === "err") {
-        break;
-      } else {
-        out.push(result.value);
-      }
-    }
-
-    return ok(out);
-  });
-}
-
-export function notEOF(): SequenceBuilder<void, void> {
-  return new SequenceBuilder(iterator => {
-    let next = iterator.peek("eof");
-
-    if (next.isEOF) {
-      return err(next.reject().token, "eof");
-    } else {
-      return ok(next.ignore() || undefined);
-    }
-  });
-}
-
-function assertEOF<T>(): SequenceBuilder<T, T> {
-  return new SequenceBuilder((iterator, prev) => {
-    if (isOk(prev)) {
-      let next = iterator.peek("eof");
-      if (next.isEOF) {
-        next.ignore();
-        return prev;
-      } else {
-        return err(next.reject().token, "eof");
-      }
-    } else {
-      return prev;
-    }
-  });
-}
-
-export function consumeParent<T, K extends ParentToken["type"]>(
-  options: string | { desc: string; isLeaf: boolean },
-  tokenType: K,
-  step: SequenceBuilder<void, T>
-): SequenceBuilder<void, { result: T; token: Token }> {
-  return new SequenceBuilder(iterator => {
-    let eof = notEOF().run(iterator, ok(undefined));
-    if (eof.kind === "err") {
-      return eof;
-    }
-
-    let desc = typeof options === "string" ? options : options.desc;
-    let peekOptions = typeof options === "string" ? undefined : options;
-
-    let next = iterator.peek(desc, peekOptions);
-
-    if (next.token.type !== tokenType) {
-      return err(next.reject().token, "mismatch");
-    }
-
-    let result = processInner(next.token.children, step).run(
-      iterator,
-      ok(undefined)
-    );
-
-    if (result.kind === "err") {
-      next.reject();
-      return result;
-    }
-
-    next.commit();
-
-    return ok({ result: result.value, token: next.token });
-  });
-}
-
-export function token<K extends TokenType & keyof TokenMap, N extends string>(
-  name: N,
-  tokenType: K
-): SequenceBuilder<void, ResultObject<N, TokenMap[K]>>;
-export function token<K extends TokenType & keyof TokenMap>(
-  tokenType: K
-): SequenceBuilder<void, TokenMap[K]>;
-export function token<K extends TokenType & keyof TokenMap, N extends string>(
-  nameOrTokenType: N | K,
-  maybeTokenType?: K
-): SequenceBuilder<void, ResultObject<N, TokenMap[K]> | TokenMap[K]> {
-  let name = maybeTokenType === undefined ? undefined : nameOrTokenType;
-  let tokenType =
-    maybeTokenType === undefined ? nameOrTokenType : maybeTokenType;
-
-  return consume(tokenType, token => {
-    if (token.type === tokenType) {
-      if (name !== undefined) {
-        return { [name]: token };
-      } else {
-        return token;
-      }
-    }
-  }) as SequenceBuilder<void, ResultObject<N, TokenMap[K]> | TokenMap[K]>;
-}
-
-export function source(): SequenceBuilder<void, string> {
-  return new SequenceBuilder(iterator => ok(iterator[ITERATOR_SOURCE]));
-}
-
-export function consume<T>(
-  options: string | { desc: string; isLeaf: boolean },
-  callback: (token: Token) => T | undefined
-): SequenceBuilder<void, T> {
-  return new SequenceBuilder(iterator => {
-    let eof = notEOF().run(iterator, ok(undefined));
-    if (eof.kind === "err") {
-      return eof;
-    }
-
-    let desc = typeof options === "string" ? options : options.desc;
-    let peekOptions = typeof options === "string" ? undefined : options;
-
-    let next = iterator.peek(desc, peekOptions);
-    let result = callback(next.token);
-
-    if (result === undefined) {
-      return err(next.reject().token, "mismatch");
-    }
-
-    next.commit();
-
-    return ok(result);
-  });
-}
-
-export function expandInfallible<T>(
-  shapeOrClass: { new (): Shape<T> } | Shape<T>
-): (iterator: CombinatorTokensIterator) => T {
-  return iterator => iterator.expandInfallible(shapeOrClass);
 }
 
 export class TokensIteratorTransaction extends TokensIterator {
