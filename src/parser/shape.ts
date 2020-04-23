@@ -29,10 +29,7 @@ export function err<T>(
   };
 }
 
-export function fatalError<T>(
-  token: Token,
-  reason: ErrorReason
-): Result<unknown> {
+export function fatalError<T>(token: Token, reason: ErrorReason): Result<T> {
   return {
     [RESULT_KIND]: "err",
     kind: "err",
@@ -245,33 +242,33 @@ export class ParseEvaluator<S extends ArrowState, T, U> {
   }
 }
 
-export function evalArr<T, U>(
-  callback: <S extends ArrowState>(state: S, prev: T) => [S, U]
-): ParserArrow<T, U> {
-  return new ParserArrow(new ParserArrowEvaluateCore(), callback);
-}
-
 export class ParserArrowEvaluateCore implements ParserArrowFullCore {
   Id<T>(): ParserArrow<T, T> {
     return new ParserArrow(new ParserArrowEvaluateCore(), (s, t) => [s, t]);
   }
 
+  evalArr<T, U>(
+    callback: <S extends ArrowState>(state: S, prev: T) => [S, U]
+  ): ParserArrow<T, U> {
+    return new ParserArrow(new ParserArrowEvaluateCore(), callback);
+  }
+
   recurse<T, U>(callback: () => ParserArrow<T, U>): ParserArrow<T, U> {
-    return evalArr((state, last) => {
+    return this.evalArr((state, last) => {
       let arrow = callback();
       return arrow.invoke(state, last);
     });
   }
 
   Arr<T, U>(callback: (input: T) => U): ParserArrow<T, U> {
-    return evalArr((state, last) => [state, callback(last)]);
+    return this.evalArr((state, last) => [state, callback(last)]);
   }
 
   zip<T, U, T2, U2>(
     left: ParserArrow<T, U>,
     right: ParserArrow<T2, U2>
   ): ParserArrow<[T, T2], [U, U2]> {
-    return evalArr((state, [t, t2]) => {
+    return this.evalArr((state, [t, t2]) => {
       let [state2, u] = left.invoke(state, t);
       let [state3, u2] = right.invoke(state2, t2);
 
@@ -283,7 +280,7 @@ export class ParserArrowEvaluateCore implements ParserArrowFullCore {
     left: ParserArrow<T, U>,
     right: ParserArrow<U, V>
   ): ParserArrow<T, V> {
-    return evalArr((state, prev) => {
+    return this.evalArr((state, prev) => {
       let [state2, leftResult] = left.invoke(state, prev);
       return right.invoke(state2, leftResult);
     });
@@ -293,7 +290,7 @@ export class ParserArrowEvaluateCore implements ParserArrowFullCore {
     left: ParserArrow<T, U>,
     right: ParserArrow<T, U2>
   ): ParserArrow<T, [U, U2]> {
-    return evalArr((state, prev) => {
+    return this.evalArr((state, prev) => {
       let [state2, u] = left.invoke(state, prev);
       let [state3, u2] = right.invoke(state2, prev);
 
@@ -305,7 +302,7 @@ export class ParserArrowEvaluateCore implements ParserArrowFullCore {
     left: ParserArrow<T, U>,
     right: ParserArrow<U, U2>
   ): ParserArrow<T, [U, U2]> {
-    return evalArr((state, prev) => {
+    return this.evalArr((state, prev) => {
       let [state2, u] = left.invoke(state, prev);
       let [state3, u2] = right.invoke(state2, u);
 
@@ -314,7 +311,7 @@ export class ParserArrowEvaluateCore implements ParserArrowFullCore {
   }
 
   iterate<T, U>(arrow: ParserArrow<T, U>): ParserArrow<T[], U[]> {
-    return evalArr((state, last) => {
+    return this.evalArr((state, last) => {
       let currentState = state;
       let out = [];
 
@@ -331,7 +328,7 @@ export class ParserArrowEvaluateCore implements ParserArrowFullCore {
   repeat<Pre, InnerU>(
     arrow: ParserArrow<Pre, Result<InnerU>>
   ): ParserArrow<Pre, InnerU[]> {
-    return evalArr((state, input) => {
+    return this.evalArr((state, input) => {
       let currentState = state;
 
       let [nextState, nextInput] = arrow.invoke(state, input);
@@ -360,7 +357,7 @@ export class ParserArrowEvaluateCore implements ParserArrowFullCore {
   }
 
   Reduce<T2, U2>(callback: (list: T2[]) => U2): ParserArrow<T2[], U2> {
-    return evalArr((state, last) => {
+    return this.evalArr((state, last) => {
       return [state, callback(last)];
     });
   }
@@ -369,7 +366,7 @@ export class ParserArrowEvaluateCore implements ParserArrowFullCore {
     ok: (input: T) => U,
     err: (input: Err) => U
   ): ParserArrow<Result<T>, U> {
-    return evalArr((state, last) => {
+    return this.evalArr((state, last) => {
       if (isOk(last)) {
         return [state, ok(last.value)];
       } else {
@@ -381,7 +378,7 @@ export class ParserArrowEvaluateCore implements ParserArrowFullCore {
   BothOk<Pre, Left, Right>(
     arrow: ParserArrow<Pre, [Result<Left>, Result<Right>]>
   ): ParserArrow<Pre, Result<[Left, Right]>> {
-    return evalArr((state, last) => {
+    return this.evalArr((state, last) => {
       let [state2, [left, right]] = arrow.invoke(state, last);
 
       if (isOk(left) && isOk(right)) {
@@ -398,7 +395,7 @@ export class ParserArrowEvaluateCore implements ParserArrowFullCore {
     left: ParserArrow<T, Result<InnerU>>,
     right: ParserArrow<T, Result<V>>
   ): ParserArrow<T, Result<V | InnerU>> {
-    return evalArr((state, last) => {
+    return this.evalArr((state, last) => {
       let [state2, prev] = left.invoke(state, last);
 
       if (isOk(prev)) {
@@ -412,7 +409,7 @@ export class ParserArrowEvaluateCore implements ParserArrowFullCore {
   fallibleInput<T, U>(
     arrow: ParserArrow<T, U>
   ): ParserArrow<Result<T>, Result<U>> {
-    return evalArr((state, last) => {
+    return this.evalArr((state, last) => {
       if (isOk(last)) {
         let [state2, result] = arrow.invoke(state, last.value);
         return [state2, ok(result)];
@@ -423,19 +420,19 @@ export class ParserArrowEvaluateCore implements ParserArrowFullCore {
   }
 
   Source(): ParserArrow<void, string> {
-    return evalArr(state => [state, state[ITERATOR_SOURCE]]);
+    return this.evalArr(state => [state, state[ITERATOR_SOURCE]]);
   }
 
   Atomic<T, InnerU>(
     arrow: ParserArrow<T, Result<InnerU>>
   ): ParserArrow<T, Result<InnerU>> {
-    return evalArr((state, prev) =>
+    return this.evalArr((state, prev) =>
       state.atomic(state2 => arrow.invoke(state2, prev))
     );
   }
 
   label<T, U>(label: string, arrow: ParserArrow<T, U>): ParserArrow<T, U> {
-    return evalArr((state, prev) =>
+    return this.evalArr((state, prev) =>
       state.label(label, state2 => arrow.invoke(state2, prev))
     );
   }
@@ -445,13 +442,13 @@ export class ParserArrowEvaluateCore implements ParserArrowFullCore {
     tokenType: TokenType,
     arrow: ParserArrow<void, Result<T>>
   ): ParserArrow<void, Result<{ result: T; token: Token }>> {
-    return evalArr(state => [state, state.parent(desc, tokenType, arrow)]);
+    return this.evalArr(state => [state, state.parent(desc, tokenType, arrow)]);
   }
 
   token<K extends TokenType & keyof TokenMap>(
     tokenType: K
   ): ParserArrow<void, Result<TokenMap[K]>> {
-    return evalArr(state => [
+    return this.evalArr(state => [
       state,
       state.next(tokenType, token => {
         if (token === undefined) {
@@ -472,11 +469,11 @@ export class ParserArrowEvaluateCore implements ParserArrowFullCore {
   }
 
   lookahead(): ParserArrow<void, Token | undefined> {
-    return evalArr(state => [state, state.lookahead()]);
+    return this.evalArr(state => [state, state.lookahead()]);
   }
 
   eof<T>(): ParserArrow<T, Result<void>> {
-    return evalArr(state => [
+    return this.evalArr(state => [
       state,
       state.next("eof", token => {
         if (token === undefined) {
