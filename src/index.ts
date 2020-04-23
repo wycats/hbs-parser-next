@@ -32,3 +32,8 @@ export { default as parse } from "./parser/parse";
 
 export type { StateRow as ReadTrace } from "./read/debug";
 export { trunc } from "./read/debug";
+
+import * as ops from "./parser/shapes/core-operations";
+export { ops };
+
+export * from "./parser/shapes/iterator-evaluator";

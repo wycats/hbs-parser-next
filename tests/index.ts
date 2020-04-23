@@ -4,6 +4,7 @@ import { config, dump } from "qunit";
 import "./combinators-test";
 import "./multi-test";
 import "./reader/index";
+import "./shape-test";
 
 config.autostart = true;
 config.urlConfig.push({
