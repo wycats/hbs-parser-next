@@ -1,11 +1,4 @@
-import type { TextNode } from "../nodes";
-import { Result, EXPAND } from "../shape";
-import TokensIterator from "../tokens-iterator";
-import { AbstractShape } from "./abstract";
-import type { InterpolateNode } from "../nodes/top-level";
-export declare type TopLevelNode = TextNode | InterpolateNode;
-export declare class TopLevelShape extends AbstractShape<Result<TopLevelNode>> {
-    readonly desc = "TopLevel";
-    [EXPAND](iterator: TokensIterator): Result<TopLevelNode>;
-}
+import type * as ast from "../nodes";
+export declare type TopLevelNode = ast.TextNode | ast.InterpolateNode;
+export declare const TopLevelArrow: import("../shape").ParserArrow<void, (import("../shape").Err & import("../shape").ParseErr) | (import("../shape").Ok<ast.TextNode | ast.InterpolateNode> & import("../shape").ParseOk<ast.TextNode | ast.InterpolateNode>)>;
 //# sourceMappingURL=top-level.d.ts.map

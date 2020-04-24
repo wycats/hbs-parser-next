@@ -19,21 +19,30 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.VarRefShape = void 0;
+exports.VarRefArrow = void 0;
 require("../../../read/tokens");
 const span_1 = require("../../../span");
 const ast = __importStar(require("../../nodes"));
-const abstract_1 = require("../abstract");
-const tokens_iterator_1 = require("../../tokens-iterator");
-exports.VarRefShape = abstract_1.shape("VarRef", tokens_iterator_1.atomic(iterator => iterator
-    .start(tokens_iterator_1.legacyConsumeToken("id", "Identifier" /* Identifier */))
-    .checkNext(tokens_iterator_1.assertNotNext("eq", token => token.type === "Eq" /* Eq */))
-    .extend("source", tokens_iterator_1.legacySource())
-    .andThen(({ id, source }) => {
+const shape_1 = require("../../shape");
+exports.VarRefArrow = shape_1.ParserArrow.start()
+    .token("Identifier" /* Identifier */)
+    .named("id")
+    .checkNext(shape_1.ParserArrow.start()
+    .lookahead()
+    .map(token => token === undefined || token.type !== "Eq" /* Eq */
+    ? shape_1.parseOk(undefined)
+    : shape_1.parseErr("unknown", {
+        type: "lookahead",
+        expected: "Eq" /* Eq */,
+        actual: token,
+    })))
+    .extend("source", shape_1.ParserArrow.start().source().fallible())
+    .ifOk(({ id, source }) => {
     if (span_1.slice(id.span, source) === "this") {
         return ast.thisReference(id);
     }
     else {
         return ast.varReference(id);
     }
-})));
+})
+    .label("VarRef");

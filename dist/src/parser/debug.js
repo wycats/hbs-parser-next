@@ -5,6 +5,7 @@ const debug_1 = require("../read/debug");
 const utils_1 = require("../read/utils");
 const span_1 = require("../span");
 const nodes_1 = require("./nodes");
+const shape_1 = require("./shape");
 class ParseTracer {
     constructor(token) {
         this.stack = [
@@ -47,16 +48,10 @@ class ParseTracer {
         this.stack.push(trace);
     }
     commit() {
-        let last = utils_1.unwrap(this.stack.pop());
-        if (last.shape.desc !== "begin") {
-            throw new Error(`ASSERT: unbalanced stack: stack=${last.shape.desc}, expected=begin`);
-        }
+        this.stackCheck("begin");
     }
     rollback() {
-        let last = utils_1.unwrap(this.stack.pop());
-        if (last.shape.desc !== "begin") {
-            throw new Error(`ASSERT: unbalanced stack: stack=${last.shape.desc}, expected=begin`);
-        }
+        let last = this.stackCheck("begin");
         last.failure = "rollback";
     }
     preInvoke(shape, token) {
@@ -79,18 +74,20 @@ class ParseTracer {
         this.stack.push(trace);
     }
     postInvoke(shape, result, postToken) {
-        let last = utils_1.unwrap(this.stack.pop());
-        if (last.shape.desc !== shape.desc) {
-            throw new Error(`ASSERT: unbalanced stack: stack=${last.shape.desc}, expected=${shape.desc}`);
-        }
+        let last = this.stackCheck(shape.desc);
         last.result = result;
         last.postToken = postToken;
     }
-    postInvokeFailure(shape, reason) {
+    stackCheck(expected) {
         let last = utils_1.unwrap(this.stack.pop());
-        if (last.shape.desc !== shape.desc) {
-            throw new Error(`ASSERT: unbalanced stack: stack=${last.shape.desc}, expected=${shape.desc}`);
+        if (last.shape.desc !== expected) {
+            console.warn("unbalanced stack", "stack =", this.stack.map(s => s.shape.desc), "last =", last.shape.desc, "expected =", expected);
+            throw new Error(`ASSERT: unbalanced stack: stack=${last.shape.desc}, expected=${expected}`);
         }
+        return last;
+    }
+    postInvokeFailure(shape, reason) {
+        let last = this.stackCheck(shape.desc);
         last.result = undefined;
         last.postToken = undefined;
         last.failure = reason;
@@ -122,7 +119,7 @@ class PrintTracer {
         if (this.trace.shape.desc === undefined) {
             debugger;
         }
-        console.log(`%c| ${this.preSlice} | ${debug_1.truncString(this.details, 60)} | ${this.postSlice}`, NORMAL, NORMAL, this.descStyle, DIM);
+        console.log(`%c| ${this.preSlice} | ${debug_1.truncString(this.details, 80)} | ${this.postSlice}`, NORMAL, NORMAL, this.descStyle, DIM);
         if (this.trace.children) {
             for (let child of this.trace.children) {
                 if (child.failure === "ignored") {
@@ -152,26 +149,7 @@ class PrintTracer {
         }
     }
     get formattedResult() {
-        let result = this.trace.result;
-        if (isResult(result)) {
-            if (result.kind === "err") {
-                return `ERR reason=${result.reason}`;
-            }
-            else {
-                if (isNodeish(result.value)) {
-                    return nodes_1.formatAstNode(result.value);
-                }
-                else {
-                    return this.trace.result + "";
-                }
-            }
-        }
-        else if (isNodeish(result)) {
-            return nodes_1.formatAstNode(result);
-        }
-        else {
-            return this.trace.result + "";
-        }
+        return formatResult(this.trace.result);
     }
     get descStyle() {
         let result = this.trace.result;
@@ -194,14 +172,67 @@ class PrintTracer {
         }
     }
 }
+function formatResult(result) {
+    if (typeof result !== "object" || result === null) {
+        return String(result);
+    }
+    else if (Array.isArray(result)) {
+        if (result.length > 3) {
+            return `[${result.slice(0, 2).map(formatResult).join(", ")}...]`;
+        }
+        else {
+            return `[${result.map(formatResult).join(", ")}]`;
+        }
+    }
+    else if (isResult(result)) {
+        if (shape_1.isParseErr(result)) {
+            return formatReason(result.reason);
+        }
+        else {
+            return formatResult(result.value);
+        }
+    }
+    else if (isNodeish(result)) {
+        return nodes_1.formatAstNode(result);
+    }
+    else {
+        console.log("not debuggable", result);
+        return result + "";
+    }
+}
+function formatReason(reason) {
+    switch (reason.type) {
+        case "empty":
+            return `empty`;
+        case "lookahead":
+            return `lookahead was ${formatToken(reason.actual)}, expected ${reason.expected}`;
+        case "mismatch":
+            return `expected ${formatToken(reason.actual)}, got ${reason.expected}`;
+        case "not":
+            return `expected not ${formatResult(reason.result)}`;
+        case "rejected":
+            return `rejected ${formatToken(reason.token)}`;
+        case "unexpected-eof":
+            return `unexpected eof`;
+    }
+}
+function formatToken(token) {
+    if (token === "EOF") {
+        return "EOF";
+    }
+    else {
+        return token.type;
+    }
+}
 function isNodeish(item) {
     if (typeof item === "object" && item !== null) {
-        return ("type" in item &&
-            typeof item.type === "string" &&
-            typeof item.span === "object" &&
-            item.span !== null &&
-            typeof item.span.start === "number" &&
-            typeof item.span.end === "number");
+        let obj = item;
+        return ("type" in obj &&
+            typeof obj.type === "string" &&
+            typeof obj.span === "object" &&
+            obj.span !== null &&
+            typeof obj.span.start === "number" &&
+            typeof obj.span.end === "number");
     }
     else {
         return false;
@@ -209,7 +240,8 @@ function isNodeish(item) {
 }
 function isResult(item) {
     if (typeof item === "object" && item !== null) {
-        return ("kind" in item && item.kind === "ok") || item.kind === "err";
+        let obj = item;
+        return ("kind" in obj && obj.kind === "ok") || obj.kind === "err";
     }
     else {
         return false;

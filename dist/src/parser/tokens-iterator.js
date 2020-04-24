@@ -1,11 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.TokensIteratorTransaction = exports.expandInfallible = exports.expand = exports.legacyExpand = exports.consume = exports.legacyConsume = exports.source = exports.legacySource = exports.consumeToken = exports.legacyConsumeToken = exports.consumeParent = exports.notEOF = exports.legacyNotEOF = exports.many = exports.legacyMany = exports.repeat = exports.legacyRepeat = exports.present = exports.legacyPresent = exports.assertNotNext = exports.inner = exports.atomic = exports.start = exports.PeekedToken = exports.SOURCE = exports.POS = exports.CONTEXT = exports.TOKENS = void 0;
+exports.TokensIteratorTransaction = exports.TokensIteratorState = exports.PeekedToken = exports.ITERATOR_SOURCE = exports.POS = exports.CONTEXT = exports.TOKENS = void 0;
+const utils_1 = require("../read/utils");
 const shape_1 = require("./shape");
 exports.TOKENS = Symbol("TOKENS");
 exports.CONTEXT = Symbol("CONTEXT");
 exports.POS = Symbol("POS");
-exports.SOURCE = Symbol("SOURCE");
+exports.ITERATOR_SOURCE = Symbol("SOURCE");
 class PeekedToken {
     constructor(iterator, desc, pos) {
         this.iterator = iterator;
@@ -72,6 +73,59 @@ class PeekedToken {
     }
 }
 exports.PeekedToken = PeekedToken;
+class TokensIteratorState {
+    constructor(iterator) {
+        this.iterator = iterator;
+        if (new.target !== TokensIteratorState) {
+            throw new Error(`TokensIteratorState is final`);
+        }
+    }
+    get [exports.ITERATOR_SOURCE]() {
+        return this.iterator[exports.ITERATOR_SOURCE];
+    }
+    lookahead() {
+        let next = this.iterator.peek("lookahead");
+        next.ignore();
+        return next.token;
+    }
+    atomic(callback) {
+        let result = this.iterator.atomic(iterator => {
+            let state = new TokensIteratorState(iterator);
+            let [newState, result] = callback(state);
+            if (shape_1.isOk(result)) {
+                return shape_1.parseOk([newState, result]);
+            }
+            else {
+                return result;
+            }
+        });
+        if (shape_1.isOk(result)) {
+            return [this, result.value[1]];
+        }
+        else {
+            return [this, result];
+        }
+    }
+    label(desc, callback) {
+        let innerState;
+        let result = this.iterator.label(desc, iterator => {
+            let [state, result] = callback(new TokensIteratorState(iterator));
+            innerState = state;
+            return result;
+        });
+        return [utils_1.unwrap(innerState), result];
+    }
+    next(desc, callback) {
+        return this.iterator.next(desc, callback);
+    }
+    parent(desc, tokenType, arrow) {
+        return this.iterator.processChildren(desc, tokenType, iterator => {
+            let [, result] = arrow.invoke(iterator.arrowState);
+            return result;
+        });
+    }
+}
+exports.TokensIteratorState = TokensIteratorState;
 class TokensIterator {
     constructor(tokens, context, pos = 0) {
         this.activeTransaction = null;
@@ -79,17 +133,35 @@ class TokensIterator {
         this[exports.CONTEXT] = context;
         this[exports.POS] = pos;
     }
-    get [exports.SOURCE]() {
+    get arrowState() {
+        return new TokensIteratorState(this);
+    }
+    get [exports.ITERATOR_SOURCE]() {
         return this[exports.CONTEXT].source;
+    }
+    assertNotEOF() {
+        let next = this.peek("eof");
+        if (next.isEOF) {
+            return shape_1.parseErr(next.reject().token || "EOF", {
+                type: "unexpected-eof",
+            });
+        }
+        else {
+            next.ignore();
+            return shape_1.parseOk(undefined);
+        }
     }
     start(step) {
         return step(this);
     }
-    err(desc, reason = "mismatch") {
-        return shape_1.seq(shape_1.err(this.silentPeek(desc).token, reason), this);
-    }
     ok(value) {
-        return shape_1.seq(shape_1.ok(value), this);
+        return shape_1.parseOk(value);
+    }
+    label(desc, callback) {
+        this[exports.CONTEXT].tracer.preInvoke({ desc, isLeaf: false }, this[exports.TOKENS][this[exports.POS]]);
+        let result = callback(this);
+        this[exports.CONTEXT].tracer.postInvoke({ desc }, result, this[exports.TOKENS][this[exports.POS]]);
+        return result;
     }
     peek(desc, options = { isLeaf: true }) {
         this[exports.CONTEXT].tracer.preInvoke({ desc, isLeaf: options.isLeaf }, this[exports.TOKENS][this[exports.POS]]);
@@ -104,27 +176,16 @@ class TokensIterator {
         return this[exports.TOKENS][this[exports.POS] - 1];
     }
     rejectPeek(desc, pos, peeked) {
-        this[exports.CONTEXT].tracer.postInvoke({ desc }, shape_1.err(peeked.token, "rejected"), this[exports.TOKENS][pos]);
+        this[exports.CONTEXT].tracer.postInvoke({ desc }, shape_1.parseErr(peeked.token || "EOF", {
+            type: "rejected",
+            token: peeked.token || "EOF",
+        }), this[exports.TOKENS][pos]);
     }
     peekFailure(desc, reason) {
         this[exports.CONTEXT].tracer.postInvokeFailure({ desc }, reason);
     }
     silentPeek(desc) {
         return new PeekedToken(this, desc, this[exports.POS]);
-    }
-    expandFallible(shapeOrClass) {
-        return this.expand(shapeOrClass, expanded => shape_1.seq(expanded, this));
-    }
-    expandInfallible(shapeOrClass) {
-        return this.expand(shapeOrClass, expanded => expanded);
-    }
-    expand(shapeOrClass, callback) {
-        let shape = typeof shapeOrClass === "function" ? new shapeOrClass() : shapeOrClass;
-        this[exports.CONTEXT].tracer.preInvoke(shape, this[exports.TOKENS][this[exports.POS]]);
-        let expanded = shape[shape_1.EXPAND](this);
-        let result = callback(expanded);
-        this[exports.CONTEXT].tracer.postInvoke(shape, result, this[exports.TOKENS][this[exports.POS]]);
-        return result;
     }
     get source() {
         return this[exports.CONTEXT].source;
@@ -141,7 +202,7 @@ class TokensIterator {
         else {
             transaction.rollback();
         }
-        return shape_1.seq(result, this);
+        return result;
     }
     begin() {
         if (this.activeTransaction) {
@@ -179,279 +240,59 @@ class TokensIterator {
         if (result.kind === "err") {
             return result;
         }
-        let eof = child.start(assertEOF());
-        if (eof.kind === "err") {
-            return eof;
+        let eof = child.peek("eof");
+        if (eof.token === undefined) {
+            eof.ignore();
+        }
+        else {
+            eof.reject();
+            return shape_1.parseErr(eof.token, {
+                type: "mismatch",
+                expected: "EOF",
+                actual: eof.token,
+            });
         }
         return result;
     }
+    processChildren(desc, tokenType, step) {
+        let next = this.peek(desc, { isLeaf: false });
+        if (next.token === undefined) {
+            next.reject();
+            return shape_1.parseErr("EOF", { type: "unexpected-eof" });
+        }
+        else if (next.token.type !== tokenType) {
+            next.reject();
+            return shape_1.parseErr(next.token, {
+                type: "mismatch",
+                expected: tokenType,
+                actual: next.token,
+            });
+        }
+        else {
+            let result = this.processInner(next.token.children, step);
+            if (shape_1.isParseErr(result)) {
+                next.reject();
+                return result;
+            }
+            next.commit();
+            return shape_1.parseOk({ result: result.value, token: next.token });
+        }
+    }
+    next(desc, callback) {
+        let next = this.peek(desc);
+        let result = callback(next.token);
+        if (shape_1.isErr(result)) {
+            let token = next.reject().token;
+            return shape_1.parseErr(token || "EOF", {
+                type: "rejected",
+                token: token || "EOF",
+            });
+        }
+        next.commit();
+        return shape_1.parseOk(result.value);
+    }
 }
 exports.default = TokensIterator;
-function start(step) {
-    return iterator => step(iterator);
-}
-exports.start = start;
-function atomic(callback) {
-    return iterator => iterator.atomic(callback);
-}
-exports.atomic = atomic;
-function inner(tokens, callback) {
-    return iterator => {
-        let child = iterator.withChildTokens(tokens);
-        let result = callback(child);
-        if (result.kind === "err") {
-            // parent.reject();
-            return result;
-        }
-        let eof = child.start(assertEOF());
-        if (eof.kind === "err") {
-            // parent.reject();
-            return eof;
-        }
-        return result;
-    };
-}
-exports.inner = inner;
-function assertNotNext(desc, callback) {
-    return iterator => {
-        let next = iterator.peek(desc);
-        if (next.token !== undefined && callback(next.token)) {
-            next.reject();
-            return iterator.err(desc, "lookahead");
-        }
-        else {
-            next.ignore();
-            return iterator.ok(null);
-        }
-    };
-}
-exports.assertNotNext = assertNotNext;
-function legacyPresent(desc) {
-    return (out, iterator) => out.length === 0 ? iterator.err(desc, "empty") : iterator.ok(out);
-}
-exports.legacyPresent = legacyPresent;
-function present(desc) {
-    return (iterator, prev) => {
-        if (shape_1.isOk(prev)) {
-            return prev.value.length === 0
-                ? iterator.err(desc, "empty")
-                : iterator.ok(prev.value);
-        }
-        else {
-            return prev;
-        }
-    };
-}
-exports.present = present;
-function legacyRepeat(callback) {
-    return iterator => {
-        let out = [];
-        while (true) {
-            let result = callback(iterator);
-            if (result.kind === "err") {
-                break;
-            }
-            else {
-                out.push(result.value);
-            }
-        }
-        return out;
-    };
-}
-exports.legacyRepeat = legacyRepeat;
-function repeat(callback) {
-    return iterator => {
-        let out = [];
-        while (true) {
-            let result = callback(iterator);
-            if (result.kind === "err") {
-                break;
-            }
-            else {
-                out.push(result.value);
-            }
-        }
-        return shape_1.ok(out);
-    };
-}
-exports.repeat = repeat;
-function legacyMany(Shape) {
-    return iterator => {
-        let out = [];
-        while (true) {
-            let shape = new Shape();
-            let result = legacyExpand(shape)(iterator);
-            if (result.kind === "err") {
-                break;
-            }
-            else {
-                out.push(result.value);
-            }
-        }
-        return out;
-    };
-}
-exports.legacyMany = legacyMany;
-function many(Shape) {
-    return iterator => {
-        let out = [];
-        while (true) {
-            let shape = new Shape();
-            let result = legacyExpand(shape)(iterator);
-            if (result.kind === "err") {
-                break;
-            }
-            else {
-                out.push(result.value);
-            }
-        }
-        return shape_1.ok(out);
-    };
-}
-exports.many = many;
-function legacyNotEOF() {
-    return iterator => {
-        let next = iterator.peek("eof");
-        if (next.isEOF) {
-            return shape_1.seq(shape_1.err(next.reject().token, "eof"), iterator);
-        }
-        else {
-            return shape_1.seq(shape_1.ok(next.ignore()), iterator);
-        }
-    };
-}
-exports.legacyNotEOF = legacyNotEOF;
-function notEOF() {
-    return iterator => {
-        let next = iterator.peek("eof");
-        if (next.isEOF) {
-            return shape_1.err(next.reject().token, "eof");
-        }
-        else {
-            return shape_1.ok(next.ignore());
-        }
-    };
-}
-exports.notEOF = notEOF;
-function assertEOF() {
-    return iterator => {
-        let next = iterator.peek("eof");
-        if (next.isEOF) {
-            return shape_1.ok(next.ignore());
-        }
-        else {
-            return shape_1.err(next.reject().token, "eof");
-        }
-    };
-}
-function consumeParent(options, callback) {
-    return iterator => {
-        let eof = legacyNotEOF()(iterator);
-        if (eof.kind === "err") {
-            return shape_1.seq(eof, iterator);
-        }
-        let desc = typeof options === "string" ? options : options.desc;
-        let peekOptions = typeof options === "string" ? undefined : options;
-        let next = iterator.peek(desc, peekOptions);
-        let result = callback(next.token);
-        if (result === undefined) {
-            return shape_1.seq(shape_1.err(next.reject().token, "mismatch"), iterator);
-        }
-        else if (result.kind === "err") {
-            next.reject();
-            return shape_1.seq(result, iterator);
-        }
-        next.commit();
-        return shape_1.seq(shape_1.ok({ result: result.value, token: next.token }), iterator);
-    };
-}
-exports.consumeParent = consumeParent;
-function legacyConsumeToken(nameOrTokenType, maybeTokenType) {
-    let name = maybeTokenType === undefined ? undefined : nameOrTokenType;
-    let tokenType = maybeTokenType === undefined ? nameOrTokenType : maybeTokenType;
-    return legacyConsume(tokenType, token => {
-        if (token.type === tokenType) {
-            if (name !== undefined) {
-                return { [name]: token };
-            }
-            else {
-                return token;
-            }
-        }
-    });
-}
-exports.legacyConsumeToken = legacyConsumeToken;
-function consumeToken(nameOrTokenType, maybeTokenType) {
-    let name = maybeTokenType === undefined ? undefined : nameOrTokenType;
-    let tokenType = maybeTokenType === undefined ? nameOrTokenType : maybeTokenType;
-    return consume(tokenType, token => {
-        if (token.type === tokenType) {
-            if (name !== undefined) {
-                return { [name]: token };
-            }
-            else {
-                return token;
-            }
-        }
-    });
-}
-exports.consumeToken = consumeToken;
-function legacySource() {
-    return iterator => shape_1.seq(shape_1.ok(iterator[exports.SOURCE]), iterator);
-}
-exports.legacySource = legacySource;
-function source() {
-    return iterator => shape_1.seq(shape_1.ok(iterator[exports.SOURCE]), iterator);
-}
-exports.source = source;
-function legacyConsume(options, callback) {
-    return iterator => {
-        let eof = legacyNotEOF()(iterator);
-        if (eof.kind === "err") {
-            return shape_1.seq(eof, iterator);
-        }
-        let desc = typeof options === "string" ? options : options.desc;
-        let peekOptions = typeof options === "string" ? undefined : options;
-        let next = iterator.peek(desc, peekOptions);
-        let result = callback(next.token);
-        if (result === undefined) {
-            return shape_1.seq(shape_1.err(next.reject().token, "mismatch"), iterator);
-        }
-        next.commit();
-        return shape_1.seq(shape_1.ok(result), iterator);
-    };
-}
-exports.legacyConsume = legacyConsume;
-function consume(options, callback) {
-    return iterator => {
-        let eof = notEOF()(iterator);
-        if (eof.kind === "err") {
-            return eof;
-        }
-        let desc = typeof options === "string" ? options : options.desc;
-        let peekOptions = typeof options === "string" ? undefined : options;
-        let next = iterator.peek(desc, peekOptions);
-        let result = callback(next.token);
-        if (result === undefined) {
-            return shape_1.err(next.reject().token, "mismatch");
-        }
-        next.commit();
-        return shape_1.ok(result);
-    };
-}
-exports.consume = consume;
-function legacyExpand(shapeOrClass) {
-    return iterator => iterator.expandFallible(shapeOrClass);
-}
-exports.legacyExpand = legacyExpand;
-function expand(shapeOrClass) {
-    return iterator => iterator.expandFallible(shapeOrClass);
-}
-exports.expand = expand;
-function expandInfallible(shapeOrClass) {
-    return iterator => iterator.expandInfallible(shapeOrClass);
-}
-exports.expandInfallible = expandInfallible;
 class TokensIteratorTransaction extends TokensIterator {
     constructor(tokens, context, pos = 0, transactionParent) {
         super(tokens, context, pos);

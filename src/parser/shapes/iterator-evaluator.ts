@@ -43,6 +43,20 @@ export abstract class PureEvaluatorImpl<State>
     return out;
   }
 
+  MapResult<LeftIn, ResultInner, IfOkOut, IfErrOut>(
+    state: State,
+    input: LeftIn,
+    op: ops.MapResultOperation<LeftIn, ResultInner, IfOkOut, IfErrOut>
+  ): IfOkOut | IfErrOut {
+    let result = op.left.invoke(state, this, input);
+
+    if (isOk(result)) {
+      return op.ifOk.invoke(state, this, result.value);
+    } else {
+      return op.ifErr.invoke(state, this, result);
+    }
+  }
+
   MapInput<ArrowIn, MapOut>(
     state: State,
     input: ArrowIn,
@@ -76,7 +90,7 @@ export abstract class PureEvaluatorImpl<State>
   abstract Repeat<In, Out>(
     state: State,
     input: In,
-    op: ops.RepeatOperation<In, Out>
+    op: ops.RepeatOperation<State, In, Out>
   ): Out[];
 
   Reduce<In, Out>(
@@ -99,12 +113,12 @@ export class StatefulEvaluatorImpl<State> extends PureEvaluatorImpl<State>
   Repeat<In, Out>(
     state: State,
     input: In,
-    op: ops.RepeatOperation<In, Out>
+    op: ops.RepeatOperation<State, In, Out>
   ): Out[] {
     let out: Out[] = [];
 
     while (true) {
-      let item = op.callback.invoke(state, this, input);
+      let item = op.callback.invoke(state, this, [input, state]);
 
       if (isOk(item)) {
         out.push(item.value);

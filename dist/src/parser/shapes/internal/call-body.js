@@ -19,47 +19,50 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CallBodyShape = exports.NamedArgumentsShape = exports.NamedArgumentShape = exports.PositionalShape = void 0;
+exports.CallBodyArrow = exports.NamedArgumentsArrow = exports.NamedArgumentArrow = exports.PositionalArrow = void 0;
 require("../../../read/tokens");
 const span_1 = require("../../../span");
 const ast = __importStar(require("../../nodes"));
-const abstract_1 = require("../abstract");
+const shape_1 = require("../../shape");
 const expression_1 = require("../expression");
 const interpolate_1 = require("../interpolate");
-const maybe_1 = require("./maybe");
 const ws_1 = require("./ws");
-const tokens_iterator_1 = require("../../tokens-iterator");
-exports.PositionalShape = abstract_1.shape("Positional", iterator => iterator
-    .start(tokens_iterator_1.legacyNotEOF())
-    .next(tokens_iterator_1.legacyRepeat(tokens_iterator_1.atomic(iterator => iterator
-    .start(tokens_iterator_1.legacyExpand(ws_1.Ws))
+exports.PositionalArrow = shape_1.recurse(() => ws_1.WsArrow.named("before")
+    .extend("expr", expression_1.ExpressionArrow)
+    .ifOk(({ before, expr }) => ast.extendNode(expr, { before }))
+    .atomic()
+    .repeat()
+    .andThen(assertPresent())
+    .ifOk(out => ast.positional(out, { span: span_1.range(...out) }))
+    .label("Positional"));
+exports.NamedArgumentArrow = shape_1.recurse(() => shape_1.ParserArrow.start()
+    .token("Identifier" /* Identifier */)
+    .named("id")
+    .extend("eq", shape_1.ParserArrow.start().token("Eq" /* Eq */))
+    .extend("expr", expression_1.ExpressionArrow)
+    .extend("trailingWS", ws_1.MaybeWsArrow.fallible())
+    .ifOk(({ id, expr, trailingWS }) => ast.namedArg({ name: id, value: expr }, {
+    span: span_1.range(id, expr),
+    after: trailingWS || undefined,
+}))
+    .label("NamedArgument"));
+function assertPresent() {
+    return shape_1.ParserArrow.start().lift(list => list.length > 0 ? shape_1.parseOk(list) : shape_1.parseErr("unknown", { type: "empty" }));
+}
+exports.NamedArgumentsArrow = ws_1.WsArrow.named("leadingWS")
+    .extend("args", exports.NamedArgumentArrow.repeat().andThen(assertPresent()))
+    .atomic()
+    .ifOk(({ leadingWS, args }) => ast.namedArgs(args, { span: span_1.range(...args), before: leadingWS }))
+    .label("NamedArguments");
+exports.CallBodyArrow = shape_1.recurse(() => ws_1.MaybeWsArrow.fallible()
     .named("before")
-    .extend("expr", tokens_iterator_1.legacyExpand(expression_1.ExpressionShape))
-    .andThen(({ before, expr }) => ast.extendNode(expr, { before })))))
-    .andCheck(tokens_iterator_1.legacyPresent("any args"))
-    .andThen(out => ast.positional(out, { span: span_1.range(...out) })));
-exports.NamedArgumentShape = abstract_1.shape("NamedArgument", iterator => iterator.start(tokens_iterator_1.legacyNotEOF()).next(tokens_iterator_1.atomic(iterator => iterator
-    .start(tokens_iterator_1.legacyConsumeToken("id", "Identifier" /* Identifier */))
-    .checkNext(tokens_iterator_1.legacyConsumeToken("Eq" /* Eq */))
-    .extend("expr", tokens_iterator_1.legacyExpand(expression_1.ExpressionShape))
-    .andThen(({ id, expr }) => {
-    let trailingWS = iterator.expandInfallible(ws_1.MaybeWs);
-    return ast.namedArg({ name: id, value: expr }, { span: span_1.range(id, expr), after: trailingWS || undefined });
-}))));
-exports.NamedArgumentsShape = abstract_1.shape("NamedArguments", iterator => {
-    return iterator.start(tokens_iterator_1.legacyNotEOF()).next(tokens_iterator_1.atomic(iterator => iterator
-        .start(tokens_iterator_1.legacyExpand(ws_1.Ws))
-        .named("leadingWS")
-        .extend("args", tokens_iterator_1.legacyMany(exports.NamedArgumentShape))
-        .andCheck(({ args }) => tokens_iterator_1.legacyPresent("any args")(args, iterator))
-        .andThen(({ leadingWS, args }) => ast.namedArgs(args, { span: span_1.range(...args), before: leadingWS }))));
-});
-exports.CallBodyShape = abstract_1.shape("CallBody", iterator => {
-    let before = iterator.start(tokens_iterator_1.expandInfallible(ws_1.MaybeWs)) || undefined;
-    return iterator.start(tokens_iterator_1.legacyExpand(interpolate_1.HeadShape)).andThen(head => {
-        let positional = iterator.start(tokens_iterator_1.expandInfallible(maybe_1.maybe(new exports.PositionalShape())));
-        let named = iterator.start(tokens_iterator_1.expandInfallible(maybe_1.maybe(new exports.NamedArgumentsShape())));
-        let after = iterator.start(tokens_iterator_1.expandInfallible(ws_1.MaybeWs)) || undefined;
-        return ast.callBody({ head: head, positional, named }, { span: span_1.range(head, positional, named), before, after });
-    });
-});
+    .extend("head", interpolate_1.HeadArrow)
+    .extend("positional", exports.PositionalArrow.or(null).fallible())
+    .extend("named", exports.NamedArgumentsArrow.or(null).fallible())
+    .extend("after", ws_1.MaybeWsArrow.fallible())
+    .ifOk(({ before, after, head, positional, named }) => ast.callBody({ head, positional, named }, {
+    span: span_1.range(head, positional, named),
+    before,
+    after,
+}))
+    .label("CallBody"));

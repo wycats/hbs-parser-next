@@ -1,3 +1,4 @@
-export declare const Ws: import("../abstract").ShapeConstructor<import("../../shape").Result<import("../../../read/tokens").WSToken>>;
-export declare const MaybeWs: import("../abstract").ShapeConstructor<import("../../../read/tokens").WSToken | null>;
+import { ParserArrow } from "../../shape";
+export declare const MaybeWsArrow: ParserArrow<void, import("../../../read/tokens").WSToken | undefined>;
+export declare const WsArrow: ParserArrow<void, (import("../../shape").Err & import("../../shape").ParseErr) | (import("../../shape").Ok<import("../../../read/tokens").WSToken> & import("../../shape").ParseOk<import("../../../read/tokens").WSToken>)>;
 //# sourceMappingURL=ws.d.ts.map

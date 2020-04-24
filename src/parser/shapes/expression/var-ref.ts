@@ -1,7 +1,7 @@
 import { TokenType } from "../../../read/tokens";
 import { slice } from "../../../span";
 import * as ast from "../../nodes";
-import { err, ok, ParserArrow, ParseResult } from "../../shape";
+import { parseErr, parseOk, ParserArrow, ParseResult } from "../../shape";
 
 export const VarRefArrow: ParserArrow<
   void,
@@ -14,8 +14,8 @@ export const VarRefArrow: ParserArrow<
       .lookahead()
       .map(token =>
         token === undefined || token.type !== TokenType.Eq
-          ? ok(undefined)
-          : err("unknown", {
+          ? parseOk(undefined)
+          : parseErr("unknown", {
               type: "lookahead",
               expected: TokenType.Eq,
               actual: token,

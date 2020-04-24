@@ -1,10 +1,10 @@
 import { TokenType } from "../../../read/tokens";
 import * as ast from "../../nodes";
-import { ok, ParserArrow } from "../../shape";
+import { parseOk, ParserArrow } from "../../shape";
 
 export const NumberArrow = ParserArrow.start()
   .token(TokenType.Number)
   .named("token")
-  .extend("source", ParserArrow.start().source().map(ok))
+  .extend("source", ParserArrow.start().source().map(parseOk))
   .ifOk(({ token, source }) => ast.number(token, source))
   .label("Number");

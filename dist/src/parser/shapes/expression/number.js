@@ -19,11 +19,13 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.NumberShape = void 0;
+exports.NumberArrow = void 0;
 require("../../../read/tokens");
 const ast = __importStar(require("../../nodes"));
 const shape_1 = require("../../shape");
-const tokens_iterator_1 = require("../../tokens-iterator");
-exports.NumberShape = shape_1.step("Number", shape_1.start(tokens_iterator_1.consumeToken("token", "Number" /* Number */))
-    .extend("source", tokens_iterator_1.source())
-    .andThen(({ source, token }) => ast.number(token, source)));
+exports.NumberArrow = shape_1.ParserArrow.start()
+    .token("Number" /* Number */)
+    .named("token")
+    .extend("source", shape_1.ParserArrow.start().source().map(shape_1.parseOk))
+    .ifOk(({ token, source }) => ast.number(token, source))
+    .label("Number");

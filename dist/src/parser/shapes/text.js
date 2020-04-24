@@ -19,9 +19,11 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.TextShape = void 0;
+exports.TextArrow = void 0;
 require("../../read/tokens");
 const ast = __importStar(require("../nodes"));
 const shape_1 = require("../shape");
-const tokens_iterator_1 = require("../tokens-iterator");
-exports.TextShape = shape_1.step("TextShape", shape_1.start(tokens_iterator_1.consumeToken("Text" /* Text */)).andThen(text => ast.text(text)));
+exports.TextArrow = shape_1.ParserArrow.start()
+    .token("Text" /* Text */)
+    .ifOk(text => ast.text(text))
+    .label("Text");

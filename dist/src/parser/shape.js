@@ -1,19 +1,18 @@
 "use strict";
-var _a, _b;
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.seq = exports.isSequence = exports.ErrSequence = exports.OkSequence = exports.AbstractSequence = exports.legacyStep = exports.step = exports.start = exports.SequenceBuilder = exports.infallible = exports.InfallibleSequenceBuilder = exports.SOURCE = exports.mapResult = exports.isErr = exports.isOk = exports.isResult = exports.fatalError = exports.err = exports.ok = exports.RESULT_KIND = exports.EXPAND = void 0;
-const abstract_1 = require("./shapes/abstract");
+exports.ParserArrow = exports.recurse = exports.source = exports.token = exports.ParserArrowEvaluateCore = exports.ParseEvaluator = exports.SOURCE = exports.mapResult = exports.isParseErr = exports.isErr = exports.isOk = exports.isResult = exports.err = exports.ok = exports.fatalError = exports.parseErr = exports.parseOk = exports.RESULT_KIND = exports.EXPAND = void 0;
+const tokens_iterator_1 = require("./tokens-iterator");
 exports.EXPAND = Symbol("EXPAND");
 exports.RESULT_KIND = Symbol("RESULT_KIND");
-function ok(value) {
+function parseOk(value) {
     return {
         [exports.RESULT_KIND]: "ok",
         kind: "ok",
         value,
     };
 }
-exports.ok = ok;
-function err(token, reason) {
+exports.parseOk = parseOk;
+function parseErr(token, reason) {
     return {
         [exports.RESULT_KIND]: "err",
         kind: "err",
@@ -22,7 +21,7 @@ function err(token, reason) {
         fatal: false,
     };
 }
-exports.err = err;
+exports.parseErr = parseErr;
 function fatalError(token, reason) {
     return {
         [exports.RESULT_KIND]: "err",
@@ -33,6 +32,17 @@ function fatalError(token, reason) {
     };
 }
 exports.fatalError = fatalError;
+function ok(value) {
+    return { [exports.RESULT_KIND]: "ok", value };
+}
+exports.ok = ok;
+function err(reason) {
+    return {
+        [exports.RESULT_KIND]: "err",
+        reason,
+    };
+}
+exports.err = err;
 function isResult(input) {
     if (typeof input === "object" && input !== null) {
         return exports.RESULT_KIND in input;
@@ -43,332 +53,367 @@ function isResult(input) {
 }
 exports.isResult = isResult;
 function isOk(input) {
+    if (!isResult(input)) {
+        throw new Error(`ASSERT: Expected Result, got something else`);
+    }
     return input[exports.RESULT_KIND] === "ok";
 }
 exports.isOk = isOk;
 function isErr(input) {
+    if (!isResult(input)) {
+        throw new Error(`ASSERT: Expected Result, got something else`);
+    }
     return input[exports.RESULT_KIND] === "err";
 }
 exports.isErr = isErr;
+function isParseErr(input) {
+    return isErr(input);
+}
+exports.isParseErr = isParseErr;
 function mapResult(result, callback) {
-    if (result.kind === "err") {
+    if (isParseErr(result)) {
         return result;
     }
     return callback(result.value);
 }
 exports.mapResult = mapResult;
-exports.SOURCE = ok(undefined);
-//// TODO: Differentiate SequenceBuilder (with input) from SourceSequenceBuilder (no input) ////
-class InfallibleSequenceBuilder {
-    constructor(start) {
-        this.start = start;
+exports.SOURCE = parseOk(undefined);
+class ParseEvaluator {
+    constructor(state, arrow) {
+        this.state = state;
+        this.arrow = arrow;
     }
-    run(iterator, prev) {
-        return this.start(iterator, prev);
+    evaluate(prev) {
+        return this.arrow.evaluate(this, prev);
     }
-}
-exports.InfallibleSequenceBuilder = InfallibleSequenceBuilder;
-function infallible(step) {
-    return new InfallibleSequenceBuilder(step);
-}
-exports.infallible = infallible;
-/**
- * InnerT is the previous result
- * InnerU is the successful value when executing this step
- */
-class SequenceBuilder {
-    constructor(start) {
-        this.start = start;
-    }
-    run(iterator, prev) {
-        return this.start(iterator, prev);
-    }
-    named(name) {
-        return new SequenceBuilder((iterator, prev) => {
-            if (isOk(prev)) {
-                return ok({ [name]: prev.value });
-            }
-            else {
-                return { ...prev, iterator };
-            }
-        });
-    }
-    andThen(callback) {
-        return new SequenceBuilder((iterator, last) => {
-            let prev = this.start(iterator, last);
-            if (isOk(prev)) {
-                let result = callback(prev.value);
-                if (isResult(result)) {
-                    return { ...result, iterator };
-                }
-                else {
-                    return ok(result);
-                }
-            }
-            else {
-                return { ...prev, iterator };
-            }
-        });
-    }
-    concat(other) {
-        return new SequenceBuilder((iterator, last) => {
-            let lastResult = this.run(iterator, last);
-            let otherResult = other(iterator);
-            if (isOk(lastResult) && isOk(otherResult)) {
-                return ok([lastResult.value, otherResult.value]);
-            }
-            else if (isErr(otherResult)) {
-                return { ...otherResult };
-            }
-            else {
-                return { ...lastResult };
-            }
-        });
-    }
-    extend(key, sequence) {
-        let concat = this.concat(sequence);
-        let result = concat.andThen(([a, b]) => {
-            let right = { [key]: b };
-            return { ...a, ...right };
-        });
+    withState(callback) {
+        let state = this.state;
+        let [newState, result] = callback(state);
+        this.state = newState;
         return result;
     }
-    mapErr(callback) {
-        return new SequenceBuilder((iterator, last) => {
-            let prev = this.start(iterator, last);
-            if (isErr(prev)) {
-                let result = callback(prev);
-                if (isResult(result)) {
-                    return { ...result };
+}
+exports.ParseEvaluator = ParseEvaluator;
+class ParserArrowEvaluateCore {
+    Id() {
+        return new ParserArrow(new ParserArrowEvaluateCore(), (s, t) => [s, t]);
+    }
+    evalArr(callback) {
+        return new ParserArrow(new ParserArrowEvaluateCore(), callback);
+    }
+    recurse(callback) {
+        return this.evalArr((state, last) => {
+            let arrow = callback();
+            return arrow.invoke(state, last);
+        });
+    }
+    Arr(callback) {
+        return this.evalArr((state, last) => [state, callback(last)]);
+    }
+    zip(left, right) {
+        return this.evalArr((state, [t, t2]) => {
+            let [state2, u] = left.invoke(state, t);
+            let [state3, u2] = right.invoke(state2, t2);
+            return [state3, [u, u2]];
+        });
+    }
+    andThen(left, right) {
+        return this.evalArr((state, prev) => {
+            let [state2, leftResult] = left.invoke(state, prev);
+            return right.invoke(state2, leftResult);
+        });
+    }
+    mergeNext(left, right) {
+        return this.evalArr((state, prev) => {
+            let [state2, u] = left.invoke(state, prev);
+            let [state3, u2] = right.invoke(state2, prev);
+            return [state3, [u, u2]];
+        });
+    }
+    mergeAndThen(left, right) {
+        return this.evalArr((state, prev) => {
+            let [state2, u] = left.invoke(state, prev);
+            let [state3, u2] = right.invoke(state2, u);
+            return [state3, [u, u2]];
+        });
+    }
+    iterate(arrow) {
+        return this.evalArr((state, last) => {
+            let currentState = state;
+            let out = [];
+            for (let item of last) {
+                let [nextState, result] = arrow.invoke(currentState, item);
+                out.push(result);
+                currentState = nextState;
+            }
+            return [currentState, out];
+        });
+    }
+    repeat(arrow) {
+        return this.evalArr((state, input) => {
+            let currentState = state;
+            let [nextState, nextInput] = arrow.invoke(state, input);
+            if (isErr(nextInput)) {
+                return [nextState, []];
+            }
+            let out = [nextInput.value];
+            currentState = nextState;
+            loop(() => {
+                let [nextState, nextInput] = arrow.invoke(currentState, input);
+                if (isErr(nextInput)) {
+                    return "break";
                 }
-                else {
-                    return ok(result);
-                }
+                currentState = nextState;
+                out.push(nextInput.value);
+            });
+            return [currentState, out];
+        });
+    }
+    Reduce(callback) {
+        return this.evalArr((state, last) => {
+            return [state, callback(last)];
+        });
+    }
+    FallibleArr(ok, err) {
+        return this.evalArr((state, last) => {
+            if (isOk(last)) {
+                return [state, ok(last.value)];
             }
             else {
-                return { ...prev };
+                return [state, err(last)];
             }
+        });
+    }
+    BothOk(arrow) {
+        return this.evalArr((state, last) => {
+            let [state2, [left, right]] = arrow.invoke(state, last);
+            if (isOk(left) && isOk(right)) {
+                return [
+                    state2,
+                    parseOk([left.value, right.value]),
+                ];
+            }
+            else if (isOk(left)) {
+                return [state2, right];
+            }
+            else {
+                return [state2, left];
+            }
+        });
+    }
+    OrElse(left, right) {
+        return this.evalArr((state, last) => {
+            let [state2, prev] = left.invoke(state, last);
+            if (isOk(prev)) {
+                return [state2, prev];
+            }
+            else {
+                return right.invoke(state2, last);
+            }
+        });
+    }
+    fallibleInput(arrow) {
+        return this.evalArr((state, last) => {
+            if (isOk(last)) {
+                let [state2, result] = arrow.invoke(state, last.value);
+                return [state2, parseOk(result)];
+            }
+            else {
+                return [state, last];
+            }
+        });
+    }
+    Source() {
+        return this.evalArr(state => [state, state[tokens_iterator_1.ITERATOR_SOURCE]]);
+    }
+    Atomic(arrow) {
+        return this.evalArr((state, prev) => state.atomic(state2 => arrow.invoke(state2, prev)));
+    }
+    label(label, arrow) {
+        return this.evalArr((state, prev) => state.label(label, state2 => arrow.invoke(state2, prev)));
+    }
+    parent(desc, tokenType, arrow) {
+        return this.evalArr(state => [state, state.parent(desc, tokenType, arrow)]);
+    }
+    token(tokenType) {
+        return this.evalArr(state => [
+            state,
+            state.next(tokenType, token => {
+                if (token === undefined) {
+                    return parseErr("EOF", { type: "unexpected-eof" });
+                }
+                if (token.type === tokenType) {
+                    return parseOk(token);
+                }
+                else {
+                    return parseErr(token, {
+                        type: "mismatch",
+                        expected: tokenType,
+                        actual: token,
+                    });
+                }
+            }),
+        ]);
+    }
+    lookahead() {
+        return this.evalArr(state => [state, state.lookahead()]);
+    }
+    eof() {
+        return this.evalArr(state => [
+            state,
+            state.next("eof", token => {
+                if (token === undefined) {
+                    return parseOk(undefined);
+                }
+                else {
+                    return parseErr(token, {
+                        type: "mismatch",
+                        expected: "EOF",
+                        actual: token,
+                    });
+                }
+            }),
+        ]);
+    }
+}
+exports.ParserArrowEvaluateCore = ParserArrowEvaluateCore;
+function token(type) {
+    return ParserArrow.start().token(type);
+}
+exports.token = token;
+function source() {
+    return ParserArrow.start().source().fallible();
+}
+exports.source = source;
+function recurse(callback) {
+    return new ParserArrowEvaluateCore().recurse(callback);
+}
+exports.recurse = recurse;
+class ParserArrow {
+    constructor(core, start) {
+        this.core = core;
+        this.start = start;
+    }
+    static start() {
+        return new ParserArrow(new ParserArrowEvaluateCore(), (s, t) => [
+            s,
+            t,
+        ]);
+    }
+    evaluate(evaluator, prev) {
+        return evaluator.withState(state => this.invoke(state, prev));
+    }
+    invoke(state, prev) {
+        return this.start(state, prev);
+    }
+    iterate() {
+        return this.core.iterate(this);
+    }
+    lift(callback) {
+        return this.core.Arr(callback);
+    }
+    liftFallible(ifOk, ifErr) {
+        return this.core.FallibleArr(ifOk, ifErr);
+    }
+    repeat() {
+        return this.core.repeat(this.label("repeated")).label("repeat");
+    }
+    bothOk() {
+        return this.core.BothOk(this);
+    }
+    andThen(arrow) {
+        return this.core.andThen(this, arrow);
+    }
+    map(callback) {
+        return this.core.andThen(this, this.core.Arr(callback));
+    }
+    // An adapter for cases where something assumes fallibility
+    // but you have something infallible
+    fallible() {
+        return this.map(input => parseOk(input));
+    }
+    orElse(arrow) {
+        return this.core.OrElse(this, arrow);
+    }
+    checkNext(arrow) {
+        return this.mergeNext(arrow).ifOk(([left]) => left);
+    }
+    andCheck(arrow) {
+        return this.core
+            .mergeAndThen(this, arrow)
+            .bothOk()
+            .ifOk(([left]) => left);
+    }
+    ifOk(callback) {
+        return this.core.andThen(this, this.core.FallibleArr(input => parseOk(callback(input)), err => err));
+    }
+    mergeNext(arrow) {
+        return this.core.mergeNext(this, arrow).bothOk();
+    }
+    extend(key, arrow) {
+        return this.mergeNext(arrow).ifOk(([left, right]) => {
+            return {
+                ...left,
+                [key]: right,
+            };
         });
     }
     or(value) {
-        return new InfallibleSequenceBuilder((iterator, last) => {
-            let prev = this.start(iterator, ok(last));
-            if (isOk(prev)) {
-                return prev.value;
-            }
-            else if (typeof value === "function") {
-                return value();
-            }
-            else {
-                return value;
-            }
-        });
+        return this.andThen(this.core.FallibleArr(input => input, () => value));
     }
-    andCheck(callback) {
-        return new SequenceBuilder((iterator, last) => {
-            let prev = this.start(iterator, last);
-            if (isOk(prev)) {
-                let check = callback(prev.value);
-                if (isOk(check)) {
-                    return prev;
-                }
-                else {
-                    return check;
-                }
-            }
-            else {
-                return { ...prev, iterator };
-            }
-        });
-    }
-}
-exports.SequenceBuilder = SequenceBuilder;
-function start(step) {
-    return new SequenceBuilder(step);
-}
-exports.start = start;
-function step(desc, step) {
-    return class Shape extends abstract_1.AbstractShape {
-        constructor() {
-            super(...arguments);
-            this.desc = desc;
-        }
-        [exports.EXPAND](iterator) {
-            return step.run(iterator, exports.SOURCE);
-        }
-    };
-}
-exports.step = step;
-function legacyStep(s) {
-    return s;
-}
-exports.legacyStep = legacyStep;
-class AbstractSequence {
-    constructor(inner, iterator) {
-        this.inner = inner;
-        this.iterator = iterator;
-    }
-}
-exports.AbstractSequence = AbstractSequence;
-class OkSequence extends AbstractSequence {
-    constructor(value, iterator) {
-        super({ kind: "ok", [exports.RESULT_KIND]: "ok", value }, iterator);
-        this.kind = "ok";
-        this[_a] = "ok";
-        this.value = value;
-    }
-    static fromResult(result, iterator) {
-        if (result instanceof OkSequence) {
-            return result;
-        }
-        else {
-            return new OkSequence(result.value, iterator);
-        }
-    }
-    withIterator(iterator) {
-        return new OkSequence(this.value, iterator);
-    }
+    // convenient
     named(name) {
-        return seq(ok({ [name]: this.value }), this.iterator);
+        return this.ifOk(val => {
+            return { [name]: val };
+        });
     }
-    mapResult(callback) {
-        let result = callback(this);
-        return seq(result, this.iterator);
+    present() {
+        return this.core.andThen(this, this.core.Arr(list => list.length > 0
+            ? parseOk(undefined)
+            : parseErr("unknown", { type: "empty" })));
     }
-    andThen(callback) {
-        let result = callback(this.value);
-        if (isResult(result)) {
-            return seq(result, this.iterator);
-        }
-        else {
-            return new OkSequence(result, this.iterator);
-        }
+    not() {
+        return this.core.andThen(this, this.core.FallibleArr(input => parseErr("unknown", { type: "not", result: input }), _ => parseOk(undefined)));
     }
-    next(callback) {
-        let result = callback(this.iterator);
-        if (isResult(result)) {
-            return seq(result, this.iterator);
-        }
-        else {
-            return new OkSequence(result, this.iterator);
-        }
+    // special parser combinators
+    source() {
+        return this.core.Source();
     }
-    extend(key, callback) {
-        let result = callback(this.iterator);
-        if (isResult(result)) {
-            if (isOk(result)) {
-                return seq(ok({ ...this.value, [key]: result.value }), this.iterator);
-            }
-            else {
-                return seq(result, this.iterator);
-            }
-        }
-        else {
-            return seq(ok({ ...this.value, [key]: result }), this.iterator);
-        }
+    debug() {
+        return this.core.andThen(this, this.core.Arr(input => {
+            debugger;
+            return input;
+        }));
     }
-    mapErr(_callback) {
-        return this;
+    atomic() {
+        return this.core.Atomic(this);
     }
-    or(_callback) {
-        return this.value;
+    token(type) {
+        return this.core.token(type);
     }
-    checkNext(callback) {
-        let result = callback(this.iterator);
-        if (result.kind === "err") {
-            return seq(result, this.iterator);
-        }
-        else {
-            return this;
-        }
+    eof() {
+        return this.core.eof();
     }
-    andCheck(callback) {
-        let result = callback(this.value, this.iterator);
-        if (result.kind === "err") {
-            return seq(result, this.iterator);
+    parent(desc, tokenType, arrow) {
+        return this.core.parent(desc, tokenType, arrow);
+    }
+    label(label) {
+        return this.core.label(label, this);
+    }
+    lookahead() {
+        return this.core.lookahead();
+    }
+}
+exports.ParserArrow = ParserArrow;
+function loop(callback) {
+    let count = 0;
+    while (true) {
+        count++;
+        if (count > 1000) {
+            throw new Error(`likely infinite loop`);
         }
-        else {
-            return this;
+        if (callback(count) === "break") {
+            break;
         }
     }
 }
-exports.OkSequence = OkSequence;
-_a = exports.RESULT_KIND;
-class ErrSequence extends AbstractSequence {
-    constructor(token, reason, fatal, iterator) {
-        super({ kind: "err", [exports.RESULT_KIND]: "err", token, reason, fatal }, iterator);
-        this.token = token;
-        this.reason = reason;
-        this.fatal = fatal;
-        this.kind = "err";
-        this[_b] = "err";
-    }
-    static fromResult(result, iterator) {
-        if (result instanceof ErrSequence) {
-            return result.withIterator(iterator);
-        }
-        else {
-            return new ErrSequence(result.token, result.reason, result.fatal, iterator);
-        }
-    }
-    withIterator(iterator) {
-        return new ErrSequence(this.token, this.reason, this.fatal, iterator);
-    }
-    named(_name) {
-        return this;
-    }
-    mapResult(callback) {
-        let result = callback(this);
-        return seq(result, this.iterator);
-    }
-    next(_callback) {
-        return this;
-    }
-    andThen(_callback) {
-        return this;
-    }
-    extend(_key, _callback) {
-        return this;
-    }
-    mapErr(callback) {
-        let result = callback(this);
-        if (isResult(result)) {
-            return seq(result, this.iterator);
-        }
-        else {
-            return new OkSequence(result, this.iterator);
-        }
-    }
-    or(callback) {
-        if (typeof callback === "function") {
-            return callback(this);
-        }
-        else {
-            return callback;
-        }
-    }
-    andCheck(_callback) {
-        return this;
-    }
-    checkNext(_callback) {
-        return this;
-    }
-}
-exports.ErrSequence = ErrSequence;
-_b = exports.RESULT_KIND;
-function isSequence(input) {
-    return input instanceof OkSequence || input instanceof ErrSequence;
-}
-exports.isSequence = isSequence;
-function seq(input, iterator) {
-    if (isSequence(input)) {
-        return input.withIterator(iterator);
-    }
-    if (input[exports.RESULT_KIND] === "ok") {
-        return OkSequence.fromResult(input, iterator);
-    }
-    else {
-        return ErrSequence.fromResult(input, iterator);
-    }
-}
-exports.seq = seq;

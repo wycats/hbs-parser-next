@@ -10,7 +10,7 @@ export type ResultValue<T extends ParseResult<unknown>> = T extends ParseResult<
   ? R
   : never;
 
-export function ok<T>(value: T): ParseResult<T> {
+export function parseOk<T>(value: T): ParseResult<T> {
   return {
     [RESULT_KIND]: "ok",
     kind: "ok",
@@ -18,7 +18,7 @@ export function ok<T>(value: T): ParseResult<T> {
   };
 }
 
-export function err<T>(
+export function parseErr<T>(
   token: Token | "EOF" | "unknown",
   reason: ErrorReason
 ): ParseResult<T> {
@@ -47,6 +47,10 @@ export function fatalError<T>(
 export interface Ok<T> {
   [RESULT_KIND]: "ok";
   value: T;
+}
+
+export function ok<T>(value: T): Result<T> {
+  return { [RESULT_KIND]: "ok", value };
 }
 
 export interface ParseOk<T> extends Ok<T> {
@@ -79,6 +83,13 @@ export type ErrorReason =
 export interface Err {
   [RESULT_KIND]: "err";
   reason: unknown;
+}
+
+export function err<T>(reason: unknown): Result<T> {
+  return {
+    [RESULT_KIND]: "err",
+    reason,
+  };
 }
 
 export interface ParseErr extends Err {
@@ -151,7 +162,7 @@ export type FallibleArrowResult<
 
 export type SourceStep<U> = (iterator: TokensIterator) => ParseResult<U>;
 
-export const SOURCE: ParseResult<void> = ok(undefined);
+export const SOURCE: ParseResult<void> = parseOk(undefined);
 
 export interface ParserArrowCore {
   Id<T>(): ParserArrow<T, T>;
@@ -408,7 +419,7 @@ export class ParserArrowEvaluateCore implements ParserArrowFullCore {
       if (isOk(left) && isOk(right)) {
         return [
           state2,
-          ok([left.value, right.value]) as ParseResult<[Left, Right]>,
+          parseOk([left.value, right.value]) as ParseResult<[Left, Right]>,
         ];
       } else if (isOk(left)) {
         return [state2, right as ParseErr];
@@ -439,7 +450,7 @@ export class ParserArrowEvaluateCore implements ParserArrowFullCore {
     return this.evalArr((state, last) => {
       if (isOk(last)) {
         let [state2, result] = arrow.invoke(state, last.value);
-        return [state2, ok(result)];
+        return [state2, parseOk(result)];
       } else {
         return [state, last];
       }
@@ -479,13 +490,13 @@ export class ParserArrowEvaluateCore implements ParserArrowFullCore {
       state,
       state.next(tokenType, token => {
         if (token === undefined) {
-          return err("EOF", { type: "unexpected-eof" });
+          return parseErr("EOF", { type: "unexpected-eof" });
         }
 
         if (token.type === tokenType) {
-          return ok(token) as ParseResult<TokenMap[K]>;
+          return parseOk(token) as ParseResult<TokenMap[K]>;
         } else {
-          return err(token, {
+          return parseErr(token, {
             type: "mismatch",
             expected: tokenType,
             actual: token,
@@ -504,9 +515,9 @@ export class ParserArrowEvaluateCore implements ParserArrowFullCore {
       state,
       state.next("eof", token => {
         if (token === undefined) {
-          return ok(undefined);
+          return parseOk(undefined);
         } else {
-          return err(token, {
+          return parseErr(token, {
             type: "mismatch",
             expected: "EOF",
             actual: token,
@@ -595,7 +606,7 @@ export class ParserArrow<T, U> {
   // An adapter for cases where something assumes fallibility
   // but you have something infallible
   fallible(): ParserArrow<T, ParseResult<U>> {
-    return this.map(input => ok(input));
+    return this.map(input => parseOk(input));
   }
 
   orElse<V, InnerU>(
@@ -629,7 +640,7 @@ export class ParserArrow<T, U> {
     return this.core.andThen(
       this,
       this.core.FallibleArr(
-        input => ok(callback(input)),
+        input => parseOk(callback(input)),
         err => err
       )
     );
@@ -685,8 +696,8 @@ export class ParserArrow<T, U> {
       this,
       this.core.Arr(list =>
         list.length > 0
-          ? (ok(undefined) as ParseResult<void>)
-          : (err("unknown", { type: "empty" }) as ParseResult<void>)
+          ? (parseOk(undefined) as ParseResult<void>)
+          : (parseErr("unknown", { type: "empty" }) as ParseResult<void>)
       )
     );
   }
@@ -697,8 +708,8 @@ export class ParserArrow<T, U> {
     return this.core.andThen(
       this,
       this.core.FallibleArr(
-        input => err("unknown", { type: "not", result: input }),
-        _ => ok(undefined)
+        input => parseErr("unknown", { type: "not", result: input }),
+        _ => parseOk(undefined)
       )
     );
   }

@@ -1,5 +1,2 @@
-import type * as ast from "../nodes";
-import type { Result } from "../shape";
-import { ShapeConstructor } from "./abstract";
-export declare const ExpressionShape: ShapeConstructor<Result<ast.ExpressionAstNode>>;
+export declare const ExpressionArrow: import("../shape").ParserArrow<void, (import("../shape").Err & import("../shape").ParseErr) | (import("../shape").Ok<import("../nodes").CallNode | import("../nodes").StringNode | import("../nodes").NumberNode | import("../nodes").ArgReferenceNode | import("../nodes").VarReferenceNode | import("../nodes").ThisReferenceNode | import("../nodes").PathNode> & import("../shape").ParseOk<import("../nodes").CallNode | import("../nodes").StringNode | import("../nodes").NumberNode | import("../nodes").ArgReferenceNode | import("../nodes").VarReferenceNode | import("../nodes").ThisReferenceNode | import("../nodes").PathNode>)>;
 //# sourceMappingURL=expression.d.ts.map

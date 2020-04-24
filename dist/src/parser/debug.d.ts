@@ -1,7 +1,6 @@
 import type { Token, RootToken } from "../read/tokens";
-import type { Shape } from "./shape";
 export interface ParseTrace {
-    shape: Shape<unknown> | {
+    shape: {
         desc: string;
     };
     preToken: Token | RootToken | undefined;
@@ -18,14 +17,15 @@ export declare class ParseTracer {
     begin(preToken: Token): void;
     commit(): void;
     rollback(): void;
-    preInvoke(shape: Shape<unknown> | {
+    preInvoke(shape: {
         desc: string;
         isLeaf: boolean;
     }, token: Token | undefined): void;
-    postInvoke(shape: Shape<unknown> | {
+    postInvoke(shape: {
         desc: string;
     }, result: unknown, postToken: Token | undefined): void;
-    postInvokeFailure(shape: Shape<unknown> | {
+    private stackCheck;
+    postInvokeFailure(shape: {
         desc: string;
     }, reason: "ignored" | "optional"): void;
     private get last();

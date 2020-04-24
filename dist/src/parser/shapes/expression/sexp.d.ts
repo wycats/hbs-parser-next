@@ -1,3 +1,4 @@
 import * as ast from "../../nodes";
-export declare const SexpShape: import("../abstract").ShapeConstructor<import("../../shape").Result<ast.CallNode>>;
+import { ParserArrow, ParseResult } from "../../shape";
+export declare const SexpArrow: ParserArrow<void, ParseResult<ast.CallNode>>;
 //# sourceMappingURL=sexp.d.ts.map

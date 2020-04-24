@@ -19,31 +19,28 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.PathShape = exports.PathHeadShape = exports.PathMemberShape = void 0;
+exports.PathArrow = exports.PathHeadArrow = exports.PathMemberArrow = void 0;
 require("../../../read/tokens");
 const span_1 = require("../../../span");
 const ast = __importStar(require("../../nodes"));
-const abstract_1 = require("../abstract");
+const shape_1 = require("../../shape");
 const any_1 = require("../internal/any");
 const args_ref_1 = require("./args-ref");
 const sexp_1 = require("./sexp");
 const var_ref_1 = require("./var-ref");
-const tokens_iterator_1 = require("../../tokens-iterator");
-exports.PathMemberShape = abstract_1.shape("PathMember", iterator => {
-    return iterator.start(tokens_iterator_1.legacyNotEOF()).next(tokens_iterator_1.atomic(iterator => {
-        return iterator
-            .start(tokens_iterator_1.legacyConsumeToken("dot", "Dot" /* Dot */))
-            .extend("id", tokens_iterator_1.legacyConsumeToken("Identifier" /* Identifier */))
-            .andThen(({ dot, id }) => ast.member(dot, id.span));
-    }));
-});
-exports.PathHeadShape = abstract_1.shape("PathHead", iterator => iterator.start(tokens_iterator_1.legacyExpand(any_1.any([sexp_1.SexpShape, args_ref_1.ArgRefShape, var_ref_1.VarRefShape], "path head"))));
-exports.PathShape = abstract_1.shape("Path", iterator => iterator
-    .start(tokens_iterator_1.legacyExpand(exports.PathHeadShape))
-    .named("head")
-    .extend("tail", tokens_iterator_1.legacyMany(exports.PathMemberShape))
-    .andThen(({ head, tail }) => {
-    return tail.length === 0
-        ? head
-        : ast.path({ head, tail }, span_1.range(head, ...tail));
-}));
+exports.PathMemberArrow = shape_1.ParserArrow.start()
+    .token("Dot" /* Dot */)
+    .named("dot")
+    .extend("id", shape_1.ParserArrow.start().token("Identifier" /* Identifier */))
+    .ifOk(({ dot, id }) => ast.member(dot, id.span))
+    .atomic()
+    .label("PathMember");
+exports.PathHeadArrow = any_1.anyArrow([
+    sexp_1.SexpArrow,
+    args_ref_1.ArgRefArrow,
+    var_ref_1.VarRefArrow,
+]).label("PathHead");
+exports.PathArrow = exports.PathHeadArrow.named("head")
+    .extend("tail", exports.PathMemberArrow.repeat().fallible())
+    .ifOk(({ head, tail }) => tail.length === 0 ? head : ast.path({ head, tail }, span_1.range(head, ...tail)))
+    .label("Path");

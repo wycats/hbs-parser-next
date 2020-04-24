@@ -1,167 +1,189 @@
-import type { Token } from "../read/tokens";
-import { ShapeConstructor } from "./shapes/abstract";
-import type { CombinatorTokensIterator } from "./tokens-iterator";
+import type { Token, TokenType, TokenMap } from "../read/tokens";
+import TokensIterator, { ITERATOR_SOURCE } from "./tokens-iterator";
 export declare const EXPAND: unique symbol;
 export declare const RESULT_KIND: unique symbol;
-export interface Shape<T> {
-    readonly desc: string;
-    [EXPAND](iterator: CombinatorTokensIterator): T;
-}
-export declare type ResultValue<T extends Result<unknown>> = T extends Result<infer R> ? R : never;
-export declare type ShapeResult<T extends Shape<Result<unknown>>> = T extends Shape<Result<infer R>> ? R : T extends Shape<infer R> ? R : never;
-export declare type ShapeConstructorResult<T extends ShapeConstructor<Result<unknown>>> = T extends {
-    new (): Shape<Result<infer R>>;
-} ? R : T extends ShapeConstructor<infer R> ? R : never;
-export declare function ok<T>(value: T): Ok<T>;
-export declare function err(token: Token, reason: string): Err;
-export declare function fatalError(token: Token, reason: string): Err;
+export declare type ResultValue<T extends ParseResult<unknown>> = T extends ParseResult<infer R> ? R : never;
+export declare function parseOk<T>(value: T): ParseResult<T>;
+export declare function parseErr<T>(token: Token | "EOF" | "unknown", reason: ErrorReason): ParseResult<T>;
+export declare function fatalError<T>(token: Token, reason: ErrorReason): ParseResult<T>;
 export interface Ok<T> {
+    [RESULT_KIND]: "ok";
+    value: T;
+}
+export declare function ok<T>(value: T): Result<T>;
+export interface ParseOk<T> extends Ok<T> {
     [RESULT_KIND]: "ok";
     kind: "ok";
     value: T;
 }
+export declare type ErrorReason = {
+    type: "rejected";
+    token: Token | "EOF";
+} | {
+    type: "unexpected-eof";
+} | {
+    type: "mismatch";
+    expected: TokenType | "EOF";
+    actual: Token | "EOF";
+} | {
+    type: "not";
+    result: unknown;
+} | {
+    type: "empty";
+} | {
+    type: "lookahead";
+    expected: TokenType | "EOF";
+    actual: Token | "EOF";
+};
 export interface Err {
     [RESULT_KIND]: "err";
+    reason: unknown;
+}
+export declare function err<T>(reason: unknown): Result<T>;
+export interface ParseErr extends Err {
+    [RESULT_KIND]: "err";
     kind: "err";
-    token: Token;
-    reason: string;
+    token: Token | "EOF" | "unknown";
+    reason: ErrorReason;
     fatal: boolean;
 }
 export declare type Result<T> = Ok<T> | Err;
+export declare type ParseResult<T> = Result<T> & (ParseOk<T> | ParseErr);
 export declare function isResult<T>(input: unknown): input is Result<T>;
 export declare function isOk<T>(input: Result<T>): input is Ok<T>;
 export declare function isErr<T>(input: Result<T>): input is Err;
-export declare function mapResult<T, U>(result: Result<T>, callback: (input: T) => Result<U>): Result<U>;
-export interface AnySequence<T, U> {
-    run(iterator: CombinatorTokensIterator, prev: T): U;
-}
-export interface InfallibleSequence<T, U> extends AnySequence<T, U> {
-}
-export interface FallibleSequence<InnerT, InnerU> extends AnySequence<Result<InnerT>, Result<InnerU>> {
-    named<K extends string>(name: K): FallibleSequence<Result<InnerU>, ResultObject<K, InnerU>>;
-    andThen<V>(callback: (input: InnerU) => Result<V>): FallibleSequence<InnerT, V>;
-    andThen<V>(callback: (input: InnerU) => V): FallibleSequence<InnerT, V>;
-    extend<K extends string, V>(key: K, step: SourceStep<V>): FallibleSequence<InnerT, InnerU & ResultObject<K, V>>;
-    andCheck(callback: (input: InnerU) => Result<unknown>): FallibleSequence<InnerT, InnerU>;
-    mapErr<V>(callback: (input: Err) => Result<V>): FallibleSequence<InnerT, InnerU | V>;
-    mapErr<V>(callback: (input: Err) => V): FallibleSequence<InnerT, InnerU | V>;
-    or<V>(value: V | Thunk<V>): InfallibleSequence<InnerT, InnerU | V>;
-}
+export declare function isParseErr<T>(input: ParseResult<T>): input is ParseErr;
+export declare function mapResult<T, U>(result: ParseResult<T>, callback: (input: T) => ParseResult<U>): ParseResult<U>;
 export declare type Thunk<T> = () => T;
-export declare type Step<T, U> = (iterator: CombinatorTokensIterator, prev: Result<T>) => Result<U>;
-export declare type SourceStep<U> = (iterator: CombinatorTokensIterator) => Result<U>;
-export declare type InfallibleStep<T, U> = (iterator: CombinatorTokensIterator, prev: T) => U;
-export declare type InfallibleSourceStep<U> = (iterator: CombinatorTokensIterator) => U & InfallibleStep<void, U>;
-export declare const SOURCE: Result<void>;
-export declare class InfallibleSequenceBuilder<T, U> implements AnySequence<T, U> {
+export declare type Step<T, U> = (iterator: TokensIterator, prev: ParseResult<T>) => ParseResult<U>;
+export declare type ArrowResult<T extends ParserArrow<any, any>> = T extends ParserArrow<unknown, infer R> ? R : never;
+export declare type FallibleArrowResult<T extends ParserArrow<any, ParseResult<any>>> = T extends ParserArrow<unknown, ParseResult<infer R>> ? ParseResult<R> : never;
+export declare type SourceStep<U> = (iterator: TokensIterator) => ParseResult<U>;
+export declare const SOURCE: ParseResult<void>;
+export interface ParserArrowCore {
+    Id<T>(): ParserArrow<T, T>;
+    Arr<T, U>(callback: (input: T) => U): ParserArrow<T, U>;
+    recurse<T, U>(callback: () => ParserArrow<T, U>): ParserArrow<T, U>;
+    zip<T, U, T2, U2>(left: ParserArrow<T, U>, right: ParserArrow<T2, U2>): ParserArrow<[T, T2], [U, U2]>;
+    andThen<T, U, V>(left: ParserArrow<T, U>, arrow: ParserArrow<U, V>): ParserArrow<T, V>;
+    mergeNext<T, U, V>(left: ParserArrow<T, U>, right: ParserArrow<T, V>): ParserArrow<T, [U, V]>;
+    mergeAndThen<T, U, V>(left: ParserArrow<T, U>, right: ParserArrow<U, V>): ParserArrow<T, [U, V]>;
+}
+export interface IterateParserArrow extends ParserArrowCore {
+    iterate<T, U>(left: ParserArrow<T, U>): ParserArrow<T[], U[]>;
+    repeat<Pre, InnerU>(arrow: ParserArrow<Pre, ParseResult<InnerU>>): ParserArrow<Pre, InnerU[]>;
+    Reduce<T, U>(callback: (list: T[]) => U): ParserArrow<T[], U>;
+}
+export interface ChoiceParserArrowCore extends ParserArrowCore {
+    FallibleArr<T, U>(ok: (input: T) => U, err: (input: ParseErr) => U): ParserArrow<ParseResult<T>, U>;
+    BothOk<Pre, Left, Right>(arrow: ParserArrow<Pre, [ParseResult<Left>, ParseResult<Right>]>): ParserArrow<Pre, ParseResult<[Left, Right]>>;
+    OrElse<T, InnerU, V>(left: ParserArrow<T, ParseResult<InnerU>>, right: ParserArrow<T, ParseResult<V>>): ParserArrow<T, ParseResult<InnerU | V>>;
+    fallibleInput<T, U>(arrow: ParserArrow<T, U>): ParserArrow<ParseResult<T>, ParseResult<U>>;
+}
+export interface IteratorParserArrowCore extends ParserArrowCore {
+    Source(): ParserArrow<void, string>;
+    Atomic<T, InnerU>(step: ParserArrow<T, ParseResult<InnerU>>): ParserArrow<T, ParseResult<InnerU>>;
+    label<T, U>(label: string, arrow: ParserArrow<T, U>): ParserArrow<T, U>;
+    parent<T>(desc: string, tokenType: TokenType, arrow: ParserArrow<void, ParseResult<T>>): ParserArrow<void, ParseResult<{
+        result: T;
+        token: Token;
+    }>>;
+    token<K extends TokenType & keyof TokenMap>(tokenType: K): ParserArrow<void, ParseResult<TokenMap[K]>>;
+    lookahead(): ParserArrow<void, Token | undefined>;
+    eof<T>(): ParserArrow<T, ParseResult<void>>;
+}
+export interface ParserArrowFullCore extends ParserArrowCore, IterateParserArrow, ChoiceParserArrowCore, IteratorParserArrowCore {
+}
+export interface Evaluator<S, T, U> {
+    evaluate(prev: T): U;
+    withState<V>(callback: (state: S) => [V, S]): V;
+}
+export interface ArrowState {
+    [ITERATOR_SOURCE]: string;
+    atomic<T>(callback: (state: this) => [this, ParseResult<T>]): [this, ParseResult<T>];
+    label<T>(desc: string, callback: (state: this) => [this, T]): [this, T];
+    next<T>(state: string, callback: (token: Token | undefined) => ParseResult<T>): ParseResult<T>;
+    lookahead(): Token | undefined;
+    parent<T>(desc: string, tokenType: TokenType, arrow: ParserArrow<void, ParseResult<T>>): ParseResult<{
+        result: T;
+        token: Token;
+    }>;
+}
+export declare class ParseEvaluator<S extends ArrowState, T, U> {
+    private state;
+    private arrow;
+    constructor(state: S, arrow: ParserArrow<T, U>);
+    evaluate(prev: T): U;
+    withState<V>(callback: (state: S) => [S, V]): V;
+}
+export declare class ParserArrowEvaluateCore implements ParserArrowFullCore {
+    Id<T>(): ParserArrow<T, T>;
+    evalArr<T, U>(callback: <S extends ArrowState>(state: S, prev: T) => [S, U]): ParserArrow<T, U>;
+    recurse<T, U>(callback: () => ParserArrow<T, U>): ParserArrow<T, U>;
+    Arr<T, U>(callback: (input: T) => U): ParserArrow<T, U>;
+    zip<T, U, T2, U2>(left: ParserArrow<T, U>, right: ParserArrow<T2, U2>): ParserArrow<[T, T2], [U, U2]>;
+    andThen<T, U, V>(left: ParserArrow<T, U>, right: ParserArrow<U, V>): ParserArrow<T, V>;
+    mergeNext<T, U, U2>(left: ParserArrow<T, U>, right: ParserArrow<T, U2>): ParserArrow<T, [U, U2]>;
+    mergeAndThen<T, U, U2>(left: ParserArrow<T, U>, right: ParserArrow<U, U2>): ParserArrow<T, [U, U2]>;
+    iterate<T, U>(arrow: ParserArrow<T, U>): ParserArrow<T[], U[]>;
+    repeat<Pre, InnerU>(arrow: ParserArrow<Pre, ParseResult<InnerU>>): ParserArrow<Pre, InnerU[]>;
+    Reduce<T2, U2>(callback: (list: T2[]) => U2): ParserArrow<T2[], U2>;
+    FallibleArr<T, U>(ok: (input: T) => U, err: (input: ParseErr) => U): ParserArrow<ParseResult<T>, U>;
+    BothOk<Pre, Left, Right>(arrow: ParserArrow<Pre, [ParseResult<Left>, ParseResult<Right>]>): ParserArrow<Pre, ParseResult<[Left, Right]>>;
+    OrElse<T, V, InnerU>(left: ParserArrow<T, ParseResult<InnerU>>, right: ParserArrow<T, ParseResult<V>>): ParserArrow<T, ParseResult<V | InnerU>>;
+    fallibleInput<T, U>(arrow: ParserArrow<T, U>): ParserArrow<ParseResult<T>, ParseResult<U>>;
+    Source(): ParserArrow<void, string>;
+    Atomic<T, InnerU>(arrow: ParserArrow<T, ParseResult<InnerU>>): ParserArrow<T, ParseResult<InnerU>>;
+    label<T, U>(label: string, arrow: ParserArrow<T, U>): ParserArrow<T, U>;
+    parent<T>(desc: string, tokenType: TokenType, arrow: ParserArrow<void, ParseResult<T>>): ParserArrow<void, ParseResult<{
+        result: T;
+        token: Token;
+    }>>;
+    token<K extends TokenType & keyof TokenMap>(tokenType: K): ParserArrow<void, ParseResult<TokenMap[K]>>;
+    lookahead(): ParserArrow<void, Token | undefined>;
+    eof<T>(): ParserArrow<T, ParseResult<void>>;
+}
+export declare function token<K extends TokenType & keyof TokenMap>(type: K): ParserArrow<void, ParseResult<TokenMap[K]>>;
+export declare function source(): ParserArrow<void, ParseResult<string>>;
+export declare function recurse<T>(callback: () => ParserArrow<void, T>): ParserArrow<void, T>;
+export declare class ParserArrow<T, U> {
+    private core;
     private start;
-    constructor(start: InfallibleStep<T, U>);
-    run(iterator: CombinatorTokensIterator, prev: T): U;
+    static start<T, U = T>(): ParserArrow<T, U>;
+    constructor(core: ParserArrowFullCore, start: <S extends ArrowState>(state: S, prev: T) => [S, U]);
+    evaluate<S extends ArrowState>(evaluator: ParseEvaluator<S, T, U>, prev: T): U;
+    invoke<S extends ArrowState>(state: S, prev: T): [S, U];
+    iterate(): ParserArrow<T[], U[]>;
+    lift<T2, U2>(callback: (input: T2) => U2): ParserArrow<T2, U2>;
+    liftFallible<T2, U2>(ifOk: (ok: T2) => U2, ifErr: (err: ParseErr) => U2): ParserArrow<ParseResult<T2>, U2>;
+    repeat<InnerU>(this: ParserArrow<void, ParseResult<InnerU>>): ParserArrow<void, InnerU[]>;
+    bothOk<Pre, Left, Right>(this: ParserArrow<Pre, [ParseResult<Left>, ParseResult<Right>]>): ParserArrow<Pre, ParseResult<[Left, Right]>>;
+    andThen<V>(arrow: ParserArrow<U, V>): ParserArrow<T, V>;
+    map<V>(callback: (input: U) => V): ParserArrow<T, V>;
+    fallible(): ParserArrow<T, ParseResult<U>>;
+    orElse<V, InnerU>(this: ParserArrow<T, ParseResult<InnerU>>, arrow: ParserArrow<T, ParseResult<V>>): ParserArrow<T, ParseResult<InnerU | V>>;
+    checkNext<InnerU, V>(this: ParserArrow<T, ParseResult<InnerU>>, arrow: ParserArrow<T, ParseResult<V>>): ParserArrow<T, ParseResult<InnerU>>;
+    andCheck<InnerU, V>(this: ParserArrow<T, ParseResult<InnerU>>, arrow: ParserArrow<ParseResult<InnerU>, ParseResult<V>>): ParserArrow<T, ParseResult<InnerU>>;
+    ifOk<V, InnerU>(this: ParserArrow<T, ParseResult<InnerU>>, callback: (input: InnerU) => V): ParserArrow<T, ParseResult<V>>;
+    mergeNext<InnerU, V>(this: ParserArrow<T, ParseResult<InnerU>>, arrow: ParserArrow<T, ParseResult<V>>): ParserArrow<T, ParseResult<[InnerU, V]>>;
+    extend<K extends string, InnerU, V>(this: ParserArrow<T, ParseResult<InnerU>>, key: K, arrow: ParserArrow<T, ParseResult<V>>): ParserArrow<T, ParseResult<InnerU & ResultObject<K, V>>>;
+    or<V, InnerU>(this: ParserArrow<T, ParseResult<InnerU>>, value: V): ParserArrow<T, InnerU | V>;
+    named<K extends string, InnerU>(this: ParserArrow<T, ParseResult<InnerU>>, name: K): ParserArrow<T, ParseResult<ResultObject<K, InnerU>>>;
+    present<Pre>(this: ParserArrow<Pre, T[]>): ParserArrow<Pre, ParseResult<void>>;
+    not<InnerU>(this: ParserArrow<T, ParseResult<InnerU>>): ParserArrow<T, ParseResult<void>>;
+    source(): ParserArrow<void, string>;
+    debug(): ParserArrow<T, U>;
+    atomic<InnerU>(this: ParserArrow<T, ParseResult<InnerU>>): ParserArrow<T, ParseResult<InnerU>>;
+    token<K extends TokenType & keyof TokenMap>(type: K): ParserArrow<void, ParseResult<TokenMap[K]>>;
+    eof(): ParserArrow<T, ParseResult<void>>;
+    parent<T>(desc: string, tokenType: TokenType, arrow: ParserArrow<void, ParseResult<T>>): ParserArrow<void, ParseResult<{
+        result: T;
+        token: Token;
+    }>>;
+    label(label: string): ParserArrow<T, U>;
+    lookahead(): ParserArrow<void, Token | undefined>;
 }
-export declare function infallible<T>(step: InfallibleSourceStep<T>): InfallibleSequenceBuilder<void, T>;
-/**
- * InnerT is the previous result
- * InnerU is the successful value when executing this step
- */
-export declare class SequenceBuilder<InnerT, InnerU> implements FallibleSequence<InnerT, InnerU> {
-    private start;
-    constructor(start: Step<InnerT, InnerU>);
-    run(iterator: CombinatorTokensIterator, prev: Result<InnerT>): Result<InnerU>;
-    named<K extends string>(name: K): FallibleSequence<Result<InnerU>, ResultObject<K, InnerU>>;
-    andThen<V>(callback: (input: InnerU) => Result<V>): FallibleSequence<InnerT, V>;
-    andThen<V>(callback: (input: InnerU) => V): FallibleSequence<InnerT, V>;
-    concat<V>(other: SourceStep<V>): FallibleSequence<InnerT, [InnerU, V]>;
-    extend<K extends string, V>(key: K, sequence: SourceStep<V>): FallibleSequence<InnerT, InnerU & ResultObject<K, V>>;
-    mapErr<V>(callback: (input: Err) => Result<V>): FallibleSequence<InnerT, InnerU | V>;
-    mapErr<V>(callback: (input: Err) => V): FallibleSequence<InnerT, InnerU | V>;
-    or<V>(value: V | Thunk<V>): InfallibleSequence<InnerT, InnerU | V>;
-    andCheck(callback: (input: InnerU) => Result<unknown>): FallibleSequence<InnerT, InnerU>;
-}
-export declare function start<T>(step: SourceStep<T>): SequenceBuilder<void, T>;
-export declare function step<T>(desc: string, step: FallibleSequence<void, T>): ShapeConstructor<Result<T>>;
-export declare function step<T>(desc: string, step: InfallibleSequence<void, T>): ShapeConstructor<T>;
-export declare function legacyStep<T, U>(s: Step<T, U>): Step<T, U>;
-export declare function legacyStep<T, U>(s: SourceStep<U>): SourceStep<U>;
-export declare abstract class AbstractSequence<T> {
-    protected inner: Result<T>;
-    readonly iterator: CombinatorTokensIterator;
-    constructor(inner: Result<T>, iterator: CombinatorTokensIterator);
-    abstract withIterator(iterator: CombinatorTokensIterator): Sequence<T>;
-    abstract named<K extends string>(name: K): Sequence<ResultObject<K, T>>;
-    abstract mapResult<U>(callback: (input: Result<T>) => Result<U>): Sequence<U>;
-    abstract andThen<U>(callback: (input: T) => Result<U>): Sequence<U>;
-    abstract andThen<U>(callback: (input: T) => U): Sequence<U>;
-    abstract andThen<U>(callback: (input: T) => U | Result<U>): Sequence<U>;
-    abstract next<U>(callback: (iterator: CombinatorTokensIterator) => Result<U>): Sequence<U>;
-    abstract next<U>(callback: (iterator: CombinatorTokensIterator) => U): Sequence<U>;
-    abstract next<U>(callback: (iterator: CombinatorTokensIterator) => U | Result<U>): Sequence<U>;
-    abstract extend<K extends string, U>(key: K, callback: (iterator: CombinatorTokensIterator) => Result<U>): Sequence<T & ResultObject<K, U>>;
-    abstract extend<K extends string, U>(key: K, callback: (iterator: CombinatorTokensIterator) => U): Sequence<T & ResultObject<K, U>>;
-    abstract extend<K extends string, U>(key: K, callback: (iterator: CombinatorTokensIterator) => U | Result<U>): Sequence<T & ResultObject<K, U>>;
-    abstract mapErr<U>(callback: (input: Err) => Result<U>): Result<T | U>;
-    abstract mapErr<U>(callback: (input: Err) => U): Result<T | U>;
-    abstract mapErr<U>(callback: (input: Err) => Result<U> | U): Result<T | U>;
-    abstract or<U>(callback: (input: Err) => U): T | U;
-    abstract or<U>(callback: U): T | U;
-    abstract or<U>(callback: (input: Err) => U | U): T | U;
-    abstract andCheck(callback: (input: T, iterator: CombinatorTokensIterator) => Result<unknown>): Sequence<T>;
-    abstract checkNext(callback: (iterator: CombinatorTokensIterator) => Result<unknown>): Sequence<T>;
-}
-export declare class OkSequence<T> extends AbstractSequence<T> implements Ok<T> {
-    static fromResult<T>(result: Ok<T>, iterator: CombinatorTokensIterator): OkSequence<T>;
-    inner: Ok<T>;
-    readonly kind = "ok";
-    readonly [RESULT_KIND] = "ok";
-    readonly value: T;
-    constructor(value: T, iterator: CombinatorTokensIterator);
-    withIterator(iterator: CombinatorTokensIterator): OkSequence<T>;
-    named<K extends string>(name: K): Sequence<ResultObject<K, T>>;
-    mapResult<U>(callback: (input: Result<T>) => Result<U>): Sequence<U>;
-    andThen<U>(callback: (input: T) => Result<U>): Sequence<U>;
-    andThen<U>(callback: (input: T) => U): Sequence<U>;
-    next<U>(callback: (iterator: CombinatorTokensIterator) => Result<U>): Sequence<U>;
-    next<U>(callback: (iterator: CombinatorTokensIterator) => U): Sequence<U>;
-    extend<K extends string, U>(key: K, callback: (iterator: CombinatorTokensIterator) => Result<U>): Sequence<T & ResultObject<K, U>>;
-    extend<K extends string, U>(key: K, callback: (iterator: CombinatorTokensIterator) => U): Sequence<T & ResultObject<K, U>>;
-    mapErr<U>(_callback: (input: Err) => Result<U>): Sequence<T | U>;
-    mapErr<U>(_callback: (input: Err) => U): Sequence<T | U>;
-    or<U>(_callback: (input: Err) => U): T | U;
-    or<U>(_callback: Exclude<U, (input: Err) => U>): T | U;
-    checkNext(callback: (iterator: CombinatorTokensIterator) => Result<unknown>): Sequence<T>;
-    andCheck(callback: (input: T, iterator: CombinatorTokensIterator) => Result<unknown>): Sequence<T>;
-}
-export declare class ErrSequence<T> extends AbstractSequence<T> implements Err {
-    readonly token: Token;
-    readonly reason: string;
-    readonly fatal: boolean;
-    static fromResult<T>(result: Err, iterator: CombinatorTokensIterator): ErrSequence<T>;
-    inner: Err;
-    type: T;
-    readonly kind = "err";
-    readonly [RESULT_KIND] = "err";
-    constructor(token: Token, reason: string, fatal: boolean, iterator: CombinatorTokensIterator);
-    withIterator(iterator: CombinatorTokensIterator): ErrSequence<T>;
-    named<K extends string>(_name: K): Sequence<ResultObject<K, T>>;
-    mapResult<U>(callback: (input: Result<T>) => Result<U>): Sequence<U>;
-    next<U>(_callback: (iterator: CombinatorTokensIterator) => Result<U>): Sequence<U>;
-    next<U>(_callback: (iterator: CombinatorTokensIterator) => U): Sequence<U>;
-    andThen<U>(_callback: (input: T) => Result<U>): Sequence<U>;
-    andThen<U>(_callback: (input: T) => U): Sequence<U>;
-    extend<K extends string, U>(key: K, callback: (iterator: CombinatorTokensIterator) => Result<U>): Sequence<T & ResultObject<K, U>>;
-    extend<K extends string, U>(key: K, callback: (iterator: CombinatorTokensIterator) => U): Sequence<T & ResultObject<K, U>>;
-    mapErr<U>(callback: (input: Err) => Result<U>): Sequence<T | U>;
-    mapErr<U>(callback: (input: Err) => U): Sequence<T | U>;
-    or<U>(callback: (input: Err) => U): T | U;
-    or<U>(callback: Exclude<U, (input: Err) => U>): T | U;
-    andCheck(_callback: (input: T, iterator: CombinatorTokensIterator) => Result<unknown>): Sequence<T>;
-    checkNext(_callback: (iterator: CombinatorTokensIterator) => Result<unknown>): Sequence<T>;
-}
-export declare type Sequence<T> = OkSequence<T> | ErrSequence<T>;
-export declare function isSequence<T>(input: Result<T>): input is Sequence<T>;
-export declare function isSequence(input: unknown): input is Sequence<unknown>;
-export declare function seq<T>(input: Result<T> & Err, iterator: CombinatorTokensIterator): ErrSequence<T>;
-export declare function seq<T>(input: Result<T> & Ok<T>, iterator: CombinatorTokensIterator): OkSequence<T>;
-export declare function seq<T>(input: Result<T>, iterator: CombinatorTokensIterator): Sequence<T>;
+export declare type Inner<T> = T extends ParseResult<infer R> ? R : never;
 export declare type ResultObject<K extends string, T> = {
     [P in K]: T;
 };

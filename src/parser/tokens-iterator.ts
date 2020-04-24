@@ -3,10 +3,10 @@ import { unwrap } from "../read/utils";
 import type { ParseTracer } from "./debug";
 import {
   ArrowState,
-  err,
+  parseErr,
   isErr,
   isOk,
-  ok,
+  parseOk,
   ParserArrow,
   ParseResult,
   isParseErr,
@@ -132,7 +132,7 @@ export class TokensIteratorState implements ArrowState {
       let [newState, result] = callback(state as this);
 
       if (isOk(result)) {
-        return ok([newState, result] as [this, ParseResult<T>]);
+        return parseOk([newState, result] as [this, ParseResult<T>]);
       } else {
         return result;
       }
@@ -203,12 +203,12 @@ export default class TokensIterator {
   assertNotEOF(): ParseResult<void> {
     let next = this.peek("eof");
     if (next.isEOF) {
-      return err(next.reject().token || "EOF", {
+      return parseErr(next.reject().token || "EOF", {
         type: "unexpected-eof",
       }) as ParseResult<void>;
     } else {
       next.ignore();
-      return ok(undefined);
+      return parseOk(undefined);
     }
   }
 
@@ -217,7 +217,7 @@ export default class TokensIterator {
   }
 
   ok<T>(value: T): ParseResult<T> {
-    return ok(value);
+    return parseOk(value);
   }
 
   label<T>(desc: string, callback: (iterator: TokensIterator) => T): T {
@@ -267,7 +267,7 @@ export default class TokensIterator {
   ): void {
     this[CONTEXT].tracer.postInvoke(
       { desc },
-      err(peeked.token || "EOF", {
+      parseErr(peeked.token || "EOF", {
         type: "rejected",
         token: peeked.token || "EOF",
       }),
@@ -380,7 +380,7 @@ export default class TokensIterator {
       eof.ignore();
     } else {
       eof.reject();
-      return err(eof.token, {
+      return parseErr(eof.token, {
         type: "mismatch",
         expected: "EOF",
         actual: eof.token,
@@ -399,10 +399,10 @@ export default class TokensIterator {
 
     if (next.token === undefined) {
       next.reject();
-      return err("EOF", { type: "unexpected-eof" });
+      return parseErr("EOF", { type: "unexpected-eof" });
     } else if (next.token.type !== tokenType) {
       next.reject();
-      return err(next.token, {
+      return parseErr(next.token, {
         type: "mismatch",
         expected: tokenType,
         actual: next.token,
@@ -417,7 +417,7 @@ export default class TokensIterator {
 
       next.commit();
 
-      return ok({ result: result.value, token: next.token });
+      return parseOk({ result: result.value, token: next.token });
     }
   }
 
@@ -430,12 +430,15 @@ export default class TokensIterator {
 
     if (isErr(result)) {
       let token = next.reject().token;
-      return err(token || "EOF", { type: "rejected", token: token || "EOF" });
+      return parseErr(token || "EOF", {
+        type: "rejected",
+        token: token || "EOF",
+      });
     }
 
     next.commit();
 
-    return ok(result.value);
+    return parseOk(result.value);
   }
 }
 

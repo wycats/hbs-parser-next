@@ -1,4 +1,4 @@
-import type { ParserArrow, ParseResult, Result } from "../shape";
+import type { ParserArrow, ParseResult, Result, Err } from "../shape";
 
 export class Arrow<In, Out> {
   constructor(readonly operation: Operation) {}
@@ -169,6 +169,37 @@ export function pipeline<LeftIn, Middle, RightOut>(
   return new Arrow({ type: "Pipeline", label, left, right });
 }
 
+/// MAP RESULT ///
+
+export interface MapResultOperation<LeftIn, ResultInner, IfOkOut, IfErrOut>
+  extends BaseOperation {
+  type: "MapResult";
+  left: Arrow<LeftIn, Result<ResultInner>>;
+  ifOk: Arrow<ResultInner, IfOkOut>;
+  ifErr: Arrow<Err, IfErrOut>;
+}
+
+export interface SimpleEvaluator<State> {
+  MapResult<LeftIn, ResultInner, IfOkOut, IfErrOut>(
+    state: State,
+    input: LeftIn,
+    op: MapResultOperation<LeftIn, ResultInner, IfOkOut, IfErrOut>
+  ): IfOkOut | IfErrOut;
+}
+
+export interface OperationMap extends BaseOperation {
+  MapResult: MapResultOperation<any, unknown, unknown, unknown>;
+}
+
+export function mapResult<LeftIn, ResultInner, IfOkOut, IfErrOut>(
+  left: Arrow<LeftIn, Result<ResultInner>>,
+  ifOk: Arrow<ResultInner, IfOkOut>,
+  ifErr: Arrow<Err, IfErrOut>,
+  label?: string
+): Arrow<LeftIn, IfOkOut | IfErrOut> {
+  return new Arrow({ type: "MapResult", label, left, ifOk, ifErr });
+}
+
 /// MAP INPUT ///
 
 export interface MapInputOperation<ArrowIn, MapOut> extends BaseOperation {
@@ -256,21 +287,25 @@ export function keepAndThen<In, LeftOut, RightOut>(
 
 /// REPEAT ///
 
-export interface RepeatOperation<In, Out> extends BaseOperation {
+export interface RepeatOperation<State, In, Out> extends BaseOperation {
   type: "Repeat";
-  callback: Arrow<In, Result<Out>>;
+  callback: Arrow<[In, State], Result<Out>>;
 }
 
 export interface StatefulEvaluator<State> {
-  Repeat<In, Out>(state: State, input: In, op: RepeatOperation<In, Out>): Out[];
+  Repeat<In, Out>(
+    state: State,
+    input: In,
+    op: RepeatOperation<State, In, Out>
+  ): Out[];
 }
 
 export interface OperationMap {
-  Repeat: RepeatOperation<any, unknown>;
+  Repeat: RepeatOperation<any, any, unknown>;
 }
 
-export function repeat<In, Out>(
-  callback: Arrow<In, Result<Out>>,
+export function repeat<State, In, Out>(
+  callback: Arrow<[State, In], Result<Out>>,
   label?: string
 ): Arrow<void, Out[]> {
   return new Arrow({ type: "Repeat", label, callback });

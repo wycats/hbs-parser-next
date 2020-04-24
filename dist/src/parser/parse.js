@@ -18,16 +18,14 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-const ast = __importStar(require("./nodes"));
-const block_body_1 = __importDefault(require("./shapes/block-body"));
-const tokens_iterator_1 = __importStar(require("./tokens-iterator"));
-const shape_1 = require("./shape");
+const __1 = require("..");
 require("../read/read");
 const debug_1 = require("./debug");
+const ast = __importStar(require("./nodes"));
+const shape_1 = require("./shape");
+const top_level_1 = require("./shapes/top-level");
+const tokens_iterator_1 = __importStar(require("./tokens-iterator"));
 function parse({ input, source, logging, }) {
     let tracer = new debug_1.ParseTracer(input);
     let iterator = new tokens_iterator_1.default(input.children, {
@@ -35,19 +33,14 @@ function parse({ input, source, logging, }) {
         tracer,
     });
     try {
-        let topLevel = new block_body_1.default();
-        let root = iterator.start(tokens_iterator_1.expandInfallible(topLevel));
-        let maybeEOF = iterator.peek("eof");
-        if (maybeEOF.isEOF) {
-            maybeEOF.commit();
-            return shape_1.ok(ast.root(root, {
-                start: 0,
-                end: source.length,
-            }));
-        }
-        else {
-            return shape_1.err(maybeEOF.reject().token, "incomplete");
-        }
+        let topLevel = top_level_1.TopLevelArrow.repeat()
+            .fallible()
+            .checkNext(shape_1.ParserArrow.start().eof())
+            .ifOk(nodes => ast.root(nodes, __1.range(...nodes)))
+            .label("root");
+        let state = iterator.arrowState;
+        let [, root] = topLevel.invoke(state);
+        return root;
     }
     finally {
         if (logging === "Print" /* Print */) {

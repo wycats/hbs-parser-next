@@ -19,37 +19,14 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.InterpolateShape = exports.HeadShape = void 0;
+exports.InterpolateArrow = exports.HeadArrow = void 0;
 require("../../read/tokens");
 const ast = __importStar(require("../nodes"));
 const shape_1 = require("../shape");
-const tokens_iterator_1 = require("../tokens-iterator");
-const abstract_1 = require("./abstract");
 const expression_1 = require("./expression");
 const call_body_1 = require("./internal/call-body");
-class HeadShape extends abstract_1.AbstractShape {
-    constructor() {
-        super(...arguments);
-        this.desc = "Head";
-    }
-    [shape_1.EXPAND](iterator) {
-        return tokens_iterator_1.legacyExpand(expression_1.ExpressionShape)(iterator);
-    }
-}
-exports.HeadShape = HeadShape;
-class InterpolateShape extends abstract_1.AbstractShape {
-    constructor() {
-        super(...arguments);
-        this.desc = "Interpolate";
-    }
-    [shape_1.EXPAND](iterator) {
-        return iterator
-            .start(tokens_iterator_1.consumeParent({ desc: "interpolate", isLeaf: false }, token => {
-            if (token.type === "Interpolate" /* Interpolate */) {
-                return iterator.processInner(token.children, iterator => tokens_iterator_1.legacyExpand(call_body_1.CallBodyShape)(iterator));
-            }
-        }))
-            .andThen(({ result, token }) => ast.interpolate(result, { span: token.span }));
-    }
-}
-exports.InterpolateShape = InterpolateShape;
+exports.HeadArrow = shape_1.recurse(() => expression_1.ExpressionArrow.label("Head"));
+exports.InterpolateArrow = shape_1.recurse(() => shape_1.ParserArrow.start()
+    .parent("interpolate", "Interpolate" /* UntrustedInterpolate */, call_body_1.CallBodyArrow)
+    .ifOk(({ result, token }) => ast.interpolate(result, { span: token.span }))
+    .label("Interpolate"));

@@ -22,7 +22,7 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (!exports.hasOwnProperty(p)) __createBinding(exports, m, p);
 }
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.utils = exports.a = exports.r = exports.ast = exports.tokens = exports.multi = exports.combinators = void 0;
+exports.ops = exports.utils = exports.a = exports.r = exports.ast = exports.tokens = exports.multi = exports.combinators = void 0;
 const combinators = __importStar(require("./read/combinators"));
 exports.combinators = combinators;
 var logger_1 = require("./read/logger");
@@ -49,3 +49,9 @@ var parse_1 = require("./parser/parse");
 Object.defineProperty(exports, "parse", { enumerable: true, get: function () { return parse_1.default; } });
 var debug_1 = require("./read/debug");
 Object.defineProperty(exports, "trunc", { enumerable: true, get: function () { return debug_1.trunc; } });
+const ops = __importStar(require("./parser/shapes/core-operations"));
+exports.ops = ops;
+var shape_1 = require("./parser/shape");
+Object.defineProperty(exports, "parseOk", { enumerable: true, get: function () { return shape_1.parseOk; } });
+Object.defineProperty(exports, "parseErr", { enumerable: true, get: function () { return shape_1.parseErr; } });
+__exportStar(require("./parser/shapes/iterator-evaluator"), exports);

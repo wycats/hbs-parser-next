@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.debugFormatToken = exports.root = exports.trustedInterpolate = exports.interpolate = exports.sexp = exports.endTag = exports.startTag = exports.valuedAttr = exports.attrValue = exports.isInterpolateAttribute = exports.stringInterpolation = exports.argName = exports.closeBlock = exports.openBlock = exports.block = exports.blockParams = exports.equalPath = exports.arg = exports.comment = exports.numberToken = exports.stringToken = exports.attrName = exports.text = exports.ws = exports.eq = exports.dot = exports.id = exports.leaf = void 0;
+exports.debugFormatToken = exports.isParentToken = exports.root = exports.trustedInterpolate = exports.interpolate = exports.sexp = exports.endTag = exports.startTag = exports.valuedAttr = exports.attrValue = exports.isInterpolateAttribute = exports.stringInterpolation = exports.argName = exports.closeBlock = exports.openBlock = exports.block = exports.blockParams = exports.equalPath = exports.arg = exports.comment = exports.numberToken = exports.stringToken = exports.attrName = exports.text = exports.ws = exports.eq = exports.dot = exports.id = exports.leaf = void 0;
 const span_1 = require("../span");
 function leaf(type) {
     return span => ({ type, span });
@@ -174,7 +174,7 @@ function sexp({ children, inner }, span) {
 exports.sexp = sexp;
 function interpolate(children, span) {
     return {
-        type: "Interpolate" /* Interpolate */,
+        type: "Interpolate" /* UntrustedInterpolate */,
         span,
         children,
     };
@@ -196,6 +196,20 @@ function root(children, span) {
     };
 }
 exports.root = root;
+function isParentToken(token) {
+    switch (token.type) {
+        case "TrustedInterpolate" /* TrustedInterpolate */:
+        case "Interpolate" /* UntrustedInterpolate */:
+        case "Sexp" /* Sexp */:
+            return true;
+        default:
+            if ("children" in token && Array.isArray(token["children"])) {
+                throw new Error(`Missing parent token in isParentToken`);
+            }
+            return false;
+    }
+}
+exports.isParentToken = isParentToken;
 function debugFormatToken(token) {
     return `<token:${token.type}>`;
 }

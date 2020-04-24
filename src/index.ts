@@ -36,4 +36,15 @@ export { trunc } from "./read/debug";
 import * as ops from "./parser/shapes/core-operations";
 export { ops };
 
+export {
+  parseOk,
+  ok as baseOk,
+  parseErr,
+  err as baseErr,
+  Result as BaseResult,
+  isResult as isBaseResult,
+  isOk as isBaseOk,
+  isErr as isBaseErr,
+} from "./parser/shape";
+
 export * from "./parser/shapes/iterator-evaluator";

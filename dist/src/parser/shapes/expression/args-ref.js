@@ -19,11 +19,11 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ArgRefShape = void 0;
+exports.ArgRefArrow = void 0;
 require("../../../read/tokens");
 const ast = __importStar(require("../../nodes"));
-const abstract_1 = require("../abstract");
-const tokens_iterator_1 = require("../../tokens-iterator");
-exports.ArgRefShape = abstract_1.shape("ArgRef", iterator => iterator
-    .start(tokens_iterator_1.legacyConsumeToken("Argument" /* Argument */))
-    .andThen(ref => ast.argReference(ref)));
+const shape_1 = require("../../shape");
+exports.ArgRefArrow = shape_1.ParserArrow.start()
+    .token("Argument" /* Argument */)
+    .ifOk(ref => ast.argReference(ref))
+    .label("ArgRef");

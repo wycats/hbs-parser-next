@@ -12,7 +12,7 @@ import { SourceSpan } from "../span";
  */
 export declare const enum TokenType {
     Root = "Root",
-    Interpolate = "Interpolate",
+    UntrustedInterpolate = "Interpolate",
     TrustedInterpolate = "TrustedInterpolate",
     Block = "Block",
     BlockParams = "BlockParams",
@@ -126,7 +126,7 @@ export interface SexpToken extends BaseToken {
     children: readonly Token[];
 }
 export interface UntrustedInterpolateToken extends BaseToken {
-    type: TokenType.Interpolate;
+    type: TokenType.UntrustedInterpolate;
     children: readonly Token[];
 }
 export interface TrustedInterpolateToken extends BaseToken {
@@ -258,7 +258,7 @@ export interface HBSTokenMap extends LeafTokenMap {
     [TokenType.Comment]: CommentToken;
     [TokenType.Argument]: ArgumentToken;
     [TokenType.Sexp]: SexpToken;
-    [TokenType.Interpolate]: UntrustedInterpolateToken;
+    [TokenType.UntrustedInterpolate]: UntrustedInterpolateToken;
     [TokenType.TrustedInterpolate]: TrustedInterpolateToken;
     [TokenType.Block]: BlockToken;
     [TokenType.OpenBlock]: OpenBlockToken;
@@ -274,6 +274,10 @@ export interface HTMLTokenMap {
     [TokenType.ValuedAttribute]: ValuedAttributeToken;
     [TokenType.StringInterpolation]: StringInterpolationToken;
 }
+export declare type ParentToken = Extract<Token, {
+    children: readonly Token[];
+}>;
+export declare function isParentToken(token: Token): token is ParentToken;
 export declare type HTMLToken = HTMLTokenMap[keyof HTMLTokenMap];
 export interface TokenMap extends HBSTokenMap, HTMLTokenMap {
 }

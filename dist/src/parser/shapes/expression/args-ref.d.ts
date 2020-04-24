@@ -1,3 +1,4 @@
 import * as ast from "../../nodes";
-export declare const ArgRefShape: import("../abstract").ShapeConstructor<import("../../shape").Result<ast.ArgReferenceNode>>;
+import { ParserArrow, ParseResult } from "../../shape";
+export declare const ArgRefArrow: ParserArrow<void, ParseResult<ast.ArgReferenceNode>>;
 //# sourceMappingURL=args-ref.d.ts.map

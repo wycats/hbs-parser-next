@@ -48,7 +48,7 @@ function serializeNode(token, source) {
             return ["@", span_1.slice(token.name, source)];
         case "Sexp" /* Sexp */:
             return ["(", ...serializeList(token.children, source), ")"];
-        case "Interpolate" /* Interpolate */:
+        case "Interpolate" /* UntrustedInterpolate */:
             return ["{{", ...serializeList(token.children, source), "}}"];
         case "TrustedInterpolate" /* TrustedInterpolate */:
             return ["{{{", ...serializeList(token.children, source), "}}}"];

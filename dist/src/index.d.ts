@@ -21,4 +21,8 @@ export * from "./read/read";
 export { default as parse } from "./parser/parse";
 export type { StateRow as ReadTrace } from "./read/debug";
 export { trunc } from "./read/debug";
+import * as ops from "./parser/shapes/core-operations";
+export { ops };
+export { parseOk, parseErr } from "./parser/shape";
+export * from "./parser/shapes/iterator-evaluator";
 //# sourceMappingURL=index.d.ts.map

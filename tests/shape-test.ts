@@ -1,4 +1,10 @@
-import { ops, StatefulEvaluatorImpl } from "hbs-parser-next";
+import {
+  ops,
+  StatefulEvaluatorImpl,
+  baseErr as err,
+  baseOk as ok,
+  BaseResult as Result,
+} from "hbs-parser-next";
 import { module as qunitModule, test as qunitTest } from "qunit";
 import type * as qunit from "qunit";
 import { printIndentedItems } from "./helpers";
@@ -190,6 +196,11 @@ type StringTrace = string | [string, StringTrace[]];
 
 class Tracer {
   private stack: StringTrace[] = [];
+  constructor(public input: number[] = []) {}
+
+  toJSON() {
+    return "<State>";
+  }
 
   get currentChildren(): StringTrace[] {
     if (this.stack.length === 0) {
@@ -233,11 +244,36 @@ interface JSONObject {
   [key: string]: JSONValue;
 }
 
-function trace(name: string, children?: StringTrace[]): StringTrace {
+type TraceLineArgs = [
+  unknown,
+  { type: string; label?: string } | [string, string] | string,
+  unknown
+];
+
+function trace(
+  rawName: string,
+  input: TraceLineArgs[0],
+  output: TraceLineArgs[2],
+  children?: StringTrace[]
+): StringTrace {
+  let parsedName = rawName.match(/^([^(]*)(?:\((.*)\))?$/);
+
+  if (parsedName === null) {
+    throw new Error(`SYNTAX ERROR, name must be label(Kind) or Kind`);
+  }
+
+  let leftName = parsedName[1];
+  let inParen = parsedName[2];
+
+  let name: string | [string, string] = inParen
+    ? [inParen, leftName]
+    : leftName;
+
+  debugger;
   if (children) {
-    return [name, children];
+    return [formatOp(input, name, output), children];
   } else {
-    return name;
+    return formatOp(input, name, output);
   }
 }
 
@@ -245,13 +281,19 @@ function format(op: { type: string; label?: string }): string {
   return op.label ? `${op.label}(${op.type})` : op.type;
 }
 
+function formatJSON(input: unknown) {
+  return JSON.stringify(input)
+    .replace(/\\?"/g, `'`)
+    .replace(/'(<.*?>)'/, "$1");
+}
+
 function formatOp(
   input: unknown,
   op: { type: string; label?: string } | [string, string] | string,
   out: unknown
 ): string {
-  let formattedInput = JSON.stringify(input);
-  let formattedOutput = JSON.stringify(out);
+  let formattedInput = formatJSON(input);
+  let formattedOutput = formatJSON(out);
 
   let formattedOp;
 
@@ -267,7 +309,7 @@ function formatOp(
 }
 
 function source(value: unknown, label?: string): StringTrace {
-  let out = `Source: ${JSON.stringify(value)}`;
+  let out = `Source: ${formatJSON(value)}`;
 
   if (label) {
     out += ` (${label})`;
@@ -276,8 +318,8 @@ function source(value: unknown, label?: string): StringTrace {
   return out;
 }
 
-function input(value: unknown, label?: string): StringTrace {
-  return `Input: ${JSON.stringify(value)}`;
+function input(value: unknown): StringTrace {
+  return `Input: ${formatJSON(value)}`;
 }
 
 function formatArrow(
@@ -306,15 +348,15 @@ class CollectingEvaluator extends StatefulEvaluatorImpl<Tracer> {
     let out = super.Source(...args);
 
     if (args[2].label) {
-      args[0].pushLeaf(`Source: ${JSON.stringify(out)} (${args[2].label})`);
+      args[0].pushLeaf(`Source: ${formatJSON(out)} (${args[2].label})`);
     } else {
-      args[0].pushLeaf(`Source: ${JSON.stringify(out)}`);
+      args[0].pushLeaf(`Source: ${formatJSON(out)}`);
     }
     return out;
   }
 
   Input<In>(tracer: Tracer, input: In, _op: ops.InputOperation<In>): In {
-    tracer.pushLeaf(`Input: ${JSON.stringify(input)}`);
+    tracer.pushLeaf(`Input: ${formatJSON(input)}`);
     return input;
   }
 
@@ -363,43 +405,11 @@ class CollectingEvaluator extends StatefulEvaluatorImpl<Tracer> {
   ): Out {
     return this.parent(() => super.Reduce(...args), ...args);
   }
-}
 
-interface Dict {
-  [key: string]: unknown;
-}
-
-type Primitive =
-  | string
-  | number
-  | boolean
-  | undefined
-  | null
-  | symbol
-  | bigint
-  | unknown;
-
-type RemoveUndefined<T> = {
-  [P in keyof T]: T[P] extends undefined
-    ? never
-    : T[P] extends Primitive | unknown
-    ? T[P]
-    : RemoveUndefined<T>;
-};
-
-function compact<T>(o: T): RemoveUndefined<T> {
-  if (Array.isArray(o)) {
-    return (o.map(compact) as unknown) as RemoveUndefined<T>;
-  } else if (typeof o === "object" && o !== null) {
-    let out = {} as Dict;
-    for (let [key, value] of Object.entries(o)) {
-      if (value !== undefined) {
-        out[key] = compact(value);
-      }
-    }
-    return out as RemoveUndefined<T>;
-  } else {
-    return o as RemoveUndefined<T>;
+  Repeat<In, Out>(
+    ...args: [Tracer, In, ops.RepeatOperation<Tracer, In, Out>]
+  ): Out[] {
+    return this.parent(() => super.Repeat(...args), ...args);
   }
 }
 
@@ -410,7 +420,10 @@ export class StatefulArrowEvaluationTest {
 
   constructor(private assert: qunit.Assert) {}
 
-  assertInvoke<T extends JSONValue, U extends JSONValue>(
+  assertInvoke<
+    T extends JSONValue | undefined | void,
+    U extends JSONValue | undefined | void
+  >(
     arrow: ops.Arrow<T, U>,
     input: T,
     expectedOutput: U,
@@ -420,7 +433,7 @@ export class StatefulArrowEvaluationTest {
     this.assert.deepEqual(
       actual,
       expectedOutput,
-      `expected output to be ${JSON.stringify(expectedOutput)}`
+      `expected output to be ${formatJSON(expectedOutput)}`
     );
 
     this.assert.deepEqual(
@@ -486,17 +499,81 @@ export class StatefulArrowEvaluationTest {
       iterate(boringIncrement),
       [3, 6, 9],
       [4, 7, 10],
-      trace(formatOp([3, 6, 9], ["Pipeline", "iteration"], [4, 7, 10]), [
-        trace(formatOp([3, 6, 9], ["Merge", "input-pair"], [[], [3, 6, 9]]), [
-          source([], "initialize"),
-          input([3, 6, 9]),
-        ]),
-        trace(formatOp([[], [3, 6, 9]], "Reduce", [4, 7, 10]), [
-          iterateTrace([], 3, 4),
-          iterateTrace([4], 6, 7),
-          iterateTrace([4, 7], 9, 10),
-        ]),
-      ])
+      trace(
+        "iteration(Pipeline)",
+        [3, 6, 9],
+        [4, 7, 10],
+        [
+          trace(
+            "input-pair(Merge)",
+            [3, 6, 9],
+            [[], [3, 6, 9]],
+            [source([], "initialize"), input([3, 6, 9])]
+          ),
+          trace(
+            "Reduce",
+            [[], [3, 6, 9]],
+            [4, 7, 10],
+            [
+              iterateTrace([], 3, 4),
+              iterateTrace([4], 6, 7),
+              iterateTrace([4, 7], 9, 10),
+            ]
+          ),
+        ]
+      )
+    );
+  }
+
+  @test repeat() {
+    this.tracer.input = [1, 2, 3];
+
+    let extract = ops.pure<[unknown, Tracer], Result<number>>(([, state]) => {
+      if (state.input.length === 0) {
+        return err("done") as Result<number>;
+      } else {
+        return ok(state.input.shift()) as Result<number>;
+      }
+    }, "shift");
+
+    let fallible = ops.pure((v: number) => ok(v), "fallible");
+
+    let increment = ops.mapResult(
+      extract,
+      ops.pipeline(boringIncrement, fallible, "ifOk"),
+      ops.pure(err => err, "ifErr")
+    );
+
+    let repeat: ops.Arrow<void, number[]> = ops.repeat(increment);
+
+    this.assertInvoke(
+      repeat,
+      null,
+      [2, 3, 4],
+      trace(
+        "Repeat",
+        null,
+        [2, 3, 4],
+        [
+          trace("shift(Pure)", [null, this.tracer], ok(1)),
+          trace("ifOk(Pipeline)", 1, ok(2), [
+            trace("boring-increment(Pure)", 1, 2),
+            trace("fallible(Pure)", 2, ok(2)),
+          ]),
+          trace("shift(Pure)", [null, this.tracer], ok(2)),
+          trace("ifOk(Pipeline)", 2, ok(3), [
+            trace("boring-increment(Pure)", 2, 3),
+            trace("fallible(Pure)", 3, ok(3)),
+          ]),
+          trace("shift(Pure)", [null, this.tracer], ok(3)),
+          trace("ifOk(Pipeline)", 3, ok(4), [
+            trace("boring-increment(Pure)", 3, 4),
+            trace("fallible(Pure)", 4, ok(4)),
+          ]),
+          trace("shift(Pure)", [null, this.tracer], err("done")),
+          trace("ifErr(Pure)", err("done"), err("done")),
+        ]
+      )
     );
   }
 }
@@ -507,16 +584,23 @@ function iterateTrace(
   output: number
 ): StringTrace {
   return trace(
-    formatOp([accum, input], ["Pipeline", "iterate"], [...accum, output]),
+    "iterate(Pipeline)",
+    [accum, input],
+    [...accum, output],
     [
-      trace(formatOp([accum, input], "Merge", [accum, output]), [
-        formatOp([accum, input], ["Pure", "first"], accum),
-        trace(formatOp([accum, input], "Pipeline", output), [
-          formatOp([accum, input], ["Pure", "second"], input),
-          formatOp(input, ["Pure", "boring-increment"], output),
-        ]),
-      ]),
-      formatOp([accum, output], ["Pure", "append"], [...accum, output]),
+      trace(
+        "Merge",
+        [accum, input],
+        [accum, output],
+        [
+          trace("first(Pure)", [accum, input], accum),
+          trace("Pipeline", [accum, input], output, [
+            trace("second(Pure)", [accum, input], input),
+            trace("boring-increment(Pure)", input, output),
+          ]),
+        ]
+      ),
+      trace("append(Pure)", [accum, output], [...accum, output]),
     ]
   );
 }

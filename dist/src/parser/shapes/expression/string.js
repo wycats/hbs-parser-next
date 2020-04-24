@@ -19,12 +19,12 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.StringShape = void 0;
+exports.StringArrow = void 0;
 require("../../../read/tokens");
 const ast = __importStar(require("../../nodes"));
-const abstract_1 = require("../abstract");
-const tokens_iterator_1 = require("../../tokens-iterator");
-exports.StringShape = abstract_1.shape("String", iterator => iterator
-    .start(tokens_iterator_1.legacyConsumeToken("token", "String" /* String */))
-    .extend("source", tokens_iterator_1.legacySource())
-    .andThen(({ token, source }) => ast.string(token, source)));
+const shape_1 = require("../../shape");
+exports.StringArrow = shape_1.token("String" /* String */)
+    .named("token")
+    .extend("source", shape_1.source())
+    .ifOk(({ token, source }) => ast.string(token, source))
+    .label("String");
