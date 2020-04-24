@@ -1,7 +1,16 @@
 import type { ParentToken, Token } from "../read/tokens";
 import { unwrap } from "../read/utils";
 import type { ParseTracer } from "./debug";
-import { ArrowState, err, isErr, isOk, ok, ParserArrow, Result } from "./shape";
+import {
+  ArrowState,
+  err,
+  isErr,
+  isOk,
+  ok,
+  ParserArrow,
+  ParseResult,
+  isParseErr,
+} from "./shape";
 
 export const TOKENS = Symbol("TOKENS");
 export const CONTEXT = Symbol("CONTEXT");
@@ -115,13 +124,15 @@ export class TokensIteratorState implements ArrowState {
     return next.token;
   }
 
-  atomic<T>(callback: (state: this) => [this, Result<T>]): [this, Result<T>] {
+  atomic<T>(
+    callback: (state: this) => [this, ParseResult<T>]
+  ): [this, ParseResult<T>] {
     let result = this.iterator.atomic(iterator => {
       let state = new TokensIteratorState(iterator);
       let [newState, result] = callback(state as this);
 
       if (isOk(result)) {
-        return ok([newState, result] as [this, Result<T>]);
+        return ok([newState, result] as [this, ParseResult<T>]);
       } else {
         return result;
       }
@@ -148,16 +159,16 @@ export class TokensIteratorState implements ArrowState {
 
   next<T>(
     desc: string,
-    callback: (token: Token | undefined) => Result<T>
-  ): Result<T> {
+    callback: (token: Token | undefined) => ParseResult<T>
+  ): ParseResult<T> {
     return this.iterator.next(desc, callback);
   }
 
   parent<T, K extends ParentToken["type"]>(
     desc: string,
     tokenType: K,
-    arrow: ParserArrow<void, Result<T>>
-  ): Result<{
+    arrow: ParserArrow<void, ParseResult<T>>
+  ): ParseResult<{
     result: T;
     token: Token;
   }> {
@@ -189,12 +200,12 @@ export default class TokensIterator {
     return this[CONTEXT].source;
   }
 
-  assertNotEOF(): Result<void> {
+  assertNotEOF(): ParseResult<void> {
     let next = this.peek("eof");
     if (next.isEOF) {
       return err(next.reject().token || "EOF", {
         type: "unexpected-eof",
-      }) as Result<void>;
+      }) as ParseResult<void>;
     } else {
       next.ignore();
       return ok(undefined);
@@ -205,7 +216,7 @@ export default class TokensIterator {
     return step(this);
   }
 
-  ok<T>(value: T): Result<T> {
+  ok<T>(value: T): ParseResult<T> {
     return ok(value);
   }
 
@@ -280,7 +291,9 @@ export default class TokensIterator {
     return new TokensIterator(tokens, this[CONTEXT]);
   }
 
-  atomic<T>(callback: (iterator: TokensIterator) => Result<T>): Result<T> {
+  atomic<T>(
+    callback: (iterator: TokensIterator) => ParseResult<T>
+  ): ParseResult<T> {
     let transaction = this.begin();
 
     let result = callback(transaction);
@@ -352,8 +365,8 @@ export default class TokensIterator {
 
   processInner<T>(
     tokens: readonly Token[],
-    callback: (t: TokensIterator) => Result<T>
-  ): Result<T> {
+    callback: (t: TokensIterator) => ParseResult<T>
+  ): ParseResult<T> {
     let child = this.withChildTokens(tokens);
     let result = callback(child);
 
@@ -380,8 +393,8 @@ export default class TokensIterator {
   processChildren<T, K extends ParentToken["type"]>(
     desc: string,
     tokenType: K,
-    step: (iterator: TokensIterator) => Result<T>
-  ): Result<{ result: T; token: Token }> {
+    step: (iterator: TokensIterator) => ParseResult<T>
+  ): ParseResult<{ result: T; token: Token }> {
     let next = this.peek(desc, { isLeaf: false });
 
     if (next.token === undefined) {
@@ -397,7 +410,7 @@ export default class TokensIterator {
     } else {
       let result = this.processInner(next.token.children, step);
 
-      if (isErr(result)) {
+      if (isParseErr(result)) {
         next.reject();
         return result;
       }
@@ -410,8 +423,8 @@ export default class TokensIterator {
 
   next<T>(
     desc: string,
-    callback: (token: Token | undefined) => Result<T>
-  ): Result<T> {
+    callback: (token: Token | undefined) => ParseResult<T>
+  ): ParseResult<T> {
     let next = this.peek(desc);
     let result = callback(next.token);
 

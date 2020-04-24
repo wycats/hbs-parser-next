@@ -1,7 +1,7 @@
 import { TokenType } from "../../../read/tokens";
 import { range } from "../../../span";
 import * as ast from "../../nodes";
-import { err, ok, ParserArrow, recurse, Result } from "../../shape";
+import { err, ok, ParserArrow, recurse, ParseResult } from "../../shape";
 import { ExpressionArrow } from "../expression";
 import { HeadArrow } from "../interpolate";
 import { MaybeWsArrow, WsArrow } from "./ws";
@@ -36,8 +36,8 @@ export const NamedArgumentArrow = recurse(() =>
     .label("NamedArgument")
 );
 
-function assertPresent<T>(): ParserArrow<T[], Result<T[]>> {
-  return ParserArrow.start().lift<T[], Result<T[]>>(list =>
+function assertPresent<T>(): ParserArrow<T[], ParseResult<T[]>> {
+  return ParserArrow.start().lift<T[], ParseResult<T[]>>(list =>
     list.length > 0 ? ok(list) : err("unknown", { type: "empty" })
   );
 }

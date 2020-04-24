@@ -3,7 +3,7 @@ import { LoggingType } from "../read/read";
 import type * as tokens from "../read/tokens";
 import { ParseTracer } from "./debug";
 import * as ast from "./nodes";
-import { ParserArrow, Result } from "./shape";
+import { ParserArrow, ParseResult } from "./shape";
 import { TopLevelArrow } from "./shapes/top-level";
 import TokensIterator, { TOKENS } from "./tokens-iterator";
 
@@ -17,7 +17,7 @@ export default function parse({
   input,
   source,
   logging,
-}: ParseOptions): Result<ast.RootNode> {
+}: ParseOptions): ParseResult<ast.RootNode> {
   let tracer = new ParseTracer(input);
   let iterator = new TokensIterator(input.children, {
     source,

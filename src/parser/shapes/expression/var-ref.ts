@@ -1,11 +1,11 @@
 import { TokenType } from "../../../read/tokens";
 import { slice } from "../../../span";
 import * as ast from "../../nodes";
-import { err, ok, ParserArrow, Result } from "../../shape";
+import { err, ok, ParserArrow, ParseResult } from "../../shape";
 
 export const VarRefArrow: ParserArrow<
   void,
-  Result<ast.VarReferenceNode | ast.ThisReferenceNode>
+  ParseResult<ast.VarReferenceNode | ast.ThisReferenceNode>
 > = ParserArrow.start()
   .token(TokenType.Identifier)
   .named("id")

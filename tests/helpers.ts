@@ -56,3 +56,68 @@ export function eqError(left: Result<unknown>, right: Err) {
     assert.strictEqual(left.kind, "err", `expected an error`);
   }
 }
+
+export type IndentedItem = string | [string, IndentedItem[]];
+
+function posFor(
+  len: number,
+  index: number
+): "only" | "first" | "last" | "middle" {
+  if (index === 0) {
+    return len === 1 ? "only" : "first";
+  } else if (index === len - 1) {
+    return "last";
+  } else {
+    return "middle";
+  }
+}
+
+const CROSS = " ┣━";
+const CORNER = " ┗━";
+const VERTICAL = " ┃ ";
+const SPACE = "   ";
+
+export function printIndentedItems(nodes: IndentedItem[]): string {
+  let out = "";
+
+  for (let node of nodes) {
+    out += printNode(node, "");
+  }
+
+  return out;
+}
+
+function printNode(node: IndentedItem, indent: string): string {
+  let out = "";
+
+  if (Array.isArray(node)) {
+    out += `${node[0]}\n`;
+
+    let childrenCount = node[1].length;
+
+    node[1].forEach((child, i) => {
+      let isLast = i === childrenCount - 1;
+      out += printChildNode(child, indent, isLast);
+    });
+  } else {
+    out += `${node}\n`;
+  }
+
+  return out;
+}
+
+function printChildNode(node: IndentedItem, indent: string, isLast: boolean) {
+  let out = indent;
+
+  if (isLast) {
+    out += CORNER;
+    indent += SPACE;
+  } else {
+    out += CROSS;
+    indent += VERTICAL;
+  }
+
+  out += printNode(node, indent);
+
+  return out;
+}

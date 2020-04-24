@@ -4,11 +4,13 @@ import TokensIterator, { ITERATOR_SOURCE } from "./tokens-iterator";
 export const EXPAND = Symbol("EXPAND");
 export const RESULT_KIND = Symbol("RESULT_KIND");
 
-export type ResultValue<T extends Result<unknown>> = T extends Result<infer R>
+export type ResultValue<T extends ParseResult<unknown>> = T extends ParseResult<
+  infer R
+>
   ? R
   : never;
 
-export function ok<T>(value: T): Result<T> {
+export function ok<T>(value: T): ParseResult<T> {
   return {
     [RESULT_KIND]: "ok",
     kind: "ok",
@@ -19,7 +21,7 @@ export function ok<T>(value: T): Result<T> {
 export function err<T>(
   token: Token | "EOF" | "unknown",
   reason: ErrorReason
-): Result<T> {
+): ParseResult<T> {
   return {
     [RESULT_KIND]: "err",
     kind: "err",
@@ -29,7 +31,10 @@ export function err<T>(
   };
 }
 
-export function fatalError<T>(token: Token, reason: ErrorReason): Result<T> {
+export function fatalError<T>(
+  token: Token,
+  reason: ErrorReason
+): ParseResult<T> {
   return {
     [RESULT_KIND]: "err",
     kind: "err",
@@ -40,6 +45,11 @@ export function fatalError<T>(token: Token, reason: ErrorReason): Result<T> {
 }
 
 export interface Ok<T> {
+  [RESULT_KIND]: "ok";
+  value: T;
+}
+
+export interface ParseOk<T> extends Ok<T> {
   [RESULT_KIND]: "ok";
   // compat
   kind: "ok";
@@ -68,6 +78,11 @@ export type ErrorReason =
 
 export interface Err {
   [RESULT_KIND]: "err";
+  reason: unknown;
+}
+
+export interface ParseErr extends Err {
+  [RESULT_KIND]: "err";
   // compat
   kind: "err";
   token: Token | "EOF" | "unknown";
@@ -76,6 +91,7 @@ export interface Err {
 }
 
 export type Result<T> = Ok<T> | Err;
+export type ParseResult<T> = Result<T> & (ParseOk<T> | ParseErr);
 
 export function isResult<T>(input: unknown): input is Result<T> {
   if (typeof input === "object" && input !== null) {
@@ -101,11 +117,15 @@ export function isErr<T>(input: Result<T>): input is Err {
   return input[RESULT_KIND] === "err";
 }
 
+export function isParseErr<T>(input: ParseResult<T>): input is ParseErr {
+  return isErr(input);
+}
+
 export function mapResult<T, U>(
-  result: Result<T>,
-  callback: (input: T) => Result<U>
-): Result<U> {
-  if (isErr(result)) {
+  result: ParseResult<T>,
+  callback: (input: T) => ParseResult<U>
+): ParseResult<U> {
+  if (isParseErr(result)) {
     return result;
   }
 
@@ -116,20 +136,22 @@ export type Thunk<T> = () => T;
 
 export type Step<T, U> = (
   iterator: TokensIterator,
-  prev: Result<T>
-) => Result<U>;
+  prev: ParseResult<T>
+) => ParseResult<U>;
 
 export type ArrowResult<
   T extends ParserArrow<any, any>
 > = T extends ParserArrow<unknown, infer R> ? R : never;
 
 export type FallibleArrowResult<
-  T extends ParserArrow<any, Result<any>>
-> = T extends ParserArrow<unknown, Result<infer R>> ? Result<R> : never;
+  T extends ParserArrow<any, ParseResult<any>>
+> = T extends ParserArrow<unknown, ParseResult<infer R>>
+  ? ParseResult<R>
+  : never;
 
-export type SourceStep<U> = (iterator: TokensIterator) => Result<U>;
+export type SourceStep<U> = (iterator: TokensIterator) => ParseResult<U>;
 
-export const SOURCE: Result<void> = ok(undefined);
+export const SOURCE: ParseResult<void> = ok(undefined);
 
 export interface ParserArrowCore {
   Id<T>(): ParserArrow<T, T>;
@@ -156,7 +178,7 @@ export interface ParserArrowCore {
 export interface IterateParserArrow extends ParserArrowCore {
   iterate<T, U>(left: ParserArrow<T, U>): ParserArrow<T[], U[]>;
   repeat<Pre, InnerU>(
-    arrow: ParserArrow<Pre, Result<InnerU>>
+    arrow: ParserArrow<Pre, ParseResult<InnerU>>
   ): ParserArrow<Pre, InnerU[]>;
   Reduce<T, U>(callback: (list: T[]) => U): ParserArrow<T[], U>;
 }
@@ -164,39 +186,39 @@ export interface IterateParserArrow extends ParserArrowCore {
 export interface ChoiceParserArrowCore extends ParserArrowCore {
   FallibleArr<T, U>(
     ok: (input: T) => U,
-    err: (input: Err) => U
-  ): ParserArrow<Result<T>, U>;
+    err: (input: ParseErr) => U
+  ): ParserArrow<ParseResult<T>, U>;
 
   BothOk<Pre, Left, Right>(
-    arrow: ParserArrow<Pre, [Result<Left>, Result<Right>]>
-  ): ParserArrow<Pre, Result<[Left, Right]>>;
+    arrow: ParserArrow<Pre, [ParseResult<Left>, ParseResult<Right>]>
+  ): ParserArrow<Pre, ParseResult<[Left, Right]>>;
 
   OrElse<T, InnerU, V>(
-    left: ParserArrow<T, Result<InnerU>>,
-    right: ParserArrow<T, Result<V>>
-  ): ParserArrow<T, Result<InnerU | V>>;
+    left: ParserArrow<T, ParseResult<InnerU>>,
+    right: ParserArrow<T, ParseResult<V>>
+  ): ParserArrow<T, ParseResult<InnerU | V>>;
 
   fallibleInput<T, U>(
     arrow: ParserArrow<T, U>
-  ): ParserArrow<Result<T>, Result<U>>;
+  ): ParserArrow<ParseResult<T>, ParseResult<U>>;
 }
 
 export interface IteratorParserArrowCore extends ParserArrowCore {
   Source(): ParserArrow<void, string>;
   Atomic<T, InnerU>(
-    step: ParserArrow<T, Result<InnerU>>
-  ): ParserArrow<T, Result<InnerU>>;
+    step: ParserArrow<T, ParseResult<InnerU>>
+  ): ParserArrow<T, ParseResult<InnerU>>;
   label<T, U>(label: string, arrow: ParserArrow<T, U>): ParserArrow<T, U>;
   parent<T>(
     desc: string,
     tokenType: TokenType,
-    arrow: ParserArrow<void, Result<T>>
-  ): ParserArrow<void, Result<{ result: T; token: Token }>>;
+    arrow: ParserArrow<void, ParseResult<T>>
+  ): ParserArrow<void, ParseResult<{ result: T; token: Token }>>;
   token<K extends TokenType & keyof TokenMap>(
     tokenType: K
-  ): ParserArrow<void, Result<TokenMap[K]>>;
+  ): ParserArrow<void, ParseResult<TokenMap[K]>>;
   lookahead(): ParserArrow<void, Token | undefined>;
-  eof<T>(): ParserArrow<T, Result<void>>;
+  eof<T>(): ParserArrow<T, ParseResult<void>>;
 }
 
 export interface ParserArrowFullCore
@@ -212,19 +234,21 @@ export interface Evaluator<S, T, U> {
 
 export interface ArrowState {
   [ITERATOR_SOURCE]: string;
-  atomic<T>(callback: (state: this) => [this, Result<T>]): [this, Result<T>];
+  atomic<T>(
+    callback: (state: this) => [this, ParseResult<T>]
+  ): [this, ParseResult<T>];
   label<T>(desc: string, callback: (state: this) => [this, T]): [this, T];
   // TODO: this might be too generic to be useful for other interpreters
   next<T>(
     state: string,
-    callback: (token: Token | undefined) => Result<T>
-  ): Result<T>;
+    callback: (token: Token | undefined) => ParseResult<T>
+  ): ParseResult<T>;
   lookahead(): Token | undefined;
   parent<T>(
     desc: string,
     tokenType: TokenType,
-    arrow: ParserArrow<void, Result<T>>
-  ): Result<{ result: T; token: Token }>;
+    arrow: ParserArrow<void, ParseResult<T>>
+  ): ParseResult<{ result: T; token: Token }>;
 }
 
 export class ParseEvaluator<S extends ArrowState, T, U> {
@@ -326,7 +350,7 @@ export class ParserArrowEvaluateCore implements ParserArrowFullCore {
   }
 
   repeat<Pre, InnerU>(
-    arrow: ParserArrow<Pre, Result<InnerU>>
+    arrow: ParserArrow<Pre, ParseResult<InnerU>>
   ): ParserArrow<Pre, InnerU[]> {
     return this.evalArr((state, input) => {
       let currentState = state;
@@ -364,8 +388,8 @@ export class ParserArrowEvaluateCore implements ParserArrowFullCore {
 
   FallibleArr<T, U>(
     ok: (input: T) => U,
-    err: (input: Err) => U
-  ): ParserArrow<Result<T>, U> {
+    err: (input: ParseErr) => U
+  ): ParserArrow<ParseResult<T>, U> {
     return this.evalArr((state, last) => {
       if (isOk(last)) {
         return [state, ok(last.value)];
@@ -376,15 +400,18 @@ export class ParserArrowEvaluateCore implements ParserArrowFullCore {
   }
 
   BothOk<Pre, Left, Right>(
-    arrow: ParserArrow<Pre, [Result<Left>, Result<Right>]>
-  ): ParserArrow<Pre, Result<[Left, Right]>> {
+    arrow: ParserArrow<Pre, [ParseResult<Left>, ParseResult<Right>]>
+  ): ParserArrow<Pre, ParseResult<[Left, Right]>> {
     return this.evalArr((state, last) => {
       let [state2, [left, right]] = arrow.invoke(state, last);
 
       if (isOk(left) && isOk(right)) {
-        return [state2, ok([left.value, right.value]) as Result<[Left, Right]>];
+        return [
+          state2,
+          ok([left.value, right.value]) as ParseResult<[Left, Right]>,
+        ];
       } else if (isOk(left)) {
-        return [state2, right as Err];
+        return [state2, right as ParseErr];
       } else {
         return [state2, left];
       }
@@ -392,14 +419,14 @@ export class ParserArrowEvaluateCore implements ParserArrowFullCore {
   }
 
   OrElse<T, V, InnerU>(
-    left: ParserArrow<T, Result<InnerU>>,
-    right: ParserArrow<T, Result<V>>
-  ): ParserArrow<T, Result<V | InnerU>> {
+    left: ParserArrow<T, ParseResult<InnerU>>,
+    right: ParserArrow<T, ParseResult<V>>
+  ): ParserArrow<T, ParseResult<V | InnerU>> {
     return this.evalArr((state, last) => {
       let [state2, prev] = left.invoke(state, last);
 
       if (isOk(prev)) {
-        return [state2, prev as Result<V | InnerU>];
+        return [state2, prev as ParseResult<V | InnerU>];
       } else {
         return right.invoke(state2, last);
       }
@@ -408,7 +435,7 @@ export class ParserArrowEvaluateCore implements ParserArrowFullCore {
 
   fallibleInput<T, U>(
     arrow: ParserArrow<T, U>
-  ): ParserArrow<Result<T>, Result<U>> {
+  ): ParserArrow<ParseResult<T>, ParseResult<U>> {
     return this.evalArr((state, last) => {
       if (isOk(last)) {
         let [state2, result] = arrow.invoke(state, last.value);
@@ -424,8 +451,8 @@ export class ParserArrowEvaluateCore implements ParserArrowFullCore {
   }
 
   Atomic<T, InnerU>(
-    arrow: ParserArrow<T, Result<InnerU>>
-  ): ParserArrow<T, Result<InnerU>> {
+    arrow: ParserArrow<T, ParseResult<InnerU>>
+  ): ParserArrow<T, ParseResult<InnerU>> {
     return this.evalArr((state, prev) =>
       state.atomic(state2 => arrow.invoke(state2, prev))
     );
@@ -440,14 +467,14 @@ export class ParserArrowEvaluateCore implements ParserArrowFullCore {
   parent<T>(
     desc: string,
     tokenType: TokenType,
-    arrow: ParserArrow<void, Result<T>>
-  ): ParserArrow<void, Result<{ result: T; token: Token }>> {
+    arrow: ParserArrow<void, ParseResult<T>>
+  ): ParserArrow<void, ParseResult<{ result: T; token: Token }>> {
     return this.evalArr(state => [state, state.parent(desc, tokenType, arrow)]);
   }
 
   token<K extends TokenType & keyof TokenMap>(
     tokenType: K
-  ): ParserArrow<void, Result<TokenMap[K]>> {
+  ): ParserArrow<void, ParseResult<TokenMap[K]>> {
     return this.evalArr(state => [
       state,
       state.next(tokenType, token => {
@@ -456,7 +483,7 @@ export class ParserArrowEvaluateCore implements ParserArrowFullCore {
         }
 
         if (token.type === tokenType) {
-          return ok(token) as Result<TokenMap[K]>;
+          return ok(token) as ParseResult<TokenMap[K]>;
         } else {
           return err(token, {
             type: "mismatch",
@@ -472,7 +499,7 @@ export class ParserArrowEvaluateCore implements ParserArrowFullCore {
     return this.evalArr(state => [state, state.lookahead()]);
   }
 
-  eof<T>(): ParserArrow<T, Result<void>> {
+  eof<T>(): ParserArrow<T, ParseResult<void>> {
     return this.evalArr(state => [
       state,
       state.next("eof", token => {
@@ -492,11 +519,11 @@ export class ParserArrowEvaluateCore implements ParserArrowFullCore {
 
 export function token<K extends TokenType & keyof TokenMap>(
   type: K
-): ParserArrow<void, Result<TokenMap[K]>> {
+): ParserArrow<void, ParseResult<TokenMap[K]>> {
   return ParserArrow.start().token(type);
 }
 
-export function source(): ParserArrow<void, Result<string>> {
+export function source(): ParserArrow<void, ParseResult<string>> {
   return ParserArrow.start().source().fallible();
 }
 
@@ -540,20 +567,20 @@ export class ParserArrow<T, U> {
 
   liftFallible<T2, U2>(
     ifOk: (ok: T2) => U2,
-    ifErr: (err: Err) => U2
-  ): ParserArrow<Result<T2>, U2> {
+    ifErr: (err: ParseErr) => U2
+  ): ParserArrow<ParseResult<T2>, U2> {
     return this.core.FallibleArr(ifOk, ifErr);
   }
 
   repeat<InnerU>(
-    this: ParserArrow<void, Result<InnerU>>
+    this: ParserArrow<void, ParseResult<InnerU>>
   ): ParserArrow<void, InnerU[]> {
     return this.core.repeat(this.label("repeated")).label("repeat");
   }
 
   bothOk<Pre, Left, Right>(
-    this: ParserArrow<Pre, [Result<Left>, Result<Right>]>
-  ): ParserArrow<Pre, Result<[Left, Right]>> {
+    this: ParserArrow<Pre, [ParseResult<Left>, ParseResult<Right>]>
+  ): ParserArrow<Pre, ParseResult<[Left, Right]>> {
     return this.core.BothOk(this);
   }
 
@@ -567,28 +594,28 @@ export class ParserArrow<T, U> {
 
   // An adapter for cases where something assumes fallibility
   // but you have something infallible
-  fallible(): ParserArrow<T, Result<U>> {
+  fallible(): ParserArrow<T, ParseResult<U>> {
     return this.map(input => ok(input));
   }
 
   orElse<V, InnerU>(
-    this: ParserArrow<T, Result<InnerU>>,
-    arrow: ParserArrow<T, Result<V>>
-  ): ParserArrow<T, Result<InnerU | V>> {
+    this: ParserArrow<T, ParseResult<InnerU>>,
+    arrow: ParserArrow<T, ParseResult<V>>
+  ): ParserArrow<T, ParseResult<InnerU | V>> {
     return this.core.OrElse(this, arrow);
   }
 
   checkNext<InnerU, V>(
-    this: ParserArrow<T, Result<InnerU>>,
-    arrow: ParserArrow<T, Result<V>>
-  ): ParserArrow<T, Result<InnerU>> {
+    this: ParserArrow<T, ParseResult<InnerU>>,
+    arrow: ParserArrow<T, ParseResult<V>>
+  ): ParserArrow<T, ParseResult<InnerU>> {
     return this.mergeNext(arrow).ifOk(([left]) => left);
   }
 
   andCheck<InnerU, V>(
-    this: ParserArrow<T, Result<InnerU>>,
-    arrow: ParserArrow<Result<InnerU>, Result<V>>
-  ): ParserArrow<T, Result<InnerU>> {
+    this: ParserArrow<T, ParseResult<InnerU>>,
+    arrow: ParserArrow<ParseResult<InnerU>, ParseResult<V>>
+  ): ParserArrow<T, ParseResult<InnerU>> {
     return this.core
       .mergeAndThen(this, arrow)
       .bothOk()
@@ -596,9 +623,9 @@ export class ParserArrow<T, U> {
   }
 
   ifOk<V, InnerU>(
-    this: ParserArrow<T, Result<InnerU>>,
+    this: ParserArrow<T, ParseResult<InnerU>>,
     callback: (input: InnerU) => V
-  ): ParserArrow<T, Result<V>> {
+  ): ParserArrow<T, ParseResult<V>> {
     return this.core.andThen(
       this,
       this.core.FallibleArr(
@@ -609,17 +636,17 @@ export class ParserArrow<T, U> {
   }
 
   mergeNext<InnerU, V>(
-    this: ParserArrow<T, Result<InnerU>>,
-    arrow: ParserArrow<T, Result<V>>
-  ): ParserArrow<T, Result<[InnerU, V]>> {
+    this: ParserArrow<T, ParseResult<InnerU>>,
+    arrow: ParserArrow<T, ParseResult<V>>
+  ): ParserArrow<T, ParseResult<[InnerU, V]>> {
     return this.core.mergeNext(this, arrow).bothOk();
   }
 
   extend<K extends string, InnerU, V>(
-    this: ParserArrow<T, Result<InnerU>>,
+    this: ParserArrow<T, ParseResult<InnerU>>,
     key: K,
-    arrow: ParserArrow<T, Result<V>>
-  ): ParserArrow<T, Result<InnerU & ResultObject<K, V>>> {
+    arrow: ParserArrow<T, ParseResult<V>>
+  ): ParserArrow<T, ParseResult<InnerU & ResultObject<K, V>>> {
     return this.mergeNext(arrow).ifOk(([left, right]: [InnerU, V]) => {
       return {
         ...left,
@@ -629,7 +656,7 @@ export class ParserArrow<T, U> {
   }
 
   or<V, InnerU>(
-    this: ParserArrow<T, Result<InnerU>>,
+    this: ParserArrow<T, ParseResult<InnerU>>,
     value: V
   ): ParserArrow<T, InnerU | V> {
     return this.andThen(
@@ -643,28 +670,30 @@ export class ParserArrow<T, U> {
   // convenient
 
   named<K extends string, InnerU>(
-    this: ParserArrow<T, Result<InnerU>>,
+    this: ParserArrow<T, ParseResult<InnerU>>,
     name: K
-  ): ParserArrow<T, Result<ResultObject<K, InnerU>>> {
+  ): ParserArrow<T, ParseResult<ResultObject<K, InnerU>>> {
     return this.ifOk(val => {
       return { [name]: val } as ResultObject<K, InnerU>;
     });
   }
 
-  present<Pre>(this: ParserArrow<Pre, T[]>): ParserArrow<Pre, Result<void>> {
+  present<Pre>(
+    this: ParserArrow<Pre, T[]>
+  ): ParserArrow<Pre, ParseResult<void>> {
     return this.core.andThen(
       this,
       this.core.Arr(list =>
         list.length > 0
-          ? (ok(undefined) as Result<void>)
-          : (err("unknown", { type: "empty" }) as Result<void>)
+          ? (ok(undefined) as ParseResult<void>)
+          : (err("unknown", { type: "empty" }) as ParseResult<void>)
       )
     );
   }
 
   not<InnerU>(
-    this: ParserArrow<T, Result<InnerU>>
-  ): ParserArrow<T, Result<void>> {
+    this: ParserArrow<T, ParseResult<InnerU>>
+  ): ParserArrow<T, ParseResult<void>> {
     return this.core.andThen(
       this,
       this.core.FallibleArr(
@@ -691,26 +720,26 @@ export class ParserArrow<T, U> {
   }
 
   atomic<InnerU>(
-    this: ParserArrow<T, Result<InnerU>>
-  ): ParserArrow<T, Result<InnerU>> {
+    this: ParserArrow<T, ParseResult<InnerU>>
+  ): ParserArrow<T, ParseResult<InnerU>> {
     return this.core.Atomic(this);
   }
 
   token<K extends TokenType & keyof TokenMap>(
     type: K
-  ): ParserArrow<void, Result<TokenMap[K]>> {
+  ): ParserArrow<void, ParseResult<TokenMap[K]>> {
     return this.core.token(type);
   }
 
-  eof(): ParserArrow<T, Result<void>> {
+  eof(): ParserArrow<T, ParseResult<void>> {
     return this.core.eof();
   }
 
   parent<T>(
     desc: string,
     tokenType: TokenType,
-    arrow: ParserArrow<void, Result<T>>
-  ): ParserArrow<void, Result<{ result: T; token: Token }>> {
+    arrow: ParserArrow<void, ParseResult<T>>
+  ): ParserArrow<void, ParseResult<{ result: T; token: Token }>> {
     return this.core.parent(desc, tokenType, arrow);
   }
 
@@ -723,7 +752,7 @@ export class ParserArrow<T, U> {
   }
 }
 
-export type Inner<T> = T extends Result<infer R> ? R : never;
+export type Inner<T> = T extends ParseResult<infer R> ? R : never;
 
 export type ResultObject<K extends string, T> = {
   [P in K]: T;

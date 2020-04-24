@@ -3,7 +3,7 @@ import type { Token, RootToken } from "../read/tokens";
 import { unwrap } from "../read/utils";
 import { slice } from "../span";
 import { AstNode, formatAstNode } from "./nodes";
-import { Result, isErr, ErrorReason } from "./shape";
+import { ParseResult, isErr, ErrorReason, isParseErr } from "./shape";
 
 export interface ParseTrace {
   shape: { desc: string };
@@ -229,7 +229,7 @@ class PrintTracer {
 
   private get descStyle(): string {
     let result = this.trace.result as
-      | Partial<Result<unknown>>
+      | Partial<ParseResult<unknown>>
       | null
       | undefined;
     if (isResult(result)) {
@@ -258,7 +258,7 @@ function formatResult(result: unknown): string {
       return `[${result.map(formatResult).join(", ")}]`;
     }
   } else if (isResult(result)) {
-    if (isErr(result)) {
+    if (isParseErr(result)) {
       return formatReason(result.reason);
     } else {
       return formatResult(result.value);
@@ -315,9 +315,11 @@ function isNodeish(item: unknown | null | undefined): item is AstNode {
   }
 }
 
-function isResult(item: unknown | null | undefined): item is Result<unknown> {
+function isResult(
+  item: unknown | null | undefined
+): item is ParseResult<unknown> {
   if (typeof item === "object" && item !== null) {
-    let obj = item as Partial<Result<unknown>>;
+    let obj = item as Partial<ParseResult<unknown>>;
     return ("kind" in obj && obj.kind === "ok") || obj.kind === "err";
   } else {
     return false;

@@ -1,25 +1,161 @@
+import { ops, StatefulEvaluatorImpl } from "hbs-parser-next";
+import { module as qunitModule, test as qunitTest } from "qunit";
 import type * as qunit from "qunit";
-import { config, module as qunitModule, test as qunitTest, todo } from "qunit";
-import {
-  read,
-  serializeRoot,
-  r,
-  SourceSpan,
-  Err,
-  a,
-  parse,
-  LoggingType,
-  StatefulEvaluator,
-  ops,
-} from "hbs-parser-next";
+import { printIndentedItems } from "./helpers";
 
-const increment = ops.pure((i: number) => i + 1);
-const decrement = ops.pure((i: number) => i - 1);
-const double = ops.pure((i: number) => i * 2);
+// The test facilities below are intentionally using unnecessary
+// combinators when they could have used `lift` to stress-test
+// the system.
+
+export class CustomArray<T> extends Array<T>
+  implements ops.Concattable, ops.Reducable<T> {
+  constructor(...args: ConstructorParameters<typeof Array>) {
+    if (new.target !== CustomArray) {
+      throw new Error(`CustomArray is final -- don't subclass`);
+    }
+
+    super(...(args as any));
+  }
+
+  breakableReduce<Output>(
+    callback: (accum: Output, item: T) => IteratorResult<Output>,
+    init: Output
+  ): Output {
+    let current = init;
+
+    for (let item of this) {
+      let next = callback(current, item);
+
+      if (next.done) {
+        return next.value;
+      }
+
+      current = next.value;
+    }
+
+    return current;
+  }
+
+  zero<U>(): CustomArray<U> {
+    return new CustomArray() as CustomArray<U>;
+  }
+
+  merge(other: this): void {
+    for (let item of other) {
+      this.push(item);
+    }
+  }
+}
+
+function list<T>(...items: T[]): CustomArray<T> {
+  let a = new CustomArray<T>();
+  a.push(...items);
+  return a;
+}
+
+const flatIncrement = ops.pure((i: number) => list(i + 1), "flat-increment");
+
+export function flatIncrementTrace(input: number, out: number[]): StringTrace {
+  return formatOp(input, { type: "Pure", label: "flat-increment" }, out);
+}
+
+const firstReducable = ops.pure(
+  (numbers: ops.Reducable<number>) =>
+    numbers.breakableReduce((_, value) => ({ done: true, value }), 0),
+  "first"
+);
+
+function firstReducableTrace(input: number[], output: number): StringTrace {
+  return formatOp(input, { type: "Pure", label: "first" }, output);
+}
+
+const first: ops.Arrow<[number, ...number[]], number> = ops.pure(
+  (numbers: number[]) => numbers[0]
+);
+
+const second: ops.Arrow<[number, number], number> = ops.pure(
+  (numbers: number[]) => numbers[1]
+);
+
+const increment = ops.pipeline(flatIncrement, firstReducable, "increment");
+
+// this is useful for examples that are already very noisy
+const boringIncrement = ops.pure(
+  (input: number) => input + 1,
+  "boring-increment"
+);
+
+function incrementTrace(input: number, output: number): StringTrace {
+  return [
+    formatOp(input, { type: "Pipeline", label: "increment" }, output),
+    [
+      flatIncrementTrace(input, [output]),
+      firstReducableTrace([output], output),
+    ],
+  ];
+}
+
+const decrement = ops.pure((i: number) => i - 1, "decrement");
+const double = ops.pure((i: number) => i * 2, "double");
+
+function iterateOne(
+  map: ops.Arrow<number, number>
+): ops.Arrow<[number[], number], number[]> {
+  // extract the first value from the input
+  const accumulator = ops.pure(
+    (input: [number[], number]) => input[0],
+    "first"
+  );
+
+  // extract the second value from the input
+  const value = ops.pure((input: [number[], number]) => input[1], "second");
+
+  // merge them back together, mapping the value over the map arrow
+  const pair = ops.merge(accumulator, ops.pipeline(value, map));
+
+  // the append function takes an [accum, input] and pushes the input
+  // into the accum; yes, I know this is not really pure 🤔
+  let append = ops.pure(([accum, input]: [number[], number]) => {
+    accum.push(input);
+    return accum;
+  }, "append");
+
+  // pipe [accum, input -> map] into append
+  return ops.pipeline(pair, append, "iterate");
+}
+
+function iterate(
+  arrow: ops.Arrow<number, number>
+): ops.Arrow<number[], number[]> {
+  // create the initial `[]`
+  const inputAccumulator = ops.source(() => [] as number[], "initialize");
+
+  // build a single iteration arrow
+  // [accum: number[], in: number] -> number
+  let iteration = iterateOne(arrow);
+
+  // turn the iteration arrow into a reduce
+  // [in: number[], accum: number[]] -> number[]
+  let reduce = ops.reduce(iteration);
+
+  // create the input
+  let input = ops.merge(inputAccumulator, ops.input<number[]>(), "input-pair");
+
+  // [in: number[]] -> reduce: ([in: number[], accum: number[]] -> number[])
+  return ops.pipeline(input, reduce, "iteration");
+}
+
+function decrementTrace(input: number, output: number): StringTrace {
+  return formatArrow(input, decrement, output);
+}
+
+function doubleTrace(input: number, output: number): StringTrace {
+  return formatArrow(input, double, output);
+}
 
 @module("Arrow Evaluation")
 export class ArrowEvaluationTest {
-  private evaluator = new StatefulEvaluator();
+  private evaluator = new StatefulEvaluatorImpl();
 
   private invoke<T, U>(op: ops.Arrow<T, U>, input: T): U {
     return op.invoke(null, this.evaluator, input);
@@ -34,13 +170,13 @@ export class ArrowEvaluationTest {
     assert.deepEqual(this.invoke(zipped, [5, 5]), [6, 4]);
   }
 
-  @test andThen(assert: qunit.Assert) {
-    let pipeline = ops.andThen(increment, double);
+  @test pipeline(assert: qunit.Assert) {
+    let pipeline = ops.pipeline(increment, double);
     assert.deepEqual(this.invoke(pipeline, 5), 12);
   }
 
-  @test split(assert: qunit.Assert) {
-    let concurrent = ops.split(increment, double);
+  @test merge(assert: qunit.Assert) {
+    let concurrent = ops.merge(increment, double);
     assert.deepEqual(this.invoke(concurrent, 5), [6, 10]);
   }
 
@@ -50,150 +186,183 @@ export class ArrowEvaluationTest {
   }
 }
 
+type StringTrace = string | [string, StringTrace[]];
+
 class Tracer {
-  private stack: StartedTraceRecord[] = [];
+  private stack: StringTrace[] = [];
 
-  constructor(private children: TraceRecord[] = []) {}
-
-  get records(): TraceRecord[] {
-    if (this.stack.length > 0) {
-      throw new Error(
-        `Unexpectedly getting records before program is done evaluating`
-      );
+  get currentChildren(): StringTrace[] {
+    if (this.stack.length === 0) {
+      return this.stack;
+    } else {
+      return this.stack[this.stack.length - 1][1] as StringTrace[];
     }
-    return this.children;
   }
 
-  preInvoke(op: string, input: unknown) {
-    let record = {
-      operation: op,
-      inout: { in: input },
-      children: [],
-    };
+  get currentName(): string | undefined {
+    if (this.stack.length === 0) {
+      return;
+    } else {
+      return this.stack[this.stack.length - 1][0] as string;
+    }
+  }
 
+  get records(): StringTrace[] {
+    return this.stack;
+  }
+
+  pushLeaf(leaf: string) {
+    this.currentChildren.push(leaf);
+  }
+
+  preInvoke(name: string) {
+    let record = [name, []] as StringTrace;
+    this.currentChildren.push(record);
     this.stack.push(record);
   }
 
-  postInvoke(output: unknown) {
-    let startedRecord = this.stack.pop();
-
-    if (startedRecord === undefined) {
-      throw new Error("ASSERT");
-    }
-
-    let finishedRecord = {
-      operation: startedRecord.operation,
-      inout: { in: startedRecord.inout.in, out: output },
-      children: startedRecord.children,
-    };
-
-    assertFinishedTraceRecord(finishedRecord);
-
-    if (this.stack.length > 0) {
-      let last = this.stack[this.stack.length - 1];
-      last.children.push(finishedRecord);
-    } else {
-      this.children.push(finishedRecord);
-    }
+  postInvoke(desc: string) {
+    let last = this.stack.pop() as [string, StringTrace[]];
+    last[0] = desc;
   }
 }
 
-interface StartedTraceRecord {
-  operation: string;
-  inout: { in: unknown };
-  children: StartedTraceRecord[];
+type JSONValue = string | number | null | boolean | JSONArray | JSONObject;
+type JSONArray = JSONValue[];
+interface JSONObject {
+  [key: string]: JSONValue;
 }
 
-function assertFinishedTraceRecord(
-  record: StartedTraceRecord
-): asserts record is TraceRecord {
-  if (!("inout" in record)) {
-    throw new Error(`unexpected unfinished trace record`);
-  }
-
-  for (let child of record.children) {
-    assertFinishedTraceRecord(child);
+function trace(name: string, children?: StringTrace[]): StringTrace {
+  if (children) {
+    return [name, children];
+  } else {
+    return name;
   }
 }
 
-interface TraceRecord {
-  operation: string;
-  inout: { in: unknown; out: unknown; label?: string };
-  children: TraceRecord[];
+function format(op: { type: string; label?: string }): string {
+  return op.label ? `${op.label}(${op.type})` : op.type;
 }
 
-class CollectingEvaluator extends StatefulEvaluator<Tracer> {
-  private trace<In, Out>(
-    operation: string,
+function formatOp(
+  input: unknown,
+  op: { type: string; label?: string } | [string, string] | string,
+  out: unknown
+): string {
+  let formattedInput = JSON.stringify(input);
+  let formattedOutput = JSON.stringify(out);
+
+  let formattedOp;
+
+  if (typeof op === "string") {
+    formattedOp = op;
+  } else if (Array.isArray(op)) {
+    formattedOp = format({ type: op[0], label: op[1] });
+  } else {
+    formattedOp = format(op);
+  }
+
+  return `${formattedOp}: ${formattedInput} -> ${formattedOutput}`;
+}
+
+function source(value: unknown, label?: string): StringTrace {
+  let out = `Source: ${JSON.stringify(value)}`;
+
+  if (label) {
+    out += ` (${label})`;
+  }
+
+  return out;
+}
+
+function input(value: unknown, label?: string): StringTrace {
+  return `Input: ${JSON.stringify(value)}`;
+}
+
+function formatArrow(
+  input: unknown,
+  op: ops.Arrow<unknown, unknown>,
+  out: unknown
+): string {
+  return formatOp(input, op.operation, out);
+}
+
+class CollectingEvaluator extends StatefulEvaluatorImpl<Tracer> {
+  private parent<T>(
+    callback: () => T,
     state: Tracer,
-    input: In,
-    callback: () => Out
-  ): Out {
-    state.preInvoke(operation, input);
-    let output = callback();
-    state.postInvoke(output);
-    return output;
+    input: unknown,
+    op: ops.Operation
+  ): T {
+    state.preInvoke(op.type);
+    let clonedInput = JSON.parse(JSON.stringify(input));
+    let out = callback();
+    state.postInvoke(formatOp(clonedInput, op, out));
+    return out;
   }
 
-  Pure<In, Out>(state: Tracer, input: In, op: ops.PureOperation<In, Out>): Out {
-    return this.trace("Pure", state, input, () => super.Pure(state, input, op));
+  Source<Out>(...args: [Tracer, unknown, ops.SourceOperation<Out>]): Out {
+    let out = super.Source(...args);
+
+    if (args[2].label) {
+      args[0].pushLeaf(`Source: ${JSON.stringify(out)} (${args[2].label})`);
+    } else {
+      args[0].pushLeaf(`Source: ${JSON.stringify(out)}`);
+    }
+    return out;
+  }
+
+  Input<In>(tracer: Tracer, input: In, _op: ops.InputOperation<In>): In {
+    tracer.pushLeaf(`Input: ${JSON.stringify(input)}`);
+    return input;
+  }
+
+  Pure<In, Out>(
+    state: Tracer,
+    ...args: readonly [In, ops.PureOperation<In, Out>]
+  ): Out {
+    let input = JSON.parse(JSON.stringify(args[0]));
+    let out = super.Pure(state, ...args);
+    state.pushLeaf(formatOp(input, args[1], out));
+    return out;
   }
 
   Zip<In1, Out1, In2, Out2>(
-    state: Tracer,
-    input: [In1, In2],
-    op: ops.ZipOperation<In1, Out1, In2, Out2>
+    ...args: [Tracer, [In1, In2], ops.ZipOperation<In1, Out1, In2, Out2>]
   ): [Out1, Out2] {
-    return this.trace("Zip", state, input, () => super.Zip(state, input, op));
+    return this.parent(() => super.Zip(...args), ...args);
   }
 
-  AndThen<LeftIn, Middle, RightOut>(
-    state: Tracer,
-    input: LeftIn,
-    op: ops.AndThenOperation<LeftIn, Middle, RightOut>
+  Pipeline<LeftIn, Middle, RightOut>(
+    ...args: [Tracer, LeftIn, ops.PipelineOperation<LeftIn, Middle, RightOut>]
   ): RightOut {
-    return this.trace("AndThen", state, input, () =>
-      super.AndThen(state, input, op)
-    );
+    return this.parent(() => super.Pipeline(...args), ...args);
   }
 
-  Split<In, LeftOut, RightOut>(
-    state: Tracer,
-    input: In,
-    op: ops.SplitOperation<In, LeftOut, RightOut>
+  Merge<In, LeftOut, RightOut>(
+    ...args: [Tracer, In, ops.MergeOperation<In, LeftOut, RightOut>]
   ): [LeftOut, RightOut] {
-    return this.trace("Split", state, input, () =>
-      super.Split(state, input, op)
-    );
+    return this.parent(() => super.Merge(...args), ...args);
+  }
+
+  MapInput<ArrowIn, MapOut>(
+    ...args: [Tracer, ArrowIn, ops.MapInputOperation<ArrowIn, MapOut>]
+  ): MapOut {
+    return this.parent(() => super.MapInput(...args), ...args);
   }
 
   KeepAndThen<In, LeftOut, RightOut>(
-    state: Tracer,
-    input: In,
-    op: ops.KeepAndThenOperation<In, LeftOut, RightOut>
+    ...args: [Tracer, In, ops.KeepAndThenOperation<In, LeftOut, RightOut>]
   ): [LeftOut, RightOut] {
-    return this.trace("KeepAndThen", state, input, () =>
-      super.KeepAndThen(state, input, op)
-    );
+    return this.parent(() => super.KeepAndThen(...args), ...args);
   }
-}
 
-type TraceRecordShorthand = readonly [
-  ops.OperationType,
-  { in: unknown; out: unknown; label?: string },
-  ...TraceRecordShorthand[]
-];
-
-function expandShorthand([
-  operation,
-  { in: input, out: output, label },
-  ...children
-]: TraceRecordShorthand): TraceRecord {
-  return compact({
-    operation,
-    inout: { in: input, out: output, label },
-    children: children ? children.map(expandShorthand) : [],
-  });
+  Reduce<In, Out>(
+    ...args: [Tracer, [Out, Iterable<In>], ops.ReduceOperation<In, Out>]
+  ): Out {
+    return this.parent(() => super.Reduce(...args), ...args);
+  }
 }
 
 interface Dict {
@@ -234,79 +403,122 @@ function compact<T>(o: T): RemoveUndefined<T> {
   }
 }
 
-function record<T extends TraceRecordShorthand>(...shorthand: T): TraceRecord {
-  return expandShorthand(shorthand);
-}
-
 @module("Stateful Arrow Evaluation")
 export class StatefulArrowEvaluationTest {
   private evaluator = new CollectingEvaluator();
   private tracer = new Tracer();
 
+  constructor(private assert: qunit.Assert) {}
+
+  assertInvoke<T extends JSONValue, U extends JSONValue>(
+    arrow: ops.Arrow<T, U>,
+    input: T,
+    expectedOutput: U,
+    ...expectedTraceRecords: StringTrace[]
+  ) {
+    let actual = this.invoke(arrow, input);
+    this.assert.deepEqual(
+      actual,
+      expectedOutput,
+      `expected output to be ${JSON.stringify(expectedOutput)}`
+    );
+
+    this.assert.deepEqual(
+      `\n${printIndentedItems(this.tracer.records)}\n`,
+      `\n${printIndentedItems(expectedTraceRecords)}\n`,
+      "expected trace to match"
+    );
+  }
+
   private invoke<T, U>(op: ops.Arrow<T, U>, input: T): U {
     return op.invoke(this.tracer, this.evaluator, input);
   }
 
-  private get state() {
-    return this.tracer.records;
+  @test pure() {
+    this.assertInvoke(increment, 1, 2, incrementTrace(1, 2));
   }
 
-  @test pure(assert: qunit.Assert) {
-    assert.equal(this.invoke(increment, 1), 2);
-    assert.deepEqual(this.state, [record("Pure", { in: 1, out: 2 })]);
+  @test zip() {
+    this.assertInvoke(
+      ops.zip(increment, decrement),
+      [5, 5],
+      [6, 4],
+      [
+        formatOp([5, 5], "Zip", [6, 4]),
+        [incrementTrace(5, 6), decrementTrace(5, 4)],
+      ]
+    );
   }
 
-  @test zip(assert: qunit.Assert) {
-    let zipped = ops.zip(increment, decrement);
-    assert.deepEqual(this.invoke(zipped, [5, 5]), [6, 4]);
-    assert.deepEqual(this.state, [
-      record(
-        "Zip",
-        { in: [5, 5], out: [6, 4] },
-        ["Pure", { in: 5, out: 6 }],
-        ["Pure", { in: 5, out: 4 }]
-      ),
+  @test pipeline() {
+    this.assertInvoke(ops.pipeline(increment, double), 5, 12, [
+      formatOp(5, { type: "Pipeline" }, 12),
+      [incrementTrace(5, 6), doubleTrace(6, 12)],
     ]);
   }
 
-  @test andThen(assert: qunit.Assert) {
-    let pipeline = ops.andThen(increment, double);
-    assert.deepEqual(this.invoke(pipeline, 5), 12);
-    assert.deepEqual(this.state, [
-      record(
-        "AndThen",
-        { in: 5, out: 12 },
-        ["Pure", { in: 5, out: 6 }],
-        ["Pure", { in: 6, out: 12 }]
-      ),
-    ]);
+  @test merge() {
+    this.assertInvoke(
+      ops.merge(increment, double),
+      5,
+      [6, 10],
+      [
+        formatOp(5, "Merge", [6, 10]),
+        [incrementTrace(5, 6), doubleTrace(5, 10)],
+      ]
+    );
   }
 
-  @test split(assert: qunit.Assert) {
-    let concurrent = ops.split(increment, double);
-    assert.deepEqual(this.invoke(concurrent, 5), [6, 10]);
-    assert.deepEqual(this.state, [
-      record(
-        "Split",
-        { in: 5, out: [6, 10] },
-        ["Pure", { in: 5, out: 6 }],
-        ["Pure", { in: 5, out: 10 }]
-      ),
-    ]);
+  @test mergeAndThen() {
+    this.assertInvoke(
+      ops.keepAndThen(increment, double),
+      5,
+      [6, 12],
+      [
+        formatOp(5, "KeepAndThen", [6, 12]),
+        [incrementTrace(5, 6), doubleTrace(6, 12)],
+      ]
+    );
   }
 
-  @test mergeAndThen(assert: qunit.Assert) {
-    let pipeline = ops.keepAndThen(increment, double);
-    assert.deepEqual(this.invoke(pipeline, 5), [6, 12]);
-    assert.deepEqual(this.state, [
-      record(
-        "KeepAndThen",
-        { in: 5, out: [6, 12] },
-        ["Pure", { in: 5, out: 6 }],
-        ["Pure", { in: 6, out: 12 }]
-      ),
-    ]);
+  @test iterate() {
+    this.assertInvoke(
+      iterate(boringIncrement),
+      [3, 6, 9],
+      [4, 7, 10],
+      trace(formatOp([3, 6, 9], ["Pipeline", "iteration"], [4, 7, 10]), [
+        trace(formatOp([3, 6, 9], ["Merge", "input-pair"], [[], [3, 6, 9]]), [
+          source([], "initialize"),
+          input([3, 6, 9]),
+        ]),
+        trace(formatOp([[], [3, 6, 9]], "Reduce", [4, 7, 10]), [
+          iterateTrace([], 3, 4),
+          iterateTrace([4], 6, 7),
+          iterateTrace([4, 7], 9, 10),
+        ]),
+      ])
+    );
   }
+}
+
+function iterateTrace(
+  accum: number[],
+  input: number,
+  output: number
+): StringTrace {
+  return trace(
+    formatOp([accum, input], ["Pipeline", "iterate"], [...accum, output]),
+    [
+      trace(formatOp([accum, input], "Merge", [accum, output]), [
+        formatOp([accum, input], ["Pure", "first"], accum),
+        trace(formatOp([accum, input], "Pipeline", output), [
+          formatOp([accum, input], ["Pure", "second"], input),
+          formatOp(input, ["Pure", "boring-increment"], output),
+        ]),
+      ]),
+      formatOp([accum, output], ["Pure", "append"], [...accum, output]),
+    ]
+  );
 }
 
 function module(name: string): <T>(target: T) => T {
@@ -315,12 +527,14 @@ function module(name: string): <T>(target: T) => T {
   return c => c;
 }
 
-function test(target: object, name: string, descriptor: PropertyDescriptor) {
+function test(target: object, name: string) {
   qunitTest(name, assert => {
     let constructor = target.constructor as {
-      new (): { [key: string]: (assert: qunit.Assert) => Promise<void> | void };
+      new (assert: qunit.Assert): {
+        [key: string]: (assert: qunit.Assert) => Promise<void> | void;
+      };
     };
-    let instance = new constructor();
+    let instance = new constructor(assert);
     return instance[name](assert);
   });
 }
