@@ -20,7 +20,7 @@
     "dev": "webpack-dev-server --mode development -w"
   },
   "resolutions": {
-    "typescript": "^3.9.0-beta"
+    "typescript": "^3.9.0-beta-dev.20200427"
   },
   "devDependencies": {
     "@babel/core": "^7.0.0",
