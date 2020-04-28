@@ -4,10 +4,10 @@ import {
   baseErr as err,
   baseOk as ok,
   BaseResult as Result,
+  JSONValue,
 } from "hbs-parser-next";
-import { module as qunitModule, test as qunitTest } from "qunit";
 import type * as qunit from "qunit";
-import { printIndentedItems } from "./helpers";
+import { printIndentedItems, module, test } from "./helpers";
 
 // The test facilities below are intentionally using unnecessary
 // combinators when they could have used `lift` to stress-test
@@ -74,14 +74,6 @@ const firstReducable = ops.pure(
 function firstReducableTrace(input: number[], output: number): StringTrace {
   return formatOp(input, { type: "Pure", label: "first" }, output);
 }
-
-const first: ops.Arrow<[number, ...number[]], number> = ops.pure(
-  (numbers: number[]) => numbers[0]
-);
-
-const second: ops.Arrow<[number, number], number> = ops.pure(
-  (numbers: number[]) => numbers[1]
-);
 
 const increment = ops.pipeline(flatIncrement, firstReducable, "increment");
 
@@ -192,7 +184,8 @@ export class ArrowEvaluationTest {
   }
 }
 
-type StringTrace = string | [string, StringTrace[]];
+type StringTraceTuple = [string, StringTrace[]];
+type StringTrace = string | StringTraceTuple;
 
 class Tracer {
   private stack: StringTrace[] = [];
@@ -238,12 +231,6 @@ class Tracer {
   }
 }
 
-type JSONValue = string | number | null | boolean | JSONArray | JSONObject;
-type JSONArray = JSONValue[];
-interface JSONObject {
-  [key: string]: JSONValue;
-}
-
 type TraceLineArgs = [
   unknown,
   { type: string; label?: string } | [string, string] | string,
@@ -281,7 +268,7 @@ function format(op: { type: string; label?: string }): string {
   return op.label ? `${op.label}(${op.type})` : op.type;
 }
 
-function formatJSON(input: unknown) {
+export function formatJSON(input: unknown) {
   return JSON.stringify(input)
     .replace(/\\?"/g, `'`)
     .replace(/'(<.*?>)'/, "$1");
@@ -418,7 +405,7 @@ export class StatefulArrowEvaluationTest {
   private evaluator = new CollectingEvaluator();
   private tracer = new Tracer();
 
-  constructor(private assert: qunit.Assert) {}
+  declare assert: qunit.Assert;
 
   assertInvoke<
     T extends JSONValue | undefined | void,
@@ -603,22 +590,4 @@ function iterateTrace(
       trace("append(Pure)", [accum, output], [...accum, output]),
     ]
   );
-}
-
-function module(name: string): <T>(target: T) => T {
-  qunitModule(name);
-
-  return c => c;
-}
-
-function test(target: object, name: string) {
-  qunitTest(name, assert => {
-    let constructor = target.constructor as {
-      new (assert: qunit.Assert): {
-        [key: string]: (assert: qunit.Assert) => Promise<void> | void;
-      };
-    };
-    let instance = new constructor(assert);
-    return instance[name](assert);
-  });
 }

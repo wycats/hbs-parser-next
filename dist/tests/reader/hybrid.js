@@ -1,118 +1,116 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const hbs_parser_next_1 = require("hbs-parser-next");
-const qunit_1 = require("qunit");
-qunit_1.module("[READER] Hybrid");
-qunit_1.test("content plus interpolation", assert => {
+import { r } from "hbs-parser-next";
+import { module, test } from "qunit";
+module("[READER] Hybrid");
+test("content plus interpolation", assert => {
     assert.tree("hello {{world}} goodbye", [
-        hbs_parser_next_1.r.text("hello "),
-        hbs_parser_next_1.r.interpolate(hbs_parser_next_1.r.id("world")),
-        hbs_parser_next_1.r.text(" goodbye"),
+        r.text("hello "),
+        r.interpolate(r.id("world")),
+        r.text(" goodbye"),
     ]);
 });
-qunit_1.test("A named arg invocation", assert => {
-    assert.tree("<@foo></@foo>", [hbs_parser_next_1.r.startTag(hbs_parser_next_1.r.arg("@foo")), hbs_parser_next_1.r.endTag("@foo")]);
+test("A named arg invocation", assert => {
+    assert.tree("<@foo></@foo>", [r.startTag(r.arg("@foo")), r.endTag("@foo")]);
 });
-qunit_1.test("A path invocation", assert => {
+test("A path invocation", assert => {
     assert.tree("<f.input></f.input>", [
-        hbs_parser_next_1.r.startTag([hbs_parser_next_1.r.id("f"), hbs_parser_next_1.r.dot, hbs_parser_next_1.r.id("input")]),
-        hbs_parser_next_1.r.endTag([hbs_parser_next_1.r.id("f"), hbs_parser_next_1.r.dot, hbs_parser_next_1.r.id("input")]),
+        r.startTag([r.id("f"), r.dot, r.id("input")]),
+        r.endTag([r.id("f"), r.dot, r.id("input")]),
     ]);
     assert.tree("<@f.input></@f.input>", [
-        hbs_parser_next_1.r.startTag([hbs_parser_next_1.r.arg("@f"), hbs_parser_next_1.r.dot, hbs_parser_next_1.r.id("input")]),
-        hbs_parser_next_1.r.endTag([hbs_parser_next_1.r.arg("@f"), hbs_parser_next_1.r.dot, hbs_parser_next_1.r.id("input")]),
+        r.startTag([r.arg("@f"), r.dot, r.id("input")]),
+        r.endTag([r.arg("@f"), r.dot, r.id("input")]),
     ]);
 });
-qunit_1.test("Curly attributes", assert => {
+test("Curly attributes", assert => {
     assert.tree("<div disabled={{disabled}}></div>", [
-        hbs_parser_next_1.r.startTag({
+        r.startTag({
             name: "div",
             attrs: [
-                hbs_parser_next_1.r.sp,
-                hbs_parser_next_1.r.attr({
+                r.sp,
+                r.attr({
                     name: "disabled",
-                    value: hbs_parser_next_1.r.attrInterpolate(hbs_parser_next_1.r.id("disabled")),
+                    value: r.attrInterpolate(r.id("disabled")),
                 }),
             ],
         }),
-        hbs_parser_next_1.r.endTag("div"),
+        r.endTag("div"),
     ]);
 });
-qunit_1.test("Curlies inside quoted attributes", assert => {
+test("Curlies inside quoted attributes", assert => {
     assert.tree(`<div disabled="{{disabled}}"></div>`, [
-        hbs_parser_next_1.r.startTag({
+        r.startTag({
             name: "div",
             attrs: [
-                hbs_parser_next_1.r.sp,
-                hbs_parser_next_1.r.attr({
+                r.sp,
+                r.attr({
                     name: "disabled",
-                    value: hbs_parser_next_1.r.stringInterpolate([hbs_parser_next_1.r.interpolate(hbs_parser_next_1.r.id("disabled"))], `"`),
+                    value: r.stringInterpolate([r.interpolate(r.id("disabled"))], `"`),
                 }),
             ],
         }),
-        hbs_parser_next_1.r.endTag("div"),
+        r.endTag("div"),
     ]);
     assert.tree(`<a href="{{url}}.html"></a>`, [
-        hbs_parser_next_1.r.startTag({
+        r.startTag({
             name: "a",
             attrs: [
-                hbs_parser_next_1.r.sp,
-                hbs_parser_next_1.r.attr({
+                r.sp,
+                r.attr({
                     name: "href",
-                    value: hbs_parser_next_1.r.stringInterpolate([hbs_parser_next_1.r.interpolate(hbs_parser_next_1.r.id("url")), hbs_parser_next_1.r.text(".html")], `"`),
+                    value: r.stringInterpolate([r.interpolate(r.id("url")), r.text(".html")], `"`),
                 }),
             ],
         }),
-        hbs_parser_next_1.r.endTag("a"),
+        r.endTag("a"),
     ]);
 });
-qunit_1.test("Arguments", assert => {
+test("Arguments", assert => {
     assert.tree(`<div @disabled="{{disabled}}"></div>`, [
-        hbs_parser_next_1.r.startTag({
+        r.startTag({
             name: "div",
             attrs: [
-                hbs_parser_next_1.r.sp,
-                hbs_parser_next_1.r.attr({
-                    name: hbs_parser_next_1.r.argName("@disabled"),
-                    value: hbs_parser_next_1.r.stringInterpolate([hbs_parser_next_1.r.interpolate(hbs_parser_next_1.r.id("disabled"))], `"`),
+                r.sp,
+                r.attr({
+                    name: r.argName("@disabled"),
+                    value: r.stringInterpolate([r.interpolate(r.id("disabled"))], `"`),
                 }),
             ],
         }),
-        hbs_parser_next_1.r.endTag("div"),
+        r.endTag("div"),
     ]);
     assert.tree(`<a @href="{{url}}.html"></a>`, [
-        hbs_parser_next_1.r.startTag({
+        r.startTag({
             name: "a",
             attrs: [
-                hbs_parser_next_1.r.sp,
-                hbs_parser_next_1.r.attr({
-                    name: hbs_parser_next_1.r.argName("@href"),
-                    value: hbs_parser_next_1.r.stringInterpolate([hbs_parser_next_1.r.interpolate(hbs_parser_next_1.r.id("url")), hbs_parser_next_1.r.text(".html")], `"`),
+                r.sp,
+                r.attr({
+                    name: r.argName("@href"),
+                    value: r.stringInterpolate([r.interpolate(r.id("url")), r.text(".html")], `"`),
                 }),
             ],
         }),
-        hbs_parser_next_1.r.endTag("a"),
+        r.endTag("a"),
     ]);
 });
-qunit_1.test("Modifiers", assert => {
+test("Modifiers", assert => {
     assert.tree(`<div disabled {{on "click" (fn this.handleClick @arg)}}></div>`, [
-        hbs_parser_next_1.r.startTag({
+        r.startTag({
             name: "div",
             attrs: [
-                hbs_parser_next_1.r.sp,
-                hbs_parser_next_1.r.attr("disabled"),
-                hbs_parser_next_1.r.sp,
-                hbs_parser_next_1.r.interpolate(hbs_parser_next_1.r.id("on"), hbs_parser_next_1.r.sp, hbs_parser_next_1.r.str(`"click"`), hbs_parser_next_1.r.sp, hbs_parser_next_1.r.sexp([
-                    hbs_parser_next_1.r.id("fn"),
-                    hbs_parser_next_1.r.sp,
-                    hbs_parser_next_1.r.id("this"),
-                    hbs_parser_next_1.r.dot,
-                    hbs_parser_next_1.r.id("handleClick"),
-                    hbs_parser_next_1.r.sp,
-                    hbs_parser_next_1.r.arg("@arg"),
+                r.sp,
+                r.attr("disabled"),
+                r.sp,
+                r.interpolate(r.id("on"), r.sp, r.str(`"click"`), r.sp, r.sexp([
+                    r.id("fn"),
+                    r.sp,
+                    r.id("this"),
+                    r.dot,
+                    r.id("handleClick"),
+                    r.sp,
+                    r.arg("@arg"),
                 ])),
             ],
         }),
-        hbs_parser_next_1.r.endTag("div"),
+        r.endTag("div"),
     ]);
 });

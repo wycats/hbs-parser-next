@@ -1,5 +1,6 @@
 import type { Err, Result, Snippet } from "hbs-parser-next";
-import { assert } from "qunit";
+import { assert, module as qunitModule, test as qunitTest } from "qunit";
+import type * as qunit from "qunit";
 
 export function unwrap<T>(input: Result<T>): T {
   if (input.kind === "ok") {
@@ -57,25 +58,15 @@ export function eqError(left: Result<unknown>, right: Err) {
   }
 }
 
-export type IndentedItem = string | [string, IndentedItem[]];
+export type ListIndentedItem = [string, IndentedItem[]];
+export interface InnerIndentedItem extends ListIndentedItem {}
+export type IndentedItem = string | InnerIndentedItem;
 
-function posFor(
-  len: number,
-  index: number
-): "only" | "first" | "last" | "middle" {
-  if (index === 0) {
-    return len === 1 ? "only" : "first";
-  } else if (index === len - 1) {
-    return "last";
-  } else {
-    return "middle";
-  }
-}
-
-const CROSS = " ┣━";
-const CORNER = " ┗━";
-const VERTICAL = " ┃ ";
+const SIMPLE = true;
 const SPACE = "   ";
+const CROSS = SIMPLE ? SPACE : " ┣━";
+const CORNER = SIMPLE ? SPACE : " ┗━";
+const VERTICAL = SIMPLE ? SPACE : " ┃ ";
 
 export function printIndentedItems(nodes: IndentedItem[]): string {
   let out = "";
@@ -120,4 +111,25 @@ function printChildNode(node: IndentedItem, indent: string, isLast: boolean) {
   out += printNode(node, indent);
 
   return out;
+}
+
+export function module(
+  name: string
+): <T extends { new (): object }>(target: T) => T {
+  qunitModule(name);
+
+  return c => c;
+}
+
+export function test(target: object, name: string) {
+  qunitTest(name, assert => {
+    let constructor = target.constructor as {
+      new (): {
+        assert: qunit.Assert;
+      };
+    };
+    let instance = new constructor();
+    instance.assert = assert;
+    return (instance as any)[name](assert);
+  });
 }

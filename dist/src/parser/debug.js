@@ -1,12 +1,9 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.ParseTracer = void 0;
-const debug_1 = require("../read/debug");
-const utils_1 = require("../read/utils");
-const span_1 = require("../span");
-const nodes_1 = require("./nodes");
-const shape_1 = require("./shape");
-class ParseTracer {
+import { truncString } from "../read/debug";
+import { unwrap } from "../read/utils";
+import { slice } from "../span";
+import { formatAstNode } from "./nodes";
+import { isParseErr } from "./shape";
+export class ParseTracer {
     constructor(token) {
         this.stack = [
             {
@@ -79,7 +76,7 @@ class ParseTracer {
         last.postToken = postToken;
     }
     stackCheck(expected) {
-        let last = utils_1.unwrap(this.stack.pop());
+        let last = unwrap(this.stack.pop());
         if (last.shape.desc !== expected) {
             console.warn("unbalanced stack", "stack =", this.stack.map(s => s.shape.desc), "last =", last.shape.desc, "expected =", expected);
             throw new Error(`ASSERT: unbalanced stack: stack=${last.shape.desc}, expected=${expected}`);
@@ -101,7 +98,6 @@ class ParseTracer {
         }
     }
 }
-exports.ParseTracer = ParseTracer;
 const SUCCESS = "color: green";
 const ERROR = "color: red";
 const TRANSACTION_SUCCESS = "background-color: #6a6; color: white; font-weight: bold";
@@ -119,7 +115,7 @@ class PrintTracer {
         if (this.trace.shape.desc === undefined) {
             debugger;
         }
-        console.log(`%c| ${this.preSlice} | ${debug_1.truncString(this.details, 80)} | ${this.postSlice}`, NORMAL, NORMAL, this.descStyle, DIM);
+        console.log(`%c| ${this.preSlice} | ${truncString(this.details, 80)} | ${this.postSlice}`, NORMAL, NORMAL, this.descStyle, DIM);
         if (this.trace.children) {
             for (let child of this.trace.children) {
                 if (child.failure === "ignored") {
@@ -142,10 +138,10 @@ class PrintTracer {
     slice(token, length = 13) {
         if (token) {
             let span = token.span;
-            return debug_1.truncString(span_1.slice({ start: span.start, end: this.source.length }, this.source), length);
+            return truncString(slice({ start: span.start, end: this.source.length }, this.source), length);
         }
         else {
-            return debug_1.truncString("<eof>");
+            return truncString("<eof>");
         }
     }
     get formattedResult() {
@@ -185,7 +181,7 @@ function formatResult(result) {
         }
     }
     else if (isResult(result)) {
-        if (shape_1.isParseErr(result)) {
+        if (isParseErr(result)) {
             return formatReason(result.reason);
         }
         else {
@@ -193,7 +189,7 @@ function formatResult(result) {
         }
     }
     else if (isNodeish(result)) {
-        return nodes_1.formatAstNode(result);
+        return formatAstNode(result);
     }
     else {
         console.log("not debuggable", result);

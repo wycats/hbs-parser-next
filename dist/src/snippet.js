@@ -1,7 +1,4 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.fatalError = exports.err = exports.ok = exports.Snippet = void 0;
-class Snippet {
+export class Snippet {
     constructor(source, offset, length, logger) {
         this.source = source;
         this.offset = offset;
@@ -65,20 +62,17 @@ class Snippet {
         return this.source.length - this.offset - this.length;
     }
 }
-exports.Snippet = Snippet;
-function ok(value) {
+export function ok(value) {
     return { kind: "ok", value };
 }
-exports.ok = ok;
-function err(snippet, reason) {
+export function err(snippet, reason) {
     return {
         kind: "err",
         snippet,
         reason,
     };
 }
-exports.err = err;
-function fatalError(snippet, reason) {
+export function fatalError(snippet, reason) {
     return {
         kind: "err",
         snippet,
@@ -86,4 +80,3 @@ function fatalError(snippet, reason) {
         fatal: true,
     };
 }
-exports.fatalError = fatalError;

@@ -1,105 +1,100 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.serializeNode = exports.serializeRoot = void 0;
-const tokens_1 = require("./tokens");
-const span_1 = require("../span");
-const utils_1 = require("./utils");
-function serializeRoot(root, source) {
+import { isInterpolateAttribute, } from "./tokens";
+import { slice } from "../span";
+import { unreachable } from "./utils";
+export function serializeRoot(root, source) {
     let out = [];
     for (let token of root.children) {
         out.push(...serializeNode(token, source));
     }
     return out.join("");
 }
-exports.serializeRoot = serializeRoot;
-function serializeNode(token, source) {
+export function serializeNode(token, source) {
     if (token === null) {
         return [""];
     }
     switch (token.type) {
         // leaf tokens
-        case "Dot" /* Dot */:
-        case "Eq" /* Eq */:
-        case "Identifier" /* Identifier */:
-        case "WS" /* WS */:
-        case "Text" /* Text */:
-        case "AttributeName" /* AttributeName */:
-            return [span_1.slice(token.span, source)];
-        case "String" /* String */: {
-            let quote = token.quote === 0 /* Single */ ? `'` : `"`;
-            return [quote, span_1.slice(token.data, source), quote];
+        case TokenType.Dot:
+        case TokenType.Eq:
+        case TokenType.Identifier:
+        case TokenType.WS:
+        case TokenType.Text:
+        case TokenType.AttributeName:
+            return [slice(token.span, source)];
+        case TokenType.String: {
+            let quote = token.quote === QuoteType.Single ? `'` : `"`;
+            return [quote, slice(token.data, source), quote];
         }
-        case "Number" /* Number */: {
+        case TokenType.Number: {
             let out = [];
             if (token.negative) {
-                out.push(span_1.slice(token.negative, source));
+                out.push(slice(token.negative, source));
             }
-            out.push(span_1.slice(token.head, source));
+            out.push(slice(token.head, source));
             if (token.tail) {
-                out.push(".", span_1.slice(token.tail, source));
+                out.push(".", slice(token.tail, source));
             }
             return out;
         }
-        case "ArgName" /* ArgName */:
-            return ["@", span_1.slice(token.name, source)];
-        case "AttributeValue" /* AttributeValue */:
+        case TokenType.ArgName:
+            return ["@", slice(token.name, source)];
+        case TokenType.AttributeValue:
             return serializeAttributeValue(token, source);
-        case "Argument" /* Argument */:
-            return ["@", span_1.slice(token.name, source)];
-        case "Sexp" /* Sexp */:
+        case TokenType.Argument:
+            return ["@", slice(token.name, source)];
+        case TokenType.Sexp:
             return ["(", ...serializeList(token.children, source), ")"];
-        case "Interpolate" /* UntrustedInterpolate */:
+        case TokenType.UntrustedInterpolate:
             return ["{{", ...serializeList(token.children, source), "}}"];
-        case "TrustedInterpolate" /* TrustedInterpolate */:
+        case TokenType.TrustedInterpolate:
             return ["{{{", ...serializeList(token.children, source), "}}}"];
-        case "Block" /* Block */:
+        case TokenType.Block:
             return [
                 ...serializeNode(token.open, source),
                 ...serializeList(token.body, source),
                 ...serializeNode(token.close, source),
             ];
-        case "OpenBlock" /* OpenBlock */:
+        case TokenType.OpenBlock:
             return [
                 "{{#",
                 ...serializeList(token.name, source),
                 ...serializeList(token.head, source),
                 "}}",
             ];
-        case "BlockParams" /* BlockParams */:
+        case TokenType.BlockParams:
             return ["as |", ...serializeList(token.params, source), "|"];
-        case "CloseBlock" /* CloseBlock */:
+        case TokenType.CloseBlock:
             return ["{{/", ...serializeList(token.name, source), "}}"];
-        case "Comment" /* Comment */:
-            return ["<!--", span_1.slice(token.data, source), "-->"];
-        case "StartTag" /* StartTag */:
+        case TokenType.Comment:
+            return ["<!--", slice(token.data, source), "-->"];
+        case TokenType.StartTag:
             return [
                 "<",
                 ...serializeList(token.name, source),
                 ...serializeList(token.attributes, source),
                 ">",
             ];
-        case "EndTag" /* EndTag */:
+        case TokenType.EndTag:
             return [
                 "</",
                 ...serializeList(token.name, source),
                 ...serializeNode(token.trailing, source),
                 ">",
             ];
-        case "ValuedAttribute" /* ValuedAttribute */:
+        case TokenType.ValuedAttribute:
             return [
                 ...serializeNode(token.name, source),
                 "=",
                 ...serializeNode(token.value, source),
             ];
-        case "StringInterpolation" /* StringInterpolation */:
+        case TokenType.StringInterpolation:
             return serializeList(token.parts, source);
         default:
-            return utils_1.unreachable(token);
+            return unreachable(token);
     }
 }
-exports.serializeNode = serializeNode;
 function serializeAttributeValue(token, source) {
-    if (tokens_1.isInterpolateAttribute(token)) {
+    if (isInterpolateAttribute(token)) {
         return serializeNode(token.value, source);
     }
     return [
@@ -110,9 +105,9 @@ function serializeAttributeValue(token, source) {
 }
 function serializeQuote(token) {
     switch (token.valueType) {
-        case "SingleQuoted" /* SingleQuoted */:
+        case AttributeValueType.SingleQuoted:
             return `'`;
-        case "DoubleQuoted" /* DoubleQuoted */:
+        case AttributeValueType.DoubleQuoted:
             return `"`;
         default:
             return "";

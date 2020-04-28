@@ -1,84 +1,105 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.ParserArrow = exports.recurse = exports.source = exports.token = exports.ParserArrowEvaluateCore = exports.ParseEvaluator = exports.SOURCE = exports.mapResult = exports.isParseErr = exports.isErr = exports.isOk = exports.isResult = exports.err = exports.ok = exports.fatalError = exports.parseErr = exports.parseOk = exports.RESULT_KIND = exports.EXPAND = void 0;
-const tokens_iterator_1 = require("./tokens-iterator");
-exports.EXPAND = Symbol("EXPAND");
-exports.RESULT_KIND = Symbol("RESULT_KIND");
-function parseOk(value) {
+import { ITERATOR_SOURCE } from "./tokens-iterator";
+import { FORMAT, SNAPSHOT, formatUnknown, } from "../debug";
+export const EXPAND = Symbol("EXPAND");
+export const RESULT_KIND = Symbol("RESULT_KIND");
+export function parseOk(value) {
     return {
-        [exports.RESULT_KIND]: "ok",
+        [RESULT_KIND]: "ok",
         kind: "ok",
+        [FORMAT]() {
+            return { type: "raw", value: `Ok(${value})` };
+        },
+        [SNAPSHOT]() {
+            return this;
+        },
         value,
     };
 }
-exports.parseOk = parseOk;
-function parseErr(token, reason) {
+export function parseErr(token, reason) {
     return {
-        [exports.RESULT_KIND]: "err",
+        [RESULT_KIND]: "err",
+        [FORMAT]() {
+            return { type: "raw", value: `Err` };
+        },
+        [SNAPSHOT]() {
+            return this;
+        },
         kind: "err",
         token,
         reason,
         fatal: false,
     };
 }
-exports.parseErr = parseErr;
-function fatalError(token, reason) {
+export function fatalError(token, reason) {
     return {
-        [exports.RESULT_KIND]: "err",
+        [RESULT_KIND]: "err",
+        [FORMAT]() {
+            return { type: "raw", value: `Err` };
+        },
+        [SNAPSHOT]() {
+            return this;
+        },
         kind: "err",
         token,
         reason,
         fatal: true,
     };
 }
-exports.fatalError = fatalError;
-function ok(value) {
-    return { [exports.RESULT_KIND]: "ok", value };
-}
-exports.ok = ok;
-function err(reason) {
+export function ok(value) {
     return {
-        [exports.RESULT_KIND]: "err",
+        [RESULT_KIND]: "ok",
+        [FORMAT]() {
+            return { type: "raw", value: `Ok(${formatUnknown(value)})` };
+        },
+        [SNAPSHOT]() {
+            return this;
+        },
+        value,
+    };
+}
+export function err(reason) {
+    return {
+        [RESULT_KIND]: "err",
+        [FORMAT]() {
+            return { type: "raw", value: `Err` };
+        },
+        [SNAPSHOT]() {
+            return this;
+        },
         reason,
     };
 }
-exports.err = err;
-function isResult(input) {
+export function isResult(input) {
     if (typeof input === "object" && input !== null) {
-        return exports.RESULT_KIND in input;
+        return RESULT_KIND in input;
     }
     else {
         return false;
     }
 }
-exports.isResult = isResult;
-function isOk(input) {
+export function isOk(input) {
     if (!isResult(input)) {
         throw new Error(`ASSERT: Expected Result, got something else`);
     }
-    return input[exports.RESULT_KIND] === "ok";
+    return input[RESULT_KIND] === "ok";
 }
-exports.isOk = isOk;
-function isErr(input) {
+export function isErr(input) {
     if (!isResult(input)) {
         throw new Error(`ASSERT: Expected Result, got something else`);
     }
-    return input[exports.RESULT_KIND] === "err";
+    return input[RESULT_KIND] === "err";
 }
-exports.isErr = isErr;
-function isParseErr(input) {
+export function isParseErr(input) {
     return isErr(input);
 }
-exports.isParseErr = isParseErr;
-function mapResult(result, callback) {
+export function mapResult(result, callback) {
     if (isParseErr(result)) {
         return result;
     }
     return callback(result.value);
 }
-exports.mapResult = mapResult;
-exports.SOURCE = parseOk(undefined);
-class ParseEvaluator {
+export const SOURCE = parseOk(undefined);
+export class ParseEvaluator {
     constructor(state, arrow) {
         this.state = state;
         this.arrow = arrow;
@@ -93,8 +114,7 @@ class ParseEvaluator {
         return result;
     }
 }
-exports.ParseEvaluator = ParseEvaluator;
-class ParserArrowEvaluateCore {
+export class ParserArrowEvaluateCore {
     Id() {
         return new ParserArrow(new ParserArrowEvaluateCore(), (s, t) => [s, t]);
     }
@@ -224,7 +244,7 @@ class ParserArrowEvaluateCore {
         });
     }
     Source() {
-        return this.evalArr(state => [state, state[tokens_iterator_1.ITERATOR_SOURCE]]);
+        return this.evalArr(state => [state, state[ITERATOR_SOURCE]]);
     }
     Atomic(arrow) {
         return this.evalArr((state, prev) => state.atomic(state2 => arrow.invoke(state2, prev)));
@@ -276,20 +296,16 @@ class ParserArrowEvaluateCore {
         ]);
     }
 }
-exports.ParserArrowEvaluateCore = ParserArrowEvaluateCore;
-function token(type) {
+export function token(type) {
     return ParserArrow.start().token(type);
 }
-exports.token = token;
-function source() {
+export function source() {
     return ParserArrow.start().source().fallible();
 }
-exports.source = source;
-function recurse(callback) {
+export function recurse(callback) {
     return new ParserArrowEvaluateCore().recurse(callback);
 }
-exports.recurse = recurse;
-class ParserArrow {
+export class ParserArrow {
     constructor(core, start) {
         this.core = core;
         this.start = start;
@@ -404,7 +420,6 @@ class ParserArrow {
         return this.core.lookahead();
     }
 }
-exports.ParserArrow = ParserArrow;
 function loop(callback) {
     let count = 0;
     while (true) {

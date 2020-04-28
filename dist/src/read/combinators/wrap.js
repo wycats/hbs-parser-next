@@ -1,8 +1,6 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const base_1 = require("./base");
-const snippet_1 = require("../../snippet");
-class Wrap extends base_1.AbstractCombinator {
+import { AbstractCombinator } from "./base";
+import { ok } from "../../snippet";
+export default class Wrap extends AbstractCombinator {
     constructor(combinator) {
         super();
         this.combinator = combinator;
@@ -16,8 +14,7 @@ class Wrap extends base_1.AbstractCombinator {
             return result;
         }
         else {
-            return snippet_1.ok([result.value[0], [result.value[1]]]);
+            return ok([result.value[0], [result.value[1]]]);
         }
     }
 }
-exports.default = Wrap;

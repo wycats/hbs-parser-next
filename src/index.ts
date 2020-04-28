@@ -1,50 +1,39 @@
-import * as combinators from "./read/combinators";
-export { combinators };
-export { Logger, Debuggable, formatDebuggable } from "./read/logger";
-
-import * as multi from "./read/multi";
-export { multi };
-
-export * from "./snippet";
-
-export * from "./read/hbs";
-import * as tokens from "./read/tokens";
-export { tokens };
-
-import * as ast from "./parser/nodes";
-export { ast };
-
-export * from "./span";
-
-import * as r from "./read/token-builder";
-export { r };
-
 import * as a from "./parser/ast-builder";
-export { a };
-
-import * as utils from "./read/utils";
-export { utils };
-
-export * from "./read/serialize";
-export * from "./read/read";
-
-export { default as parse } from "./parser/parse";
-
-export type { StateRow as ReadTrace } from "./read/debug";
-export { trunc } from "./read/debug";
-
+import * as ast from "./parser/nodes";
 import * as ops from "./parser/shapes/core-operations";
-export { ops };
-
+import * as combinators from "./read/combinators";
+import * as multi from "./read/multi";
+import * as r from "./read/token-builder";
+import * as tokens from "./read/tokens";
+import * as utils from "./read/utils";
+export * from "./debug";
+export { default as parse } from "./parser/parse";
 export {
-  parseOk,
+  err as baseErr,
+  isErr as isBaseErr,
+  isOk as isBaseOk,
+  isResult as isBaseResult,
   ok as baseOk,
   parseErr,
-  err as baseErr,
-  Result as BaseResult,
-  isResult as isBaseResult,
-  isOk as isBaseOk,
-  isErr as isBaseErr,
+  parseOk,
 } from "./parser/shape";
-
+export type { Result as BaseResult } from "./parser/shape";
 export * from "./parser/shapes/iterator-evaluator";
+export * from "./parser/shapes/print";
+export { trunc } from "./read/debug";
+export type { StateRow as ReadTrace } from "./read/debug";
+export * from "./read/hbs";
+export { formatDebuggable, Logger } from "./read/logger";
+export type { Debuggable } from "./read/logger";
+export * from "./read/read";
+export * from "./read/serialize";
+export * from "./snippet";
+export * from "./span";
+export { combinators };
+export { multi };
+export { tokens };
+export { ast };
+export { r };
+export { a };
+export { utils };
+export { ops };

@@ -1,23 +1,20 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.many = void 0;
-const snippet_1 = require("../snippet");
-const utils_1 = require("./utils");
-function many(source) {
+import { ok, err } from "../snippet";
+import { present, combinatorName } from "./utils";
+export function many(source) {
     return {
-        name: `many • ${utils_1.combinatorName(source)}`,
+        name: `many • ${combinatorName(source)}`,
         invoke(input) {
             let current = input;
             let out = [];
             let count = 0;
             while (true) {
                 if (count++ > 1000) {
-                    return snippet_1.err(input, "likely infinite loop");
+                    return err(input, "likely infinite loop");
                 }
                 if (current.isEOF()) {
-                    return snippet_1.ok([current.rest, out]);
+                    return ok([current.rest, out]);
                 }
-                let iterate = current.invoke(utils_1.present(source));
+                let iterate = current.invoke(present(source));
                 if (iterate.kind === "err") {
                     // if we encountered a fatal error, the entire `many`
                     // is an error
@@ -25,7 +22,7 @@ function many(source) {
                         return iterate;
                     }
                     else {
-                        return snippet_1.ok([current.rest, out]);
+                        return ok([current.rest, out]);
                     }
                 }
                 else {
@@ -37,4 +34,3 @@ function many(source) {
         },
     };
 }
-exports.many = many;

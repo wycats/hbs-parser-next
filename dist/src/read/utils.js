@@ -1,15 +1,11 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.unwrap = exports.join = exports.unreachable = exports.combinatorName = exports.present = exports.complete = exports.map = exports.mapResult = void 0;
-const snippet_1 = require("../snippet");
-function mapResult(result, callback) {
+import { ok, err } from "../snippet";
+export function mapResult(result, callback) {
     if (result.kind === "err") {
         return result;
     }
     return callback(result.value);
 }
-exports.mapResult = mapResult;
-function map(combinator, mapper) {
+export function map(combinator, mapper) {
     return {
         name: combinatorName(combinator),
         invoke(input) {
@@ -22,28 +18,26 @@ function map(combinator, mapper) {
             if (result.kind === "err") {
                 return result;
             }
-            return snippet_1.ok([next, result.value]);
+            return ok([next, result.value]);
         },
     };
 }
-exports.map = map;
-function complete(source) {
+export function complete(source) {
     return {
         name: "complete",
         invoke(input) {
             return input.invoke(map(source, (value, next) => {
                 if (next.restLength !== 0) {
-                    return snippet_1.err(input, "incomplete");
+                    return err(input, "incomplete");
                 }
                 else {
-                    return snippet_1.ok(value);
+                    return ok(value);
                 }
             }));
         },
     };
 }
-exports.complete = complete;
-function present(source) {
+export function present(source) {
     return {
         name: "present",
         kind: "transparent",
@@ -52,7 +46,7 @@ function present(source) {
             if (result.kind === "ok") {
                 let [next] = result.value;
                 if (input.eq(next)) {
-                    return snippet_1.err(input, "empty");
+                    return err(input, "empty");
                 }
                 else {
                     return result;
@@ -64,8 +58,7 @@ function present(source) {
         },
     };
 }
-exports.present = present;
-function combinatorName(c) {
+export function combinatorName(c) {
     if (c.name) {
         return c.name;
     }
@@ -74,20 +67,16 @@ function combinatorName(c) {
         throw new Error(`assert: expected combinator name`);
     }
 }
-exports.combinatorName = combinatorName;
-function unreachable(value) {
+export function unreachable(value) {
     console.error(`unreachable value`, value);
     throw new Error(`unreachable code reached`);
 }
-exports.unreachable = unreachable;
-function join(...items) {
+export function join(...items) {
     return items.filter(i => i === null || i === undefined);
 }
-exports.join = join;
-function unwrap(v) {
+export function unwrap(v) {
     if (v === null || v === undefined) {
         throw new Error(`ASSERT: Expected non-null`);
     }
     return v;
 }
-exports.unwrap = unwrap;

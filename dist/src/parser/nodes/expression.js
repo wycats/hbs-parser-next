@@ -1,89 +1,78 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.member = exports.path = exports.call = exports.argReference = exports.varReference = exports.thisReference = exports.number = exports.string = void 0;
-require("../nodes");
-const span_1 = require("../../span");
-require("../../read/tokens");
-function string(token, source) {
+import "../nodes";
+import { slice } from "../../span";
+import "../../read/tokens";
+export function string(token, source) {
     let processed;
-    let inner = span_1.slice(token.data, source);
+    let inner = slice(token.data, source);
     switch (token.quote) {
-        case 1 /* Double */:
+        case QuoteType.Double:
             processed = inner.replace(`\\"`, `"`);
             break;
-        case 0 /* Single */:
+        case QuoteType.Single:
             processed = inner.replace(`\\'`, `'`);
             break;
     }
     return {
-        type: "String" /* String */,
+        type: AstNodeType.String,
         span: token.span,
         string: processed,
         token,
     };
 }
-exports.string = string;
-function number(token, source) {
-    let wholeString = span_1.slice(token.head, source);
-    let decimalString = token.tail ? span_1.slice(token.tail, source) : undefined;
+export function number(token, source) {
+    let wholeString = slice(token.head, source);
+    let decimalString = token.tail ? slice(token.tail, source) : undefined;
     let wholeNumber = decimalString
         ? parseFloat(`${wholeString}.${decimalString}`)
         : parseInt(wholeString, 10);
     let num = token.negative ? wholeNumber * -1 : wholeNumber;
     return {
-        type: "Number" /* Number */,
+        type: AstNodeType.Number,
         span: token.span,
         number: num,
         token,
     };
 }
-exports.number = number;
-function thisReference(token) {
+export function thisReference(token) {
     return {
-        type: "ThisReference" /* ThisReference */,
+        type: AstNodeType.ThisReference,
         span: token.span,
     };
 }
-exports.thisReference = thisReference;
-function varReference(token) {
+export function varReference(token) {
     return {
-        type: "VarReference" /* VarReference */,
+        type: AstNodeType.VarReference,
         span: token.span,
     };
 }
-exports.varReference = varReference;
-function argReference(token) {
+export function argReference(token) {
     return {
-        type: "ArgReference" /* ArgReference */,
+        type: AstNodeType.ArgReference,
         span: token.span,
         token,
     };
 }
-exports.argReference = argReference;
-function call(body, { span, before, after }) {
+export function call(body, { span, before, after }) {
     return {
-        type: "Call" /* Call */,
+        type: AstNodeType.Call,
         span,
         before,
         after,
         body,
     };
 }
-exports.call = call;
-function path({ head, tail }, span) {
+export function path({ head, tail }, span) {
     return {
-        type: "Path" /* Path */,
+        type: AstNodeType.Path,
         span,
         head,
         tail,
     };
 }
-exports.path = path;
-function member(dot, span) {
+export function member(dot, span) {
     return {
-        type: "Member" /* Member */,
+        type: AstNodeType.Member,
         dot,
         span,
     };
 }
-exports.member = member;

@@ -1,48 +1,24 @@
-"use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.root = exports.TokenBuilder = exports.attr = exports.argName = exports.endTag = exports.startTag = exports.comment = exports.text = exports.sexp = exports.attrInterpolate = exports.stringInterpolate = exports.interpolate = exports.as = exports.block = exports.ws = exports.sp = exports.eq = exports.dot = exports.arg = exports.id = exports.decimal = exports.int = exports.str = exports.buildPresentTokens = void 0;
-const tokens = __importStar(require("./tokens"));
-const span_1 = require("../span");
-const utils_1 = require("./utils");
-function buildPresentTokens(tok, builder) {
+import * as tokens from "./tokens";
+import { range, span } from "../span";
+import { unwrap } from "./utils";
+export function buildPresentTokens(tok, builder) {
     return tok.map(token => token(builder));
 }
-exports.buildPresentTokens = buildPresentTokens;
-function str(name) {
+export function str(name) {
     return builder => {
         let start = builder.consume(name[0]);
         let data = builder.consume(name.slice(1, -1));
         let end = builder.consume(name.slice(-1));
-        let quote = name[0] === `'` ? 0 /* Single */ : 1 /* Double */;
-        return tokens.stringToken({ data, quote }, span_1.range(start, end));
+        let quote = name[0] === `'` ? tokens.QuoteType.Single : tokens.QuoteType.Double;
+        return tokens.stringToken({ data, quote }, range(start, end));
     };
 }
-exports.str = str;
-function int(num) {
+export function int(num) {
     if (num[0] === "-") {
         return builder => {
             let negative = builder.consume("-");
             let head = builder.consume(num.slice(1));
-            return tokens.numberToken({ head, tail: null, negative }, span_1.range(negative, head));
+            return tokens.numberToken({ head, tail: null, negative }, range(negative, head));
         };
     }
     else {
@@ -52,9 +28,8 @@ function int(num) {
         };
     }
 }
-exports.int = int;
-function decimal(num) {
-    let [, negative, head, tail] = utils_1.unwrap(num.match(/^(-?)([0-9]+)\.([0-9]+)$/));
+export function decimal(num) {
+    let [, negative, head, tail] = unwrap(num.match(/^(-?)([0-9]+)\.([0-9]+)$/));
     return builder => {
         let negativeSpan = negative ? builder.consume("-") : null;
         let headSpan = builder.consume(head);
@@ -67,26 +42,22 @@ function decimal(num) {
             head: headSpan,
             tail: tailSpan,
             negative: negativeSpan,
-        }, span_1.range(negativeSpan, headSpan, tailSpan));
+        }, range(negativeSpan, headSpan, tailSpan));
     };
 }
-exports.decimal = decimal;
-function id(name) {
+export function id(name) {
     return builder => tokens.id(builder.consume(name));
 }
-exports.id = id;
-function arg(name) {
+export function arg(name) {
     return builder => tokens.arg(builder.consume(name));
 }
-exports.arg = arg;
-exports.dot = builder => tokens.dot(builder.consume("."));
-exports.eq = builder => tokens.eq(builder.consume("="));
-exports.sp = builder => tokens.ws(builder.consume(" "));
-function ws(space) {
+export const dot = builder => tokens.dot(builder.consume("."));
+export const eq = builder => tokens.eq(builder.consume("="));
+export const sp = builder => tokens.ws(builder.consume(" "));
+export function ws(space) {
     return builder => tokens.ws(builder.consume(space));
 }
-exports.ws = ws;
-function block(name, head, ...body) {
+export function block(name, head, ...body) {
     let curriedName = typeof name === "string" ? [id(name)] : name;
     return builder => {
         let openToken = builder.consume("{{#");
@@ -101,88 +72,80 @@ function block(name, head, ...body) {
             open: tokens.openBlock({
                 name: nameTokens,
                 head: headTokens,
-            }, span_1.range(openToken, endOpen)),
+            }, range(openToken, endOpen)),
             body: bodyTokens,
-            close: tokens.closeBlock(closeName, span_1.range(close, endClose)),
+            close: tokens.closeBlock(closeName, range(close, endClose)),
         });
     };
 }
-exports.block = block;
-function as(...params) {
+export function as(...params) {
     return builder => {
         let start = builder.consume("as |");
         let head = params.slice(0, -1);
         let tail = params.slice(-1)[0];
         let tokenList = head.flatMap(param => typeof param === "function"
             ? [param(builder)]
-            : [id(param)(builder), exports.sp(builder)]);
+            : [id(param)(builder), sp(builder)]);
         tokenList.push(id(tail)(builder));
         let end = builder.consume("|");
-        return tokens.blockParams(tokenList, span_1.range(start, end));
+        return tokens.blockParams(tokenList, range(start, end));
     };
 }
-exports.as = as;
 function buildTokens(input, builder) {
     return input.map(tok => tok(builder));
 }
-function interpolate(...children) {
+export function interpolate(...children) {
     return builder => {
         let open = builder.consume("{{");
         let out = children.map(child => child(builder));
         let close = builder.consume("}}");
-        return tokens.interpolate(out, span_1.range(open, close));
+        return tokens.interpolate(out, range(open, close));
     };
 }
-exports.interpolate = interpolate;
-function stringInterpolate(children, quote) {
+export function stringInterpolate(children, quote) {
     return builder => {
         let open = builder.consume(quote);
         let out = children.map(child => child(builder));
         let close = builder.consume(quote);
         return tokens.attrValue({
             type: quoteType(quote),
-            value: tokens.stringInterpolation(out, span_1.range(...out)),
-        }, span_1.range(open, close));
+            value: tokens.stringInterpolation(out, range(...out)),
+        }, range(open, close));
     };
 }
-exports.stringInterpolate = stringInterpolate;
-function attrInterpolate(...tokenList) {
+export function attrInterpolate(...tokenList) {
     return builder => {
         let value = interpolate(...tokenList)(builder);
         return tokens.attrValue({
-            type: "Interpolate" /* Interpolate */,
+            type: tokens.AttributeValueType.Interpolate,
             value,
         }, value.span);
     };
 }
-exports.attrInterpolate = attrInterpolate;
-function sexp(children) {
+export function sexp(children) {
     return builder => {
         let open = builder.consume("(");
         let innerStart = builder.pos;
         let out = children.map(child => child(builder));
         let innerEnd = builder.pos;
         let close = builder.consume(")");
-        return tokens.sexp({ children: out, inner: span_1.span(innerStart, innerEnd) }, span_1.range(open, close));
+        return tokens.sexp({ children: out, inner: span(innerStart, innerEnd) }, range(open, close));
     };
 }
-exports.sexp = sexp;
-function text(chars) {
+export function text(chars) {
     return builder => {
         let out = builder.consume(chars);
         return tokens.text(out);
     };
 }
-exports.text = text;
-function comment(chars) {
+export function comment(chars) {
     return builder => {
         let start = builder.consume("<!--");
         let data = builder.consume(chars);
         let end = builder.consume("-->");
-        return tokens.comment(data, span_1.range(start, end));
+        return tokens.comment(data, range(start, end));
     };
 }
-exports.comment = comment;
 function isTagName(input) {
     return (typeof input === "string" ||
         Array.isArray(input) ||
@@ -221,13 +184,13 @@ function buildTagName(name) {
         }
     }
 }
-function startTag(options) {
+export function startTag(options) {
     if (isTagName(options)) {
         return builder => {
             let start = builder.consume("<");
             let nameTokens = buildPresentTokens(buildTagName(options), builder);
             let end = builder.consume(">");
-            return tokens.startTag({ name: nameTokens }, span_1.range(start, end));
+            return tokens.startTag({ name: nameTokens }, range(start, end));
         };
     }
     else {
@@ -240,12 +203,11 @@ function startTag(options) {
                 builder.consume("/");
             }
             let end = builder.consume(">");
-            return tokens.startTag({ name: nameTokens, attrs: children, selfClosing }, span_1.range(start, end));
+            return tokens.startTag({ name: nameTokens, attrs: children, selfClosing }, range(start, end));
         };
     }
 }
-exports.startTag = startTag;
-function endTag(options) {
+export function endTag(options) {
     let tagName = isTagName(options) ? options : options.name;
     let trailing = isTagName(options) ? undefined : options.trailing;
     return builder => {
@@ -253,19 +215,17 @@ function endTag(options) {
         let tagTokens = buildPresentTokens(buildTagName(tagName), builder);
         let trailingToken = trailing ? ws(trailing)(builder) : undefined;
         let end = builder.consume(">");
-        return tokens.endTag({ name: tagTokens, trailing: trailingToken }, span_1.range(start, end));
+        return tokens.endTag({ name: tagTokens, trailing: trailingToken }, range(start, end));
     };
 }
-exports.endTag = endTag;
-function argName(name) {
+export function argName(name) {
     return builder => {
         let startSpan = builder.consume(name[0]);
         let nameSpan = builder.consume(name.slice(1));
-        return tokens.argName(nameSpan, span_1.range(startSpan, nameSpan));
+        return tokens.argName(nameSpan, range(startSpan, nameSpan));
     };
 }
-exports.argName = argName;
-function attr(options) {
+export function attr(options) {
     if (typeof options === "string") {
         return builder => {
             let nameSpan = builder.consume(options);
@@ -292,9 +252,9 @@ function attr(options) {
                         let quoteEnd = builder.consume(`"`);
                         let interpolation = tokens.stringInterpolation([tokens.text(valueSpan)], valueSpan);
                         valueToken = tokens.attrValue({
-                            type: "DoubleQuoted" /* DoubleQuoted */,
+                            type: tokens.AttributeValueType.DoubleQuoted,
                             value: interpolation,
-                        }, span_1.range(quoteStart, quoteEnd));
+                        }, range(quoteStart, quoteEnd));
                         break;
                     }
                     case `'`: {
@@ -303,16 +263,16 @@ function attr(options) {
                         let quoteEnd = builder.consume(`'`);
                         let interpolation = tokens.stringInterpolation([tokens.text(valueSpan)], valueSpan);
                         valueToken = tokens.attrValue({
-                            type: "SingleQuoted" /* SingleQuoted */,
+                            type: tokens.AttributeValueType.SingleQuoted,
                             value: interpolation,
-                        }, span_1.range(quoteStart, quoteEnd));
+                        }, range(quoteStart, quoteEnd));
                         break;
                     }
                     default: {
                         let valueSpan = builder.consume(rawValue);
                         let interpolation = tokens.stringInterpolation([tokens.text(valueSpan)], valueSpan);
                         valueToken = tokens.attrValue({
-                            type: "Unquoted" /* Unquoted */,
+                            type: tokens.AttributeValueType.Unquoted,
                             value: interpolation,
                         }, valueSpan);
                     }
@@ -326,18 +286,17 @@ function attr(options) {
         };
     }
 }
-exports.attr = attr;
 function quoteType(quote) {
     switch (quote) {
         case `"`:
-            return "DoubleQuoted" /* DoubleQuoted */;
+            return tokens.AttributeValueType.DoubleQuoted;
         case `'`:
-            return "SingleQuoted" /* SingleQuoted */;
+            return tokens.AttributeValueType.SingleQuoted;
         default:
-            return "Unquoted" /* Unquoted */;
+            return tokens.AttributeValueType.Unquoted;
     }
 }
-class TokenBuilder {
+export class TokenBuilder {
     constructor(pos = 0) {
         this.pos = pos;
         this.output = "";
@@ -358,12 +317,10 @@ class TokenBuilder {
         return this.output;
     }
 }
-exports.TokenBuilder = TokenBuilder;
-function root(...children) {
+export function root(...children) {
     let builder = new TokenBuilder();
     let start = builder.pos;
     let out = children.map(child => child(builder));
     let end = builder.pos;
-    return { root: tokens.root(out, span_1.span(start, end)), source: builder.source };
+    return { root: tokens.root(out, span(start, end)), source: builder.source };
 }
-exports.root = root;

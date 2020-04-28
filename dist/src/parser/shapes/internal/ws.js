@@ -1,10 +1,7 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.WsArrow = exports.MaybeWsArrow = void 0;
-require("../../../read/tokens");
-const shape_1 = require("../../shape");
-exports.MaybeWsArrow = shape_1.ParserArrow.start()
-    .token("WS" /* WS */)
+import "../../../read/tokens";
+import { ParserArrow } from "../../shape";
+export const MaybeWsArrow = ParserArrow.start()
+    .token(TokenType.WS)
     .or(undefined)
     .label("WS?");
-exports.WsArrow = shape_1.ParserArrow.start().token("WS" /* WS */).label("WS");
+export const WsArrow = ParserArrow.start().token(TokenType.WS).label("WS");

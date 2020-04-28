@@ -1,10 +1,7 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.BlockArrow = exports.BlockBodyArrow = exports.HeadArrow = void 0;
-const expression_1 = require("./expression");
-const top_level_1 = require("./top-level");
-const shape_1 = require("../shape");
-require("../../read/tokens");
-exports.HeadArrow = expression_1.ExpressionArrow.label("BlockHead");
-exports.BlockBodyArrow = top_level_1.TopLevelArrow.repeat();
-exports.BlockArrow = shape_1.ParserArrow.start().parent("block", "Block" /* Block */, exports.BlockBodyArrow.fallible());
+import { ExpressionArrow } from "./expression";
+import { TopLevelArrow } from "./top-level";
+import { ParserArrow } from "../shape";
+import "../../read/tokens";
+export const HeadArrow = ExpressionArrow.label("BlockHead");
+export const BlockBodyArrow = TopLevelArrow.repeat();
+export const BlockArrow = ParserArrow.start().parent("block", TokenType.Block, BlockBodyArrow.fallible());

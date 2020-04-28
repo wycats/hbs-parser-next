@@ -1,7 +1,14 @@
-import type { Result } from "../shape";
+import type { Result, Err } from "../shape";
 export declare class Arrow<In, Out> {
     readonly operation: Operation;
+    static delay<A extends Arrow<unknown, unknown>>(callback: () => A): A;
     constructor(operation: Operation);
+    invoke<State>(state: State, evaluator: StatefulEvaluator<State>, input: In): Out;
+}
+export declare class DelayedArrow<In, Out> implements Arrow<In, Out> {
+    #private;
+    constructor(operation: () => Operation);
+    get operation(): Operation;
     invoke<State>(state: State, evaluator: StatefulEvaluator<State>, input: In): Out;
 }
 export interface SimpleEvaluator<State> {
@@ -73,6 +80,58 @@ export interface OperationMap extends BaseOperation {
     Pipeline: PipelineOperation<any, unknown, unknown>;
 }
 export declare function pipeline<LeftIn, Middle, RightOut>(left: Arrow<LeftIn, Middle>, right: Arrow<Middle, RightOut>, label?: string): Arrow<LeftIn, RightOut>;
+export interface MapResultOperation<LeftIn, ResultInner, IfOkOut, IfErrOut> extends BaseOperation {
+    type: "MapResult";
+    left: Arrow<LeftIn, Result<ResultInner>>;
+    ifOk: Arrow<ResultInner, IfOkOut>;
+    ifErr: Arrow<Err, IfErrOut>;
+}
+export interface SimpleEvaluator<State> {
+    MapResult<LeftIn, ResultInner, IfOkOut, IfErrOut>(state: State, input: LeftIn, op: MapResultOperation<LeftIn, ResultInner, IfOkOut, IfErrOut>): IfOkOut | IfErrOut;
+}
+export interface OperationMap extends BaseOperation {
+    MapResult: MapResultOperation<any, unknown, unknown, unknown>;
+}
+export declare function mapResult<LeftIn, ResultInner, IfOkOut, IfErrOut>(left: Arrow<LeftIn, Result<ResultInner>>, ifOk: Arrow<ResultInner, IfOkOut>, ifErr: Arrow<Err, IfErrOut>, label?: string): Arrow<LeftIn, IfOkOut | IfErrOut>;
+export interface BothOkOperation<In, LeftOut, RightOut> extends BaseOperation {
+    type: "BothOk";
+    left: Arrow<In, Result<LeftOut>>;
+    right: Arrow<In, Result<RightOut>>;
+}
+export interface SimpleEvaluator<State> {
+    BothOk<In, RightOut, LeftOut>(state: State, input: In, op: BothOkOperation<In, LeftOut, RightOut>): Result<[LeftOut, RightOut]>;
+}
+export interface OperationMap extends BaseOperation {
+    BothOk: BothOkOperation<any, unknown, unknown>;
+}
+export declare function bothOk<In, LeftOut, RightOut>(left: Arrow<In, Result<LeftOut>>, right: Arrow<In, Result<RightOut>>, label?: string): Arrow<In, Result<[LeftOut, RightOut]>>;
+export declare type FallibleArrows<In> = [Arrow<In, Result<unknown>>, ...Array<Arrow<In, Result<unknown>>>];
+export declare type MapFallibleArrows<T extends [Arrow<unknown, Result<unknown>>, ...Arrow<unknown, Result<unknown>>[]]> = Result<{
+    [P in keyof T]: T[P] extends Arrow<unknown, Result<infer Out>> ? Out : never;
+}>;
+export interface AllOkOperation<In, Arrows extends FallibleArrows<In>> extends BaseOperation {
+    type: "AllOk";
+    arrows: Arrows;
+}
+export interface SimpleEvaluator<State> {
+    AllOk<In extends unknown, Arrows extends FallibleArrows<In>>(state: State, input: In, op: AllOkOperation<In, Arrows>): MapFallibleArrows<Arrows>;
+}
+export interface OperationMap extends BaseOperation {
+    AllOk: AllOkOperation<any, FallibleArrows<any>>;
+}
+export declare function allOk<In, Arrows extends FallibleArrows<In>>(arrows: Arrows, label?: string): Arrow<In, MapFallibleArrows<Arrows>>;
+export interface FirstOkOperation<In, LeftOut, RightOut> extends BaseOperation {
+    type: "FirstOk";
+    left: Arrow<In, Result<LeftOut>>;
+    right: Arrow<In, Result<RightOut>>;
+}
+export interface SimpleEvaluator<State> {
+    FirstOk<In, RightOut, LeftOut>(state: State, input: In, op: FirstOkOperation<In, LeftOut, RightOut>): Result<LeftOut | RightOut>;
+}
+export interface OperationMap extends BaseOperation {
+    FirstOk: FirstOkOperation<any, unknown, unknown>;
+}
+export declare function firstOk<In, LeftOut, RightOut>(left: Arrow<In, Result<LeftOut>>, right: Arrow<In, Result<RightOut>>, label?: string): Arrow<In, Result<LeftOut | RightOut>>;
 export interface MapInputOperation<ArrowIn, MapOut> extends BaseOperation {
     type: "MapInput";
     arrow: Arrow<ArrowIn, unknown>;
@@ -120,6 +179,16 @@ export interface OperationMap {
     Repeat: RepeatOperation<any, any, unknown>;
 }
 export declare function repeat<State, In, Out>(callback: Arrow<[State, In], Result<Out>>, label?: string): Arrow<void, Out[]>;
+export interface StateOperation extends BaseOperation {
+    type: "State";
+}
+export interface SimpleEvaluator<State> {
+    State(state: State, input: unknown, op: StateOperation): State;
+}
+export interface OperationMap {
+    State: StateOperation;
+}
+export declare function state<Out>(label?: string): Arrow<unknown, Out>;
 export interface ReduceOperation<In, Out> extends BaseOperation {
     type: "Reduce";
     callback: Arrow<[Out, In], Out>;

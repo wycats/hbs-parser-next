@@ -1,7 +1,4 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.combinator = void 0;
-function combinator(func) {
+export function combinator(func) {
     return {
         name: "wrapper",
         kind: "transparent",
@@ -10,4 +7,3 @@ function combinator(func) {
         },
     };
 }
-exports.combinator = combinator;

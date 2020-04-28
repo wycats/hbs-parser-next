@@ -1,5 +1,13 @@
 import type { Token, TokenType, TokenMap } from "../read/tokens";
 import TokensIterator, { ITERATOR_SOURCE } from "./tokens-iterator";
+import {
+  FORMAT,
+  Formatted,
+  SNAPSHOT,
+  formatUnknown,
+  Formattable,
+  RawFormattable,
+} from "../debug";
 
 export const EXPAND = Symbol("EXPAND");
 export const RESULT_KIND = Symbol("RESULT_KIND");
@@ -14,6 +22,12 @@ export function parseOk<T>(value: T): ParseResult<T> {
   return {
     [RESULT_KIND]: "ok",
     kind: "ok",
+    [FORMAT]() {
+      return { type: "raw", value: `Ok(${value})` };
+    },
+    [SNAPSHOT]() {
+      return this;
+    },
     value,
   };
 }
@@ -24,11 +38,17 @@ export function parseErr<T>(
 ): ParseResult<T> {
   return {
     [RESULT_KIND]: "err",
+    [FORMAT]() {
+      return { type: "raw", value: `Err` } as const;
+    },
+    [SNAPSHOT]() {
+      return this;
+    },
     kind: "err",
     token,
     reason,
     fatal: false,
-  };
+  } as const;
 }
 
 export function fatalError<T>(
@@ -37,20 +57,37 @@ export function fatalError<T>(
 ): ParseResult<T> {
   return {
     [RESULT_KIND]: "err",
+    [FORMAT]() {
+      return { type: "raw", value: `Err` } as const;
+    },
+    [SNAPSHOT]() {
+      return this;
+    },
     kind: "err",
     token,
     reason,
     fatal: true,
-  };
+  } as const;
 }
 
-export interface Ok<T> {
+export interface Ok<T> extends RawFormattable {
   [RESULT_KIND]: "ok";
+  [FORMAT]: () => Formatted;
+  [SNAPSHOT]: () => Formattable;
   value: T;
 }
 
 export function ok<T>(value: T): Result<T> {
-  return { [RESULT_KIND]: "ok", value };
+  return {
+    [RESULT_KIND]: "ok",
+    [FORMAT]() {
+      return { type: "raw", value: `Ok(${formatUnknown(value)})` } as const;
+    },
+    [SNAPSHOT]() {
+      return this;
+    },
+    value,
+  } as const;
 }
 
 export interface ParseOk<T> extends Ok<T> {
@@ -80,16 +117,24 @@ export type ErrorReason =
   | { type: "empty" }
   | { type: "lookahead"; expected: TokenType | "EOF"; actual: Token | "EOF" };
 
-export interface Err {
+export interface Err extends RawFormattable {
   [RESULT_KIND]: "err";
+  [FORMAT]: () => Formatted;
+  [SNAPSHOT]: () => Formattable;
   reason: unknown;
 }
 
 export function err<T>(reason: unknown): Result<T> {
   return {
     [RESULT_KIND]: "err",
+    [FORMAT]() {
+      return { type: "raw", value: `Err` } as const;
+    },
+    [SNAPSHOT]() {
+      return this;
+    },
     reason,
-  };
+  } as const;
 }
 
 export interface ParseErr extends Err {

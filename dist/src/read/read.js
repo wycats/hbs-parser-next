@@ -1,44 +1,46 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.read = exports.TOP_LEVEL = exports.CONTENT = void 0;
-const snippet_1 = require("../snippet");
-const span_1 = require("../span");
-const combinator_1 = require("./combinator");
-const combinators_1 = require("./combinators");
-const logger_1 = require("./logger");
-const debug_1 = require("./debug");
-const html_1 = require("./html");
-const multi_1 = require("./multi");
-const tokens_1 = require("./tokens");
-const utils_1 = require("./utils");
-const hbs_1 = require("./hbs");
-exports.CONTENT = combinator_1.combinator(() => combinators_1.any("CONTENT", html_1.COMMENT, html_1.END_TAG, html_1.START_TAG, html_1.TEXT));
-exports.TOP_LEVEL = {
+import { ok, Snippet } from "../snippet";
+import { range } from "../span";
+import { combinator } from "./combinator";
+import { any } from "./combinators";
+import { Logger } from "./logger";
+import { printTrace, getTrace } from "./debug";
+import { COMMENT, END_TAG, START_TAG, TEXT } from "./html";
+import { many } from "./multi";
+import { root } from "./tokens";
+import { complete, map, mapResult } from "./utils";
+import { BLOCK, INTERPOLATE } from "./hbs";
+export var LoggingType;
+(function (LoggingType) {
+    LoggingType["Return"] = "Return";
+    LoggingType["Print"] = "Print";
+    LoggingType["None"] = "Off";
+})(LoggingType || (LoggingType = {}));
+export const CONTENT = combinator(() => any("CONTENT", COMMENT, END_TAG, START_TAG, TEXT));
+export const TOP_LEVEL = {
     name: "TOP_LEVEL",
     invoke(input) {
-        return input.invoke(combinators_1.any("top level", hbs_1.BLOCK, hbs_1.INTERPOLATE, exports.CONTENT));
+        return input.invoke(any("top level", BLOCK, INTERPOLATE, CONTENT));
     },
 };
-function read(source, { logging } = {}) {
+export function read(source, { logging } = {}) {
     try {
-        let input = snippet_1.Snippet.input(source, new logger_1.Logger(logging === "Return" /* Return */ || logging === "Print" /* Print */));
-        let result = input.invoke(utils_1.complete(utils_1.map(multi_1.many(exports.TOP_LEVEL), tokens => {
-            return snippet_1.ok(tokens_1.root(tokens, span_1.range(...tokens)));
+        let input = Snippet.input(source, new Logger(logging === LoggingType.Return || logging === LoggingType.Print));
+        let result = input.invoke(complete(map(many(TOP_LEVEL), tokens => {
+            return ok(root(tokens, range(...tokens)));
         })));
-        if (logging === "Return" /* Return */) {
+        if (logging === LoggingType.Return) {
             return {
-                root: utils_1.mapResult(result, ([, token]) => snippet_1.ok(token)),
-                trace: debug_1.getTrace(),
+                root: mapResult(result, ([, token]) => ok(token)),
+                trace: getTrace(),
             };
         }
         else {
-            return { root: utils_1.mapResult(result, ([, token]) => snippet_1.ok(token)) };
+            return { root: mapResult(result, ([, token]) => ok(token)) };
         }
     }
     finally {
-        if (logging === "Print" /* Print */) {
-            debug_1.printTrace();
+        if (logging === LoggingType.Print) {
+            printTrace();
         }
     }
 }
-exports.read = read;

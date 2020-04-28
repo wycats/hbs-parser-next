@@ -1,21 +1,18 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const snippet_1 = require("../../../snippet");
-const combinators_1 = require("../../combinators");
-const tokens_1 = require("../../tokens");
-const base_1 = require("../base");
-class HTMLText extends base_1.AbstractCombinator {
+import { ok } from "../../../snippet";
+import { pattern } from "../../combinators";
+import { text } from "../../tokens";
+import { AbstractCombinator } from "../base";
+export default class HTMLText extends AbstractCombinator {
     constructor() {
         super(...arguments);
         this.name = "TEXT";
     }
     invoke(input) {
-        let result = input.invoke(combinators_1.pattern(/^[\s\S]*?(?=[{<}]|$)/u, "TEXT"));
+        let result = input.invoke(pattern(/^[\s\S]*?(?=[{<}]|$)/u, "TEXT"));
         if (result.kind === "err") {
             return result;
         }
         let [next, value] = result.value;
-        return snippet_1.ok([next, tokens_1.text(value.span)]);
+        return ok([next, text(value.span)]);
     }
 }
-exports.default = HTMLText;

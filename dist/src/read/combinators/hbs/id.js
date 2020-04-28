@@ -1,9 +1,7 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const snippet_1 = require("../../../snippet");
-const combinators_1 = require("../../combinators");
-const base_1 = require("../base");
-class Id extends base_1.AbstractCombinator {
+import { err, ok } from "../../../snippet";
+import { pattern } from "../../combinators";
+import { AbstractCombinator } from "../base";
+export default class Id extends AbstractCombinator {
     constructor(disallowedKeywords) {
         super();
         this.disallowedKeywords = disallowedKeywords;
@@ -19,19 +17,18 @@ class Id extends base_1.AbstractCombinator {
     invoke(input) {
         const disallowedKeywords = this.disallowedKeywords;
         if (disallowedKeywords) {
-            return input.invoke(combinators_1.pattern(/^\p{ID_Start}[\p{ID_Continue}-]*/u, "ID_SNIPPET").map(snippet => {
+            return input.invoke(pattern(/^\p{ID_Start}[\p{ID_Continue}-]*/u, "ID_SNIPPET").map(snippet => {
                 let frag = snippet.fragment;
                 if (disallowedKeywords.some(k => frag === k)) {
-                    return snippet_1.err(snippet, "disallowed keyword");
+                    return err(snippet, "disallowed keyword");
                 }
                 else {
-                    return snippet_1.ok(snippet);
+                    return ok(snippet);
                 }
             }));
         }
         else {
-            return input.invoke(combinators_1.pattern(/^\p{ID_Start}[\p{ID_Continue}-]*/u, "ID_SNIPPET"));
+            return input.invoke(pattern(/^\p{ID_Start}[\p{ID_Continue}-]*/u, "ID_SNIPPET"));
         }
     }
 }
-exports.default = Id;

@@ -1,16 +1,14 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const snippet_1 = require("../../../snippet");
-const base_1 = require("../base");
-const utils_1 = require("../../utils");
-class SomeToken extends base_1.AbstractCombinator {
+import { ok } from "../../../snippet";
+import { AbstractCombinator } from "../base";
+import { combinatorName } from "../../utils";
+export default class SomeToken extends AbstractCombinator {
     constructor(combinator, type) {
         super();
         this.combinator = combinator;
         this.type = type;
     }
     get name() {
-        return `token • ${utils_1.combinatorName(this.combinator)}`;
+        return `token • ${combinatorName(this.combinator)}`;
     }
     invoke(input) {
         let result = input.invoke(this.combinator, {
@@ -20,7 +18,7 @@ class SomeToken extends base_1.AbstractCombinator {
             return result;
         }
         else {
-            return snippet_1.ok([
+            return ok([
                 result.value[0],
                 {
                     type: this.type,
@@ -30,4 +28,3 @@ class SomeToken extends base_1.AbstractCombinator {
         }
     }
 }
-exports.default = SomeToken;

@@ -1,13 +1,16 @@
 import type { Token, TokenType, TokenMap } from "../read/tokens";
 import TokensIterator, { ITERATOR_SOURCE } from "./tokens-iterator";
+import { FORMAT, Formatted, SNAPSHOT, Formattable, RawFormattable } from "../debug";
 export declare const EXPAND: unique symbol;
 export declare const RESULT_KIND: unique symbol;
 export declare type ResultValue<T extends ParseResult<unknown>> = T extends ParseResult<infer R> ? R : never;
 export declare function parseOk<T>(value: T): ParseResult<T>;
 export declare function parseErr<T>(token: Token | "EOF" | "unknown", reason: ErrorReason): ParseResult<T>;
 export declare function fatalError<T>(token: Token, reason: ErrorReason): ParseResult<T>;
-export interface Ok<T> {
+export interface Ok<T> extends RawFormattable {
     [RESULT_KIND]: "ok";
+    [FORMAT]: () => Formatted;
+    [SNAPSHOT]: () => Formattable;
     value: T;
 }
 export declare function ok<T>(value: T): Result<T>;
@@ -35,8 +38,10 @@ export declare type ErrorReason = {
     expected: TokenType | "EOF";
     actual: Token | "EOF";
 };
-export interface Err {
+export interface Err extends RawFormattable {
     [RESULT_KIND]: "err";
+    [FORMAT]: () => Formatted;
+    [SNAPSHOT]: () => Formattable;
     reason: unknown;
 }
 export declare function err<T>(reason: unknown): Result<T>;

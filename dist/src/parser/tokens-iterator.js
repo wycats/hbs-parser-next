@@ -1,13 +1,10 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.TokensIteratorTransaction = exports.TokensIteratorState = exports.PeekedToken = exports.ITERATOR_SOURCE = exports.POS = exports.CONTEXT = exports.TOKENS = void 0;
-const utils_1 = require("../read/utils");
-const shape_1 = require("./shape");
-exports.TOKENS = Symbol("TOKENS");
-exports.CONTEXT = Symbol("CONTEXT");
-exports.POS = Symbol("POS");
-exports.ITERATOR_SOURCE = Symbol("SOURCE");
-class PeekedToken {
+import { unwrap } from "../read/utils";
+import { parseErr, isErr, isOk, parseOk, isParseErr, } from "./shape";
+export const TOKENS = Symbol("TOKENS");
+export const CONTEXT = Symbol("CONTEXT");
+export const POS = Symbol("POS");
+export const ITERATOR_SOURCE = Symbol("SOURCE");
+export class PeekedToken {
     constructor(iterator, desc, pos) {
         this.iterator = iterator;
         this.desc = desc;
@@ -22,7 +19,7 @@ class PeekedToken {
     #optional;
     #ignored;
     get isEOF() {
-        return this.iterator[exports.TOKENS].length === this.pos;
+        return this.iterator[TOKENS].length === this.pos;
     }
     get finished() {
         return this.#committed || this.#rejected || this.#optional || this.#ignored;
@@ -69,19 +66,18 @@ class PeekedToken {
         return null;
     }
     get token() {
-        return this.iterator[exports.TOKENS][this.pos];
+        return this.iterator[TOKENS][this.pos];
     }
 }
-exports.PeekedToken = PeekedToken;
-class TokensIteratorState {
+export class TokensIteratorState {
     constructor(iterator) {
         this.iterator = iterator;
         if (new.target !== TokensIteratorState) {
             throw new Error(`TokensIteratorState is final`);
         }
     }
-    get [exports.ITERATOR_SOURCE]() {
-        return this.iterator[exports.ITERATOR_SOURCE];
+    get [ITERATOR_SOURCE]() {
+        return this.iterator[ITERATOR_SOURCE];
     }
     lookahead() {
         let next = this.iterator.peek("lookahead");
@@ -92,14 +88,14 @@ class TokensIteratorState {
         let result = this.iterator.atomic(iterator => {
             let state = new TokensIteratorState(iterator);
             let [newState, result] = callback(state);
-            if (shape_1.isOk(result)) {
-                return shape_1.parseOk([newState, result]);
+            if (isOk(result)) {
+                return parseOk([newState, result]);
             }
             else {
                 return result;
             }
         });
-        if (shape_1.isOk(result)) {
+        if (isOk(result)) {
             return [this, result.value[1]];
         }
         else {
@@ -113,7 +109,7 @@ class TokensIteratorState {
             innerState = state;
             return result;
         });
-        return [utils_1.unwrap(innerState), result];
+        return [unwrap(innerState), result];
     }
     next(desc, callback) {
         return this.iterator.next(desc, callback);
@@ -125,73 +121,72 @@ class TokensIteratorState {
         });
     }
 }
-exports.TokensIteratorState = TokensIteratorState;
-class TokensIterator {
+export default class TokensIterator {
     constructor(tokens, context, pos = 0) {
         this.activeTransaction = null;
-        this[exports.TOKENS] = tokens;
-        this[exports.CONTEXT] = context;
-        this[exports.POS] = pos;
+        this[TOKENS] = tokens;
+        this[CONTEXT] = context;
+        this[POS] = pos;
     }
     get arrowState() {
         return new TokensIteratorState(this);
     }
-    get [exports.ITERATOR_SOURCE]() {
-        return this[exports.CONTEXT].source;
+    get [ITERATOR_SOURCE]() {
+        return this[CONTEXT].source;
     }
     assertNotEOF() {
         let next = this.peek("eof");
         if (next.isEOF) {
-            return shape_1.parseErr(next.reject().token || "EOF", {
+            return parseErr(next.reject().token || "EOF", {
                 type: "unexpected-eof",
             });
         }
         else {
             next.ignore();
-            return shape_1.parseOk(undefined);
+            return parseOk(undefined);
         }
     }
     start(step) {
         return step(this);
     }
     ok(value) {
-        return shape_1.parseOk(value);
+        return parseOk(value);
     }
     label(desc, callback) {
-        this[exports.CONTEXT].tracer.preInvoke({ desc, isLeaf: false }, this[exports.TOKENS][this[exports.POS]]);
+        this[CONTEXT].tracer.preInvoke({ desc, isLeaf: false }, this[TOKENS][this[POS]]);
         let result = callback(this);
-        this[exports.CONTEXT].tracer.postInvoke({ desc }, result, this[exports.TOKENS][this[exports.POS]]);
+        this[CONTEXT].tracer.postInvoke({ desc }, result, this[TOKENS][this[POS]]);
         return result;
     }
     peek(desc, options = { isLeaf: true }) {
-        this[exports.CONTEXT].tracer.preInvoke({ desc, isLeaf: options.isLeaf }, this[exports.TOKENS][this[exports.POS]]);
-        return new PeekedToken(this, desc, this[exports.POS]);
+        this[CONTEXT].tracer.preInvoke({ desc, isLeaf: options.isLeaf }, this[TOKENS][this[POS]]);
+        return new PeekedToken(this, desc, this[POS]);
     }
     commitPeek(desc, pos) {
-        if (this[exports.POS] !== pos) {
+        if (this[POS] !== pos) {
             throw new Error(`assert: can't commit a peeked token after the iterator advanced`);
         }
-        this[exports.POS]++;
-        this[exports.CONTEXT].tracer.postInvoke({ desc }, this[exports.TOKENS][pos], this[exports.TOKENS][pos + 1]);
-        return this[exports.TOKENS][this[exports.POS] - 1];
+        this[POS]++;
+        this[CONTEXT].tracer.postInvoke({ desc }, this[TOKENS][pos], this[TOKENS][pos + 1]);
+        return this[TOKENS][this[POS] - 1];
     }
     rejectPeek(desc, pos, peeked) {
-        this[exports.CONTEXT].tracer.postInvoke({ desc }, shape_1.parseErr(peeked.token || "EOF", {
+        this[CONTEXT].tracer.postInvoke({ desc }, parseErr(peeked.token || "EOF", {
             type: "rejected",
             token: peeked.token || "EOF",
-        }), this[exports.TOKENS][pos]);
+        }), this[TOKENS][pos]);
     }
     peekFailure(desc, reason) {
-        this[exports.CONTEXT].tracer.postInvokeFailure({ desc }, reason);
+        this[CONTEXT].tracer.postInvokeFailure({ desc }, reason);
     }
     silentPeek(desc) {
-        return new PeekedToken(this, desc, this[exports.POS]);
+        return new PeekedToken(this, desc, this[POS]);
     }
     get source() {
-        return this[exports.CONTEXT].source;
+        return this[CONTEXT].source;
     }
     withChildTokens(tokens) {
-        return new TokensIterator(tokens, this[exports.CONTEXT]);
+        return new TokensIterator(tokens, this[CONTEXT]);
     }
     atomic(callback) {
         let transaction = this.begin();
@@ -208,31 +203,31 @@ class TokensIterator {
         if (this.activeTransaction) {
             throw new Error(`ASSERT: Can only have one active transaction for a parent at a time`);
         }
-        this[exports.CONTEXT].tracer.begin(this[exports.TOKENS][this[exports.POS]]);
-        let t = new TokensIteratorTransaction(this[exports.TOKENS], this[exports.CONTEXT], this[exports.POS], this);
+        this[CONTEXT].tracer.begin(this[TOKENS][this[POS]]);
+        let t = new TokensIteratorTransaction(this[TOKENS], this[CONTEXT], this[POS], this);
         this.activeTransaction = t;
         return t;
     }
     commitTransaction(pos, transaction) {
-        if (this[exports.POS] > pos) {
+        if (this[POS] > pos) {
             throw new Error(`assert: can't commit a transaction if it rewinds the position`);
         }
         if (transaction !== this.activeTransaction) {
             throw new Error(`ASSERT: Can only commit a transaction if it's the active transaction`);
         }
         this.activeTransaction = null;
-        this[exports.CONTEXT].tracer.commit();
-        this[exports.POS] = pos;
+        this[CONTEXT].tracer.commit();
+        this[POS] = pos;
     }
     rollbackTransaction(pos, transaction) {
-        if (this[exports.POS] > pos) {
+        if (this[POS] > pos) {
             throw new Error(`assert: transaction's position is in the past`);
         }
         if (transaction !== this.activeTransaction) {
             throw new Error(`ASSERT: Can only roll back a transaction if it's the active transaction`);
         }
         this.activeTransaction = null;
-        this[exports.CONTEXT].tracer.rollback();
+        this[CONTEXT].tracer.rollback();
     }
     processInner(tokens, callback) {
         let child = this.withChildTokens(tokens);
@@ -246,7 +241,7 @@ class TokensIterator {
         }
         else {
             eof.reject();
-            return shape_1.parseErr(eof.token, {
+            return parseErr(eof.token, {
                 type: "mismatch",
                 expected: "EOF",
                 actual: eof.token,
@@ -258,11 +253,11 @@ class TokensIterator {
         let next = this.peek(desc, { isLeaf: false });
         if (next.token === undefined) {
             next.reject();
-            return shape_1.parseErr("EOF", { type: "unexpected-eof" });
+            return parseErr("EOF", { type: "unexpected-eof" });
         }
         else if (next.token.type !== tokenType) {
             next.reject();
-            return shape_1.parseErr(next.token, {
+            return parseErr(next.token, {
                 type: "mismatch",
                 expected: tokenType,
                 actual: next.token,
@@ -270,30 +265,29 @@ class TokensIterator {
         }
         else {
             let result = this.processInner(next.token.children, step);
-            if (shape_1.isParseErr(result)) {
+            if (isParseErr(result)) {
                 next.reject();
                 return result;
             }
             next.commit();
-            return shape_1.parseOk({ result: result.value, token: next.token });
+            return parseOk({ result: result.value, token: next.token });
         }
     }
     next(desc, callback) {
         let next = this.peek(desc);
         let result = callback(next.token);
-        if (shape_1.isErr(result)) {
+        if (isErr(result)) {
             let token = next.reject().token;
-            return shape_1.parseErr(token || "EOF", {
+            return parseErr(token || "EOF", {
                 type: "rejected",
                 token: token || "EOF",
             });
         }
         next.commit();
-        return shape_1.parseOk(result.value);
+        return parseOk(result.value);
     }
 }
-exports.default = TokensIterator;
-class TokensIteratorTransaction extends TokensIterator {
+export class TokensIteratorTransaction extends TokensIterator {
     constructor(tokens, context, pos = 0, transactionParent) {
         super(tokens, context, pos);
         this.transactionParent = transactionParent;
@@ -319,7 +313,7 @@ class TokensIteratorTransaction extends TokensIterator {
             throw new Error(`ASSERT: can't commit a transaction if it has active nested transactions`);
         }
         this.#committed = true;
-        this.transactionParent.commitTransaction(this[exports.POS], this);
+        this.transactionParent.commitTransaction(this[POS], this);
     }
     rollback() {
         if (this.#committed || this.#rolledBack) {
@@ -329,7 +323,7 @@ class TokensIteratorTransaction extends TokensIterator {
             throw new Error(`ASSERT: can't roll back a transaction if it has active nested transactions`);
         }
         this.#rolledBack = true;
-        this.transactionParent.rollbackTransaction(this[exports.POS], this);
+        this.transactionParent.rollbackTransaction(this[POS], this);
     }
     commitTransaction(pos, transaction) {
         if (this.#committed || this.#rolledBack) {
@@ -349,4 +343,3 @@ class TokensIteratorTransaction extends TokensIterator {
         }
     }
 }
-exports.TokensIteratorTransaction = TokensIteratorTransaction;

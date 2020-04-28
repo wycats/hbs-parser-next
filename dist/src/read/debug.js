@@ -1,14 +1,11 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.indentWS = exports.outdent = exports.indent = exports.printTrace = exports.getTrace = exports.truncString = exports.trunc = exports.afterSnippet = exports.outputString = exports.outputStyle = exports.postInvoke = exports.preInvoke = void 0;
-const logger_1 = require("./logger");
+import { formatDebuggable } from "./logger";
 const ERROR = "color: red";
 const SUCCESS = "color: green";
 const NORMAL = "color: #333";
 const OPTIONAL = "color: #999";
 let childStack = [];
 let root;
-function preInvoke({ combinator, snippet, optional, }) {
+export function preInvoke({ combinator, snippet, optional, }) {
     let child = {
         combinator,
         preSnippet: snippet,
@@ -21,8 +18,7 @@ function preInvoke({ combinator, snippet, optional, }) {
     }
     childStack.push(child);
 }
-exports.preInvoke = preInvoke;
-function postInvoke(result) {
+export function postInvoke(result) {
     let last = childStack[childStack.length - 1];
     last.output = result;
     let row = childStack.pop();
@@ -30,8 +26,7 @@ function postInvoke(result) {
         root = row;
     }
 }
-exports.postInvoke = postInvoke;
-function outputStyle({ output, optional }, weight) {
+export function outputStyle({ output, optional }, weight) {
     if (output === undefined) {
         throw new Error(`assert: unexpected undefined output (should be a result)`);
     }
@@ -48,20 +43,18 @@ function outputStyle({ output, optional }, weight) {
         }
     }
 }
-exports.outputStyle = outputStyle;
-function outputString(output) {
+export function outputString(output) {
     if (output === undefined) {
         throw new Error(`assert: unexpected undefined output (should be a result)`);
     }
     switch (output.kind) {
         case "ok":
-            return `${logger_1.formatDebuggable(output.value[1])}%c`;
+            return `${formatDebuggable(output.value[1])}%c`;
         case "err":
             return `${output.fatal ? "fatal " : ""}error: ${output.reason} %c@ ${output.snippet.fmt()}`;
     }
 }
-exports.outputString = outputString;
-function afterSnippet(output) {
+export function afterSnippet(output) {
     if (output === undefined) {
         throw new Error(`assert: unexpected undefined output (should be a result)`);
     }
@@ -72,8 +65,7 @@ function afterSnippet(output) {
             return output.snippet;
     }
 }
-exports.afterSnippet = afterSnippet;
-function trunc(snippet) {
+export function trunc(snippet) {
     let rest = snippet.sliceRest;
     if (rest.length > 13) {
         return `${rest.slice(0, 10)}...`;
@@ -82,8 +74,7 @@ function trunc(snippet) {
         return rest.padEnd(13);
     }
 }
-exports.trunc = trunc;
-function truncString(snippet, length = 13) {
+export function truncString(snippet, length = 13) {
     if (snippet.length > length) {
         return `${snippet.slice(0, length - 3)}...`;
     }
@@ -91,8 +82,7 @@ function truncString(snippet, length = 13) {
         return snippet.padEnd(length);
     }
 }
-exports.truncString = truncString;
-function getTrace() {
+export function getTrace() {
     let current = root;
     if (current === undefined) {
         throw new Error(`attempting to get the trace, but none was recorded`);
@@ -100,8 +90,7 @@ function getTrace() {
     root = undefined;
     return current;
 }
-exports.getTrace = getTrace;
-function printTrace(indent = 0, nestedError = 0, parentStatus, row = getTrace()) {
+export function printTrace(indent = 0, nestedError = 0, parentStatus, row = getTrace()) {
     if (row === undefined) {
         // tslint:disable-next-line:no-console
         console.log(`%cassert: unexpected undefined row`, ERROR);
@@ -144,17 +133,13 @@ function printTrace(indent = 0, nestedError = 0, parentStatus, row = getTrace())
         console.groupEnd();
     }
 }
-exports.printTrace = printTrace;
 let TAB = 0;
-function indent() {
+export function indent() {
     TAB += 1;
 }
-exports.indent = indent;
-function outdent() {
+export function outdent() {
     TAB -= 1;
 }
-exports.outdent = outdent;
-function indentWS() {
+export function indentWS() {
     return " ".repeat(TAB);
 }
-exports.indentWS = indentWS;

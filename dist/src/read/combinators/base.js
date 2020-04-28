@@ -1,10 +1,6 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.AbstractCombinator = void 0;
-const utils_1 = require("../utils");
-class AbstractCombinator {
+import { map } from "../utils";
+export class AbstractCombinator {
     map(mapper) {
-        return utils_1.map(this, mapper);
+        return map(this, mapper);
     }
 }
-exports.AbstractCombinator = AbstractCombinator;

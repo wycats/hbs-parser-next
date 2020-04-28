@@ -1,29 +1,25 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.formatDebuggable = exports.isTransparent = exports.combinatorDebugType = exports.Logger = void 0;
-const snippet_1 = require("../snippet");
-const debug_1 = require("./debug");
-const tokens_1 = require("./tokens");
-class Logger {
+import { Snippet } from "../snippet";
+import { indent, outdent, preInvoke, postInvoke } from "./debug";
+import { debugFormatToken } from "./tokens";
+export class Logger {
     constructor(enableLogging) {
         this.enableLogging = enableLogging;
     }
     invoke(c, input, { forceTransparent, optional, } = {}) {
         let logged = this.enableLogging && !isTransparent(c) && !forceTransparent;
         if (logged) {
-            debug_1.preInvoke({ combinator: c, snippet: input, optional: !!optional });
-            debug_1.indent();
+            preInvoke({ combinator: c, snippet: input, optional: !!optional });
+            indent();
         }
         let result = c.invoke(input);
         if (logged) {
-            debug_1.outdent();
-            debug_1.postInvoke(result);
+            outdent();
+            postInvoke(result);
         }
         return result;
     }
 }
-exports.Logger = Logger;
-function combinatorDebugType(c) {
+export function combinatorDebugType(c) {
     if (typeof c === "function") {
         return "normal";
     }
@@ -31,8 +27,7 @@ function combinatorDebugType(c) {
         return c.kind || "normal";
     }
 }
-exports.combinatorDebugType = combinatorDebugType;
-function isTransparent(c) {
+export function isTransparent(c) {
     if (typeof c === "function") {
         return false;
     }
@@ -40,8 +35,7 @@ function isTransparent(c) {
         return c.kind === "transparent";
     }
 }
-exports.isTransparent = isTransparent;
-function formatDebuggable(debuggable) {
+export function formatDebuggable(debuggable) {
     if (typeof debuggable === "string") {
         return debuggable;
     }
@@ -58,11 +52,10 @@ function formatDebuggable(debuggable) {
             return `[${formatDebuggable(debuggable[0])}, ${formatDebuggable(debuggable[1])}, ${formatDebuggable(debuggable[2])}, ...]`;
         }
     }
-    else if (debuggable instanceof snippet_1.Snippet) {
+    else if (debuggable instanceof Snippet) {
         return debuggable.fmt();
     }
     else {
-        return tokens_1.debugFormatToken(debuggable);
+        return debugFormatToken(debuggable);
     }
 }
-exports.formatDebuggable = formatDebuggable;

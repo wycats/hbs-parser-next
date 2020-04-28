@@ -1,53 +1,90 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.debugFormatToken = exports.isParentToken = exports.root = exports.trustedInterpolate = exports.interpolate = exports.sexp = exports.endTag = exports.startTag = exports.valuedAttr = exports.attrValue = exports.isInterpolateAttribute = exports.stringInterpolation = exports.argName = exports.closeBlock = exports.openBlock = exports.block = exports.blockParams = exports.equalPath = exports.arg = exports.comment = exports.numberToken = exports.stringToken = exports.attrName = exports.text = exports.ws = exports.eq = exports.dot = exports.id = exports.leaf = void 0;
-const span_1 = require("../span");
-function leaf(type) {
+import { range, slice } from "../span";
+/**
+ * Steps for creating a new token type:
+ *
+ * 1. add a variant to TokenType
+ * 2. create an interface {Name}Token
+ * 3. add the new token to LeafTokenMap or TokenMap
+ * 4. update serializeNode to serialize the new token
+ * 5. add a function to construct the new token (unless it's always nested
+ *    inside another token like `BlockParams`)
+ * 6. update token-builder.ts to support building the new token
+ */
+export var TokenType;
+(function (TokenType) {
+    TokenType["Root"] = "Root";
+    TokenType["UntrustedInterpolate"] = "Interpolate";
+    TokenType["TrustedInterpolate"] = "TrustedInterpolate";
+    // TODO: Either we should have Block and Element or StartBlock/EndBlock and StartElement/EndElement
+    TokenType["Block"] = "Block";
+    TokenType["BlockParams"] = "BlockParams";
+    TokenType["OpenBlock"] = "OpenBlock";
+    TokenType["CloseBlock"] = "CloseBlock";
+    TokenType["Sexp"] = "Sexp";
+    TokenType["Identifier"] = "Identifier";
+    TokenType["Argument"] = "Argument";
+    TokenType["Dot"] = "Dot";
+    TokenType["Eq"] = "Eq";
+    TokenType["WS"] = "WS";
+    TokenType["String"] = "String";
+    TokenType["Number"] = "Number";
+    // HTML
+    TokenType["Text"] = "Text";
+    TokenType["Comment"] = "Comment";
+    TokenType["StartTag"] = "StartTag";
+    TokenType["EndTag"] = "EndTag";
+    TokenType["ArgName"] = "ArgName";
+    TokenType["AttributeName"] = "AttributeName";
+    TokenType["AttributeValue"] = "AttributeValue";
+    TokenType["ValuedAttribute"] = "ValuedAttribute";
+    TokenType["StringInterpolation"] = "StringInterpolation";
+})(TokenType || (TokenType = {}));
+export function leaf(type) {
     return span => ({ type, span });
 }
-exports.leaf = leaf;
-exports.id = leaf("Identifier" /* Identifier */);
-exports.dot = leaf("Dot" /* Dot */);
-exports.eq = leaf("Eq" /* Eq */);
-exports.ws = leaf("WS" /* WS */);
-exports.text = leaf("Text" /* Text */);
-exports.attrName = leaf("AttributeName" /* AttributeName */);
-function stringToken({ data, quote }, span) {
+export const id = leaf(TokenType.Identifier);
+export const dot = leaf(TokenType.Dot);
+export const eq = leaf(TokenType.Eq);
+export const ws = leaf(TokenType.WS);
+export const text = leaf(TokenType.Text);
+export const attrName = leaf(TokenType.AttributeName);
+export var QuoteType;
+(function (QuoteType) {
+    QuoteType[QuoteType["Single"] = 0] = "Single";
+    QuoteType[QuoteType["Double"] = 1] = "Double";
+})(QuoteType || (QuoteType = {}));
+export function stringToken({ data, quote }, span) {
     return {
-        type: "String" /* String */,
+        type: TokenType.String,
         span,
         data,
         quote,
     };
 }
-exports.stringToken = stringToken;
-function numberToken({ head, tail, negative, }, span) {
+export function numberToken({ head, tail, negative, }, span) {
     return {
-        type: "Number" /* Number */,
+        type: TokenType.Number,
         span,
         negative,
         head,
         tail,
     };
 }
-exports.numberToken = numberToken;
-function comment(data, span) {
+export function comment(data, span) {
     return {
-        type: "Comment" /* Comment */,
+        type: TokenType.Comment,
         data,
         span,
     };
 }
-exports.comment = comment;
-function arg(span) {
+export function arg(span) {
     return {
-        type: "Argument" /* Argument */,
+        type: TokenType.Argument,
         name: { start: span.start + 1, end: span.end },
         span,
     };
 }
-exports.arg = arg;
-function equalPath(leftTokens, rightTokens, source) {
+export function equalPath(leftTokens, rightTokens, source) {
     if (leftTokens.length !== rightTokens.length) {
         return false;
     }
@@ -57,150 +94,141 @@ function equalPath(leftTokens, rightTokens, source) {
             return false;
         }
         switch (left.type) {
-            case "ArgName" /* ArgName */:
-                return (span_1.slice(left.name, source) ===
-                    span_1.slice(right.name, source));
-            case "Identifier" /* Identifier */:
-                return (span_1.slice(left.span, source) ===
-                    span_1.slice(right.span, source));
-            case "Dot" /* Dot */:
+            case TokenType.ArgName:
+                return (slice(left.name, source) ===
+                    slice(right.name, source));
+            case TokenType.Identifier:
+                return (slice(left.span, source) ===
+                    slice(right.span, source));
+            case TokenType.Dot:
                 return true;
             default:
                 throw new Error(`assert: unexpected token type ${left.type}`);
         }
     });
 }
-exports.equalPath = equalPath;
-function blockParams(params, span) {
+export function blockParams(params, span) {
     return {
-        type: "BlockParams" /* BlockParams */,
+        type: TokenType.BlockParams,
         span,
         params,
     };
 }
-exports.blockParams = blockParams;
-function block({ open, body, close }) {
+export function block({ open, body, close }) {
     return {
-        type: "Block" /* Block */,
-        span: span_1.range(open.span, close.span),
+        type: TokenType.Block,
+        span: range(open.span, close.span),
         open,
         body,
         close,
     };
 }
-exports.block = block;
-function openBlock({ name, head }, span) {
+export function openBlock({ name, head }, span) {
     return {
-        type: "OpenBlock" /* OpenBlock */,
+        type: TokenType.OpenBlock,
         span,
         name,
         head,
     };
 }
-exports.openBlock = openBlock;
-function closeBlock(name, span) {
+export function closeBlock(name, span) {
     return {
-        type: "CloseBlock" /* CloseBlock */,
+        type: TokenType.CloseBlock,
         span,
         name,
     };
 }
-exports.closeBlock = closeBlock;
-function argName(name, span) {
+export var AttributeValueType;
+(function (AttributeValueType) {
+    AttributeValueType["Interpolate"] = "Interpolate";
+    AttributeValueType["Unquoted"] = "Unquoted";
+    AttributeValueType["SingleQuoted"] = "SingleQuoted";
+    AttributeValueType["DoubleQuoted"] = "DoubleQuoted";
+})(AttributeValueType || (AttributeValueType = {}));
+export function argName(name, span) {
     return {
-        type: "ArgName" /* ArgName */,
+        type: TokenType.ArgName,
         name,
         span,
     };
 }
-exports.argName = argName;
-function stringInterpolation(parts, span) {
+export function stringInterpolation(parts, span) {
     return {
-        type: "StringInterpolation" /* StringInterpolation */,
+        type: TokenType.StringInterpolation,
         span,
         parts,
     };
 }
-exports.stringInterpolation = stringInterpolation;
-function isInterpolateAttribute(input) {
-    return input.valueType === "Interpolate" /* Interpolate */;
+export function isInterpolateAttribute(input) {
+    return input.valueType === AttributeValueType.Interpolate;
 }
-exports.isInterpolateAttribute = isInterpolateAttribute;
-function attrValue({ type, value }, span) {
+export function attrValue({ type, value }, span) {
     return {
-        type: "AttributeValue" /* AttributeValue */,
+        type: TokenType.AttributeValue,
         span,
         valueType: type,
         value,
     };
 }
-exports.attrValue = attrValue;
-function valuedAttr({ name, value }, span) {
+export function valuedAttr({ name, value }, span) {
     return {
-        type: "ValuedAttribute" /* ValuedAttribute */,
+        type: TokenType.ValuedAttribute,
         span,
         name,
         value,
     };
 }
-exports.valuedAttr = valuedAttr;
-function startTag({ name, attrs, selfClosing }, span) {
+export function startTag({ name, attrs, selfClosing }, span) {
     return {
-        type: "StartTag" /* StartTag */,
+        type: TokenType.StartTag,
         span,
         name,
         attributes: attrs || [],
         selfClosing,
     };
 }
-exports.startTag = startTag;
-function endTag({ name, trailing }, span) {
+export function endTag({ name, trailing }, span) {
     return {
-        type: "EndTag" /* EndTag */,
+        type: TokenType.EndTag,
         span,
         trailing: trailing ? trailing : null,
         name,
     };
 }
-exports.endTag = endTag;
-function sexp({ children, inner }, span) {
+export function sexp({ children, inner }, span) {
     return {
-        type: "Sexp" /* Sexp */,
+        type: TokenType.Sexp,
         span,
         inner,
         children,
     };
 }
-exports.sexp = sexp;
-function interpolate(children, span) {
+export function interpolate(children, span) {
     return {
-        type: "Interpolate" /* UntrustedInterpolate */,
+        type: TokenType.UntrustedInterpolate,
         span,
         children,
     };
 }
-exports.interpolate = interpolate;
-function trustedInterpolate(children, span) {
+export function trustedInterpolate(children, span) {
     return {
-        type: "TrustedInterpolate" /* TrustedInterpolate */,
+        type: TokenType.TrustedInterpolate,
         span,
         children,
     };
 }
-exports.trustedInterpolate = trustedInterpolate;
-function root(children, span) {
+export function root(children, span) {
     return {
-        type: "Root" /* Root */,
+        type: TokenType.Root,
         span,
         children,
     };
 }
-exports.root = root;
-function isParentToken(token) {
+export function isParentToken(token) {
     switch (token.type) {
-        case "TrustedInterpolate" /* TrustedInterpolate */:
-        case "Interpolate" /* UntrustedInterpolate */:
-        case "Sexp" /* Sexp */:
+        case TokenType.TrustedInterpolate:
+        case TokenType.UntrustedInterpolate:
+        case TokenType.Sexp:
             return true;
         default:
             if ("children" in token && Array.isArray(token["children"])) {
@@ -209,8 +237,6 @@ function isParentToken(token) {
             return false;
     }
 }
-exports.isParentToken = isParentToken;
-function debugFormatToken(token) {
+export function debugFormatToken(token) {
     return `<token:${token.type}>`;
 }
-exports.debugFormatToken = debugFormatToken;

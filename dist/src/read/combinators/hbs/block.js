@@ -1,69 +1,60 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.CloseBlock = exports.OpenBlock = void 0;
-const snippet_1 = require("../../../snippet");
-const span_1 = require("../../../span");
-const combinators_1 = require("../../combinators");
-const hbs_1 = require("../../hbs");
-const multi_1 = require("../../multi");
-const read_1 = require("../../read");
-const tokens_1 = require("../../tokens");
-const base_1 = require("../base");
-const spaced_tokens_1 = __importDefault(require("./spaced-tokens"));
-class Block extends base_1.AbstractCombinator {
+import { fatalError, ok } from "../../../snippet";
+import { range } from "../../../span";
+import { any, maybe, seq, tag } from "../../combinators";
+import { ID, SIMPLE_PATH, WS } from "../../hbs";
+import { many } from "../../multi";
+import { TOP_LEVEL } from "../../read";
+import { block, blockParams, closeBlock, equalPath, openBlock, } from "../../tokens";
+import { AbstractCombinator } from "../base";
+import SpacedTokens from "./spaced-tokens";
+export default class Block extends AbstractCombinator {
     constructor() {
         super(...arguments);
         this.name = "BLOCK";
     }
     invoke(input) {
-        return input.invoke(combinators_1.seq("BLOCK", OPEN_BLOCK, multi_1.many(read_1.TOP_LEVEL), CLOSE_BLOCK).map(([open, body, close]) => {
-            if (!tokens_1.equalPath(open.name, close.name, input.source)) {
-                return snippet_1.fatalError(input.forSpan(span_1.range(...close.name)), "mismatch");
+        return input.invoke(seq("BLOCK", OPEN_BLOCK, many(TOP_LEVEL), CLOSE_BLOCK).map(([open, body, close]) => {
+            if (!equalPath(open.name, close.name, input.source)) {
+                return fatalError(input.forSpan(range(...close.name)), "mismatch");
             }
-            return snippet_1.ok(tokens_1.block({ open, body, close }));
+            return ok(block({ open, body, close }));
         }));
     }
 }
-exports.default = Block;
-const BLOCK_SPACED_TOKENS = new spaced_tokens_1.default(["as"]);
+const BLOCK_SPACED_TOKENS = new SpacedTokens(["as"]);
 // tslint:disable-next-line:max-classes-per-file
-class OpenBlock extends base_1.AbstractCombinator {
+export class OpenBlock extends AbstractCombinator {
     constructor() {
         super(...arguments);
         this.name = "OPEN_BLOCK";
     }
     invoke(input) {
-        return input.invoke(combinators_1.seq("OPEN_BLOCK", combinators_1.tag("{{#"), hbs_1.SIMPLE_PATH, BLOCK_SPACED_TOKENS, combinators_1.maybe(BLOCK_PARAMS), combinators_1.maybe(hbs_1.WS), combinators_1.tag("}}")).map(([open, path, head, params, ws, close]) => snippet_1.ok(tokens_1.openBlock({
+        return input.invoke(seq("OPEN_BLOCK", tag("{{#"), SIMPLE_PATH, BLOCK_SPACED_TOKENS, maybe(BLOCK_PARAMS), maybe(WS), tag("}}")).map(([open, path, head, params, ws, close]) => ok(openBlock({
             name: path,
             head: [...head, ...(params ? [params] : []), ...(ws ? [ws] : [])],
-        }, span_1.range(open, close)))));
+        }, range(open, close)))));
     }
 }
-exports.OpenBlock = OpenBlock;
 const OPEN_BLOCK = new OpenBlock();
 // tslint:disable-next-line:max-classes-per-file
-class BlockParams extends base_1.AbstractCombinator {
+class BlockParams extends AbstractCombinator {
     constructor() {
         super(...arguments);
         this.name = "BLOCK_PARAMS";
     }
     invoke(input) {
-        return input.invoke(combinators_1.seq("BLOCK_PARAMS", combinators_1.tag("as |"), multi_1.many(combinators_1.any("block param", hbs_1.ID, hbs_1.WS)), combinators_1.tag("|")).map(([open, params, close]) => snippet_1.ok(tokens_1.blockParams(params, span_1.range(open, close)))));
+        return input.invoke(seq("BLOCK_PARAMS", tag("as |"), many(any("block param", ID, WS)), tag("|")).map(([open, params, close]) => ok(blockParams(params, range(open, close)))));
     }
 }
 const BLOCK_PARAMS = new BlockParams();
 // tslint:disable-next-line:max-classes-per-file
-class CloseBlock extends base_1.AbstractCombinator {
+export class CloseBlock extends AbstractCombinator {
     constructor() {
         super(...arguments);
         this.name = "CLOSE_BLOCK";
     }
     invoke(input) {
-        return input.invoke(combinators_1.seq("CLOSE_BLOCK", combinators_1.tag("{{/"), hbs_1.SIMPLE_PATH, combinators_1.tag("}}")).map(([open, path, close]) => snippet_1.ok(tokens_1.closeBlock(path, span_1.range(open, close)))));
+        return input.invoke(seq("CLOSE_BLOCK", tag("{{/"), SIMPLE_PATH, tag("}}")).map(([open, path, close]) => ok(closeBlock(path, range(open, close)))));
     }
 }
-exports.CloseBlock = CloseBlock;
 const CLOSE_BLOCK = new CloseBlock();

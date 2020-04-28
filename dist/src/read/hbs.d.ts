@@ -18,7 +18,7 @@ export declare const NUMBER: SomeNumber;
 export declare const SEXP: Sexp;
 export declare const ID: CombinatorType<import("./tokens").IdentifierToken>;
 export declare const EQ: CombinatorType<import("./tokens").EqToken>;
-export declare const NAMED: import("./combinators/seq").default<[import("./tokens").IdentifierToken, import("./tokens").EqToken, import("./tokens").StringToken | import("./tokens").NumberToken | import("./tokens").SexpToken | import("./tokens").PresentTokens]>;
+export declare const NAMED: import("./combinators/seq").default<[import("./tokens").IdentifierToken, import("./tokens").EqToken, import("./tokens").SexpToken | import("./tokens").StringToken | import("./tokens").NumberToken | import("./tokens").PresentTokens]>;
 export declare const SIMPLE_PATH: SimplePath;
 export declare const SPACED_TOKENS: SpacedTokens;
 export declare const BLOCK: Block;

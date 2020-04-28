@@ -1,18 +1,13 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const hbs_1 = require("../../hbs");
-const combinators_1 = require("../../combinators");
-const base_1 = require("../base");
-const snippet_1 = require("../../../snippet");
-const simple_path_1 = __importDefault(require("./simple-path"));
-class SpacedTokens extends base_1.AbstractCombinator {
+import { SEXP, wrap, NUMBER, NAMED, WS, STRING } from "../../hbs";
+import { any } from "../../combinators";
+import { AbstractCombinator } from "../base";
+import { ok } from "../../../snippet";
+import SimplePath from "./simple-path";
+export default class SpacedTokens extends AbstractCombinator {
     constructor(disallowedKeywords) {
         super();
         this.disallowedKeywords = disallowedKeywords;
-        this.path = new simple_path_1.default(disallowedKeywords);
+        this.path = new SimplePath(disallowedKeywords);
     }
     get name() {
         if (this.disallowedKeywords) {
@@ -24,7 +19,7 @@ class SpacedTokens extends base_1.AbstractCombinator {
     }
     invoke(input) {
         let out = [];
-        let tk = combinators_1.any("token", hbs_1.wrap(hbs_1.SEXP), hbs_1.wrap(hbs_1.STRING), hbs_1.wrap(hbs_1.NUMBER), hbs_1.NAMED, this.path, hbs_1.wrap(hbs_1.WS));
+        let tk = any("token", wrap(SEXP), wrap(STRING), wrap(NUMBER), NAMED, this.path, wrap(WS));
         let current = input;
         while (true) {
             if (current.isEOF()) {
@@ -52,7 +47,6 @@ class SpacedTokens extends base_1.AbstractCombinator {
                 snippet: input,
             };
         }
-        return snippet_1.ok([current, out]);
+        return ok([current, out]);
     }
 }
-exports.default = SpacedTokens;

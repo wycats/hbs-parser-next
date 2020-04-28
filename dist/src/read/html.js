@@ -1,21 +1,15 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.COMMENT = exports.END_TAG = exports.START_TAG = exports.TEXT = void 0;
-const snippet_1 = require("../snippet");
-const span_1 = require("../span");
-const combinator_1 = require("./combinator");
-const combinators_1 = require("./combinators");
-const start_tag_1 = __importDefault(require("./combinators/html/start-tag"));
-const text_1 = __importDefault(require("./combinators/html/text"));
-const tokens_1 = require("./tokens");
-const utils_1 = require("./utils");
-const end_tag_1 = __importDefault(require("./combinators/html/end-tag"));
-exports.TEXT = new text_1.default();
-exports.START_TAG = new start_tag_1.default();
-exports.END_TAG = new end_tag_1.default();
-exports.COMMENT = combinator_1.combinator(() => utils_1.map(combinators_1.seq("COMMENT", combinators_1.tag("<!--"), combinators_1.pattern(/^.*(?=[-][-][>])/u, "comment body"), combinators_1.tag("-->")), ([start, data, end]) => {
-    return snippet_1.ok(tokens_1.comment(data.span, span_1.range(start, end)));
+import { ok } from "../snippet";
+import { range } from "../span";
+import { combinator } from "./combinator";
+import { pattern, seq, tag } from "./combinators";
+import HTMLStartTag from "./combinators/html/start-tag";
+import HTMLText from "./combinators/html/text";
+import { comment } from "./tokens";
+import { map } from "./utils";
+import HTMLEndTag from "./combinators/html/end-tag";
+export const TEXT = new HTMLText();
+export const START_TAG = new HTMLStartTag();
+export const END_TAG = new HTMLEndTag();
+export const COMMENT = combinator(() => map(seq("COMMENT", tag("<!--"), pattern(/^.*(?=[-][-][>])/u, "comment body"), tag("-->")), ([start, data, end]) => {
+    return ok(comment(data.span, range(start, end)));
 }));

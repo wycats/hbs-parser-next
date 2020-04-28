@@ -1,7 +1,43 @@
 import type { ParserArrow, ParseResult, Result, Err } from "../shape";
 
 export class Arrow<In, Out> {
+  static delay<A extends Arrow<unknown, unknown>>(callback: () => A): A {
+    return (new DelayedArrow(() => {
+      return callback().operation;
+    }) as unknown) as A;
+  }
+
   constructor(readonly operation: Operation) {}
+
+  invoke<State>(
+    state: State,
+    evaluator: StatefulEvaluator<State>,
+    input: In
+  ): Out {
+    return (evaluate(
+      this.operation,
+      state,
+      input,
+      evaluator
+    ) as unknown) as Out;
+  }
+}
+
+export class DelayedArrow<In, Out> implements Arrow<In, Out> {
+  #delayed: () => Operation;
+  #operation: Operation | undefined = undefined;
+
+  constructor(operation: () => Operation) {
+    this.#delayed = operation;
+  }
+
+  get operation(): Operation {
+    if (!this.#operation) {
+      this.#operation = this.#delayed();
+    }
+
+    return this.#operation;
+  }
 
   invoke<State>(
     state: State,
@@ -200,6 +236,108 @@ export function mapResult<LeftIn, ResultInner, IfOkOut, IfErrOut>(
   return new Arrow({ type: "MapResult", label, left, ifOk, ifErr });
 }
 
+/// BOTH OK ///
+
+export interface BothOkOperation<In, LeftOut, RightOut> extends BaseOperation {
+  type: "BothOk";
+  left: Arrow<In, Result<LeftOut>>;
+  right: Arrow<In, Result<RightOut>>;
+}
+
+export interface SimpleEvaluator<State> {
+  BothOk<In, RightOut, LeftOut>(
+    state: State,
+    input: In,
+    op: BothOkOperation<In, LeftOut, RightOut>
+  ): Result<[LeftOut, RightOut]>;
+}
+
+export interface OperationMap extends BaseOperation {
+  BothOk: BothOkOperation<any, unknown, unknown>;
+}
+
+export function bothOk<In, LeftOut, RightOut>(
+  left: Arrow<In, Result<LeftOut>>,
+  right: Arrow<In, Result<RightOut>>,
+  label?: string
+): Arrow<In, Result<[LeftOut, RightOut]>> {
+  return new Arrow({ type: "BothOk", label, left, right });
+}
+
+/// ALL OK ///
+
+export type FallibleArrows<In> = [
+  Arrow<In, Result<unknown>>,
+  ...Array<Arrow<In, Result<unknown>>>
+];
+
+export type MapFallibleArrows<
+  T extends [
+    Arrow<unknown, Result<unknown>>,
+    ...Arrow<unknown, Result<unknown>>[]
+  ]
+> = Result<
+  {
+    [P in keyof T]: T[P] extends Arrow<unknown, Result<infer Out>>
+      ? Out
+      : never;
+  }
+>;
+
+export interface AllOkOperation<In, Arrows extends FallibleArrows<In>>
+  extends BaseOperation {
+  type: "AllOk";
+  arrows: Arrows;
+}
+
+export interface SimpleEvaluator<State> {
+  // TODO: what's up with this `extends unknown`?
+  AllOk<In extends unknown, Arrows extends FallibleArrows<In>>(
+    state: State,
+    input: In,
+    op: AllOkOperation<In, Arrows>
+  ): MapFallibleArrows<Arrows>;
+}
+
+export interface OperationMap extends BaseOperation {
+  AllOk: AllOkOperation<any, FallibleArrows<any>>;
+}
+
+export function allOk<In, Arrows extends FallibleArrows<In>>(
+  arrows: Arrows,
+  label?: string
+): Arrow<In, MapFallibleArrows<Arrows>> {
+  return new Arrow({ type: "AllOk", label, arrows });
+}
+
+/// FIRST OK ///
+
+export interface FirstOkOperation<In, LeftOut, RightOut> extends BaseOperation {
+  type: "FirstOk";
+  left: Arrow<In, Result<LeftOut>>;
+  right: Arrow<In, Result<RightOut>>;
+}
+
+export interface SimpleEvaluator<State> {
+  FirstOk<In, RightOut, LeftOut>(
+    state: State,
+    input: In,
+    op: FirstOkOperation<In, LeftOut, RightOut>
+  ): Result<LeftOut | RightOut>;
+}
+
+export interface OperationMap extends BaseOperation {
+  FirstOk: FirstOkOperation<any, unknown, unknown>;
+}
+
+export function firstOk<In, LeftOut, RightOut>(
+  left: Arrow<In, Result<LeftOut>>,
+  right: Arrow<In, Result<RightOut>>,
+  label?: string
+): Arrow<In, Result<LeftOut | RightOut>> {
+  return new Arrow({ type: "FirstOk", label, left, right });
+}
+
 /// MAP INPUT ///
 
 export interface MapInputOperation<ArrowIn, MapOut> extends BaseOperation {
@@ -228,7 +366,7 @@ export function mapInput<ArrowIn, MapOut>(
   return new Arrow({ type: "MapInput", label, arrow, map });
 }
 
-/// SPLIT ///
+/// Merge ///
 
 export interface MergeOperation<In, LeftOut, RightOut> extends BaseOperation {
   type: "Merge";
@@ -309,6 +447,27 @@ export function repeat<State, In, Out>(
   label?: string
 ): Arrow<void, Out[]> {
   return new Arrow({ type: "Repeat", label, callback });
+}
+
+/// STATE ///
+
+export interface StateOperation extends BaseOperation {
+  type: "State";
+}
+
+export interface SimpleEvaluator<State> {
+  State(state: State, input: unknown, op: StateOperation): State;
+}
+
+export interface OperationMap {
+  State: StateOperation;
+}
+
+export function state<Out>(label?: string): Arrow<unknown, Out> {
+  return new Arrow({
+    type: "State",
+    label,
+  });
 }
 
 /// REDUCE ///

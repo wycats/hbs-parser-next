@@ -1,4 +1,3 @@
-import { range } from "..";
 import { LoggingType } from "../read/read";
 import type * as tokens from "../read/tokens";
 import { ParseTracer } from "./debug";
@@ -6,6 +5,7 @@ import * as ast from "./nodes";
 import { ParserArrow, ParseResult } from "./shape";
 import { TopLevelArrow } from "./shapes/top-level";
 import TokensIterator, { TOKENS } from "./tokens-iterator";
+import { range } from "../span";
 
 export interface ParseOptions {
   input: tokens.RootToken;

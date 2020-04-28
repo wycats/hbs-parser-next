@@ -1,68 +1,93 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.evaluate = exports.reduce = exports.repeat = exports.keepAndThen = exports.merge = exports.mapInput = exports.pipeline = exports.zip = exports.pure = exports.input = exports.source = exports.Arrow = void 0;
-class Arrow {
+export class Arrow {
     constructor(operation) {
         this.operation = operation;
+    }
+    static delay(callback) {
+        return new DelayedArrow(() => {
+            return callback().operation;
+        });
     }
     invoke(state, evaluator, input) {
         return evaluate(this.operation, state, input, evaluator);
     }
 }
-exports.Arrow = Arrow;
-function source(callback, label) {
+export class DelayedArrow {
+    constructor(operation) {
+        this.#operation = undefined;
+        this.#delayed = operation;
+    }
+    #delayed;
+    #operation;
+    get operation() {
+        if (!this.#operation) {
+            this.#operation = this.#delayed();
+        }
+        return this.#operation;
+    }
+    invoke(state, evaluator, input) {
+        return evaluate(this.operation, state, input, evaluator);
+    }
+}
+export function source(callback, label) {
     return new Arrow({
         type: "Source",
         callback,
         label,
     });
 }
-exports.source = source;
-function input(label) {
+export function input(label) {
     return new Arrow({
         type: "Input",
         label,
     });
 }
-exports.input = input;
-function pure(callback, label) {
+export function pure(callback, label) {
     return new Arrow({
         type: "Pure",
         label,
         callback: callback,
     });
 }
-exports.pure = pure;
-function zip(left, right, label) {
+export function zip(left, right, label) {
     return new Arrow({ type: "Zip", label, left, right });
 }
-exports.zip = zip;
-function pipeline(left, right, label) {
+export function pipeline(left, right, label) {
     return new Arrow({ type: "Pipeline", label, left, right });
 }
-exports.pipeline = pipeline;
-function mapInput(arrow, map, label) {
+export function mapResult(left, ifOk, ifErr, label) {
+    return new Arrow({ type: "MapResult", label, left, ifOk, ifErr });
+}
+export function bothOk(left, right, label) {
+    return new Arrow({ type: "BothOk", label, left, right });
+}
+export function allOk(arrows, label) {
+    return new Arrow({ type: "AllOk", label, arrows });
+}
+export function firstOk(left, right, label) {
+    return new Arrow({ type: "FirstOk", label, left, right });
+}
+export function mapInput(arrow, map, label) {
     return new Arrow({ type: "MapInput", label, arrow, map });
 }
-exports.mapInput = mapInput;
-function merge(left, right, label) {
+export function merge(left, right, label) {
     return new Arrow({ type: "Merge", label, left, right });
 }
-exports.merge = merge;
-function keepAndThen(left, right, label) {
+export function keepAndThen(left, right, label) {
     return new Arrow({ type: "KeepAndThen", label, left, right });
 }
-exports.keepAndThen = keepAndThen;
-function repeat(callback, label) {
+export function repeat(callback, label) {
     return new Arrow({ type: "Repeat", label, callback });
 }
-exports.repeat = repeat;
-function reduce(callback, label) {
+export function state(label) {
+    return new Arrow({
+        type: "State",
+        label,
+    });
+}
+export function reduce(callback, label) {
     return new Arrow({ type: "Reduce", label, callback });
 }
-exports.reduce = reduce;
 /// FUNCTIONS ///
-function evaluate(op, state, input, evaluator) {
+export function evaluate(op, state, input, evaluator) {
     return evaluator[op.type](state, input, op);
 }
-exports.evaluate = evaluate;

@@ -4,9 +4,9 @@
   "compilerOptions": {
     "composite": true,
     "outDir": "../dist/docs",
-    "baseUrl": ".",
+    "baseUrl": "./",
     "paths": {
-      "hbs-parser-next": ["../src"]
+      "hbs-parser-next": ["../src/index.ts"]
     }
   },
   "include": ["**/*.ts"],

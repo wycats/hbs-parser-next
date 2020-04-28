@@ -1,10 +1,7 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.ExpressionArrow = void 0;
-const shape_1 = require("../shape");
-const number_1 = require("./expression/number");
-const path_1 = require("./expression/path");
-const sexp_1 = require("./expression/sexp");
-const string_1 = require("./expression/string");
-const any_1 = require("./internal/any");
-exports.ExpressionArrow = shape_1.recurse(() => any_1.anyArrow([sexp_1.SexpArrow, string_1.StringArrow, number_1.NumberArrow, path_1.PathArrow]).label("Expression"));
+import { recurse } from "../shape";
+import { NumberArrow } from "./expression/number";
+import { PathArrow } from "./expression/path";
+import { SexpArrow } from "./expression/sexp";
+import { StringArrow } from "./expression/string";
+import { anyArrow } from "./internal/any";
+export const ExpressionArrow = recurse(() => anyArrow([SexpArrow, StringArrow, NumberArrow, PathArrow]).label("Expression"));

@@ -1,14 +1,14 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-require("file-loader?name=[name].[ext]!../node_modules/qunit/qunit/qunit.css");
-require("file-loader?name=[name].[ext]!./index.html");
-const qunit_1 = require("qunit");
-require("./combinators-test");
-require("./multi-test");
-require("./reader/index");
-qunit_1.config.autostart = true;
-qunit_1.config.urlConfig.push({
+import "file-loader?name=[name].[ext]!../node_modules/qunit/qunit/qunit.css";
+import "file-loader?name=[name].[ext]!./index.html";
+import { config, dump } from "qunit";
+import "./combinators-test";
+import "./multi-test";
+import "./reader/index";
+import "./shape-test";
+import "./parser-shape-test";
+config.autostart = true;
+config.urlConfig.push({
     id: "logging",
     label: "Enable logging",
 });
-qunit_1.dump.maxDepth = 25;
+dump.maxDepth = 25;

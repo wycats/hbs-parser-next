@@ -1,8 +1,6 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const base_1 = require("./base");
-const snippet_1 = require("../../snippet");
-class TakeUntil extends base_1.AbstractCombinator {
+import { AbstractCombinator } from "./base";
+import { ok } from "../../snippet";
+export default class TakeUntil extends AbstractCombinator {
     constructor(pattern) {
         super();
         this.pattern = pattern;
@@ -12,7 +10,7 @@ class TakeUntil extends base_1.AbstractCombinator {
         let next = input;
         while (true) {
             if (next.isEOF() || next.isMatch(this.pattern)) {
-                return snippet_1.ok([next.rest, next]);
+                return ok([next.rest, next]);
             }
             else {
                 next = next.extend(1);
@@ -20,4 +18,3 @@ class TakeUntil extends base_1.AbstractCombinator {
         }
     }
 }
-exports.default = TakeUntil;

@@ -1,8 +1,6 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const snippet_1 = require("../../snippet");
-const base_1 = require("./base");
-class Any extends base_1.AbstractCombinator {
+import { err } from "../../snippet";
+import { AbstractCombinator } from "./base";
+export default class Any extends AbstractCombinator {
     constructor(desc, combinators) {
         super();
         this.desc = desc;
@@ -23,7 +21,6 @@ class Any extends base_1.AbstractCombinator {
                 return result;
             }
         }
-        return snippet_1.err(input, "any");
+        return err(input, "any");
     }
 }
-exports.default = Any;

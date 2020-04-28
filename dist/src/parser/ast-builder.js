@@ -1,34 +1,12 @@
-"use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.root = exports.decimal = exports.int = exports.str = exports.member = exports.path = exports.ref = exports.call = exports.interpolate = exports.block = exports.text = void 0;
-const ast = __importStar(require("./nodes"));
-const b = __importStar(require("../read/token-builder"));
-const span_1 = require("../span");
-const token_builder_1 = require("../read/token-builder");
-class AstBuilder {
+import * as ast from "./nodes";
+import * as b from "../read/token-builder";
+import { span, range } from "../span";
+import { TokenBuilder } from "../read/token-builder";
+export default class AstBuilder {
     constructor(pos = 0) {
         this.pos = pos;
         this.output = "";
-        this.tokenBuilder = new token_builder_1.TokenBuilder();
+        this.tokenBuilder = new TokenBuilder();
     }
     consume(chars) {
         this.output += chars;
@@ -48,11 +26,9 @@ class AstBuilder {
         return this.output;
     }
 }
-exports.default = AstBuilder;
-function text(chars) {
+export function text(chars) {
     return builder => ast.text(builder.token(b.text(chars)));
 }
-exports.text = text;
 function normalizeExpr(expr) {
     if (typeof expr === "string") {
         return ref(expr);
@@ -140,9 +116,9 @@ function curriedNamed(obj) {
             else {
                 expr = normalizeExpr(value)(builder);
             }
-            args.push(ast.namedArg({ name, value: expr }, { span: span_1.range(name, expr), after }));
+            args.push(ast.namedArg({ name, value: expr }, { span: range(name, expr), after }));
         }
-        return ast.namedArgs(args, { span: span_1.range(...args), before: leading });
+        return ast.namedArgs(args, { span: range(...args), before: leading });
     };
 }
 function curriedPositional(...parts) {
@@ -174,7 +150,7 @@ function curriedPositional(...parts) {
         });
     };
 }
-function block(parts) {
+export function block(parts) {
     let { head } = extractCallParts(...parts);
     let openBlock = callBody(...parts);
     return builder => {
@@ -185,16 +161,15 @@ function block(parts) {
         let closeHead = head(builder);
         let closeEnd = builder.consume(`}}`);
         return ast.block({
-            open: ast.openBlock({ ...open }, { span: span_1.range(openStart, openEnd) }),
+            open: ast.openBlock({ ...open }, { span: range(openStart, openEnd) }),
             body: [],
             close: ast.closeBlock(closeHead.span, {
-                span: span_1.range(closeStart, closeEnd),
+                span: range(closeStart, closeEnd),
             }),
-        }, { span: span_1.range(openStart, closeEnd) });
+        }, { span: range(openStart, closeEnd) });
     };
 }
-exports.block = block;
-function interpolate(...parts) {
+export function interpolate(...parts) {
     return builder => {
         let start = builder.pos;
         builder.consume("{{");
@@ -204,14 +179,13 @@ function interpolate(...parts) {
         return ast.interpolate(body, { span: { start, end } });
     };
 }
-exports.interpolate = interpolate;
 function assert(input, cb) {
     let success = typeof cb === "function" ? cb(input) : !!input;
     if (success === false) {
         throw new Error(`ASSERT`);
     }
 }
-function call(...parts) {
+export function call(...parts) {
     return builder => {
         let start = builder.pos;
         builder.consume("(");
@@ -221,7 +195,6 @@ function call(...parts) {
         return ast.call(body, { span: { start, end } });
     };
 }
-exports.call = call;
 function callBody(...parts) {
     return builder => {
         let { beforeWS, afterWS, head, positional, named } = extractCallParts(...parts);
@@ -234,7 +207,7 @@ function callBody(...parts) {
             head: headNode,
             positional: positionalNodes,
             named: namedNode,
-        }, { span: span_1.range(headNode, positionalNodes, namedNode), before, after });
+        }, { span: range(headNode, positionalNodes, namedNode), before, after });
     };
 }
 /**
@@ -244,7 +217,7 @@ function callBody(...parts) {
  * - `@` ID -> ArgReferenceToken
  * - ID -> VarReferenceToken
  */
-function ref(name) {
+export function ref(name) {
     return builder => {
         if (name === "this") {
             return ast.thisReference(builder.token(b.id("this")));
@@ -257,8 +230,7 @@ function ref(name) {
         }
     };
 }
-exports.ref = ref;
-function path(curriedHead, ...tailParts) {
+export function path(curriedHead, ...tailParts) {
     return builder => {
         let start = builder.pos;
         let head = normalizeExpr(curriedHead)(builder);
@@ -270,45 +242,39 @@ function path(curriedHead, ...tailParts) {
         return ast.path({ head, tail }, { start, end });
     };
 }
-exports.path = path;
-function member(part) {
+export function member(part) {
     return builder => {
         let dot = builder.token(b.dot);
         let span = builder.consume(part);
         return ast.member(dot, span);
     };
 }
-exports.member = member;
 /**
  *
  * @param body the outer contents of the string (like `"hello"`)
  */
-function str(body) {
+export function str(body) {
     return builder => {
         let tok = builder.token(b.str(body));
         return ast.string(tok, builder.source);
     };
 }
-exports.str = str;
-function int(body) {
+export function int(body) {
     return builder => {
         let tok = builder.token(b.int(body));
         return ast.number(tok, builder.source);
     };
 }
-exports.int = int;
-function decimal(body) {
+export function decimal(body) {
     return builder => {
         let tok = builder.token(b.decimal(body));
         return ast.number(tok, builder.source);
     };
 }
-exports.decimal = decimal;
-function root(...children) {
+export function root(...children) {
     let builder = new AstBuilder();
     let start = builder.pos;
     let out = children.map(child => child(builder));
     let end = builder.pos;
-    return { root: ast.root(out, span_1.span(start, end)), source: builder.source };
+    return { root: ast.root(out, span(start, end)), source: builder.source };
 }
-exports.root = root;
