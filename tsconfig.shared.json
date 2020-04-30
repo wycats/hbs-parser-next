@@ -6,7 +6,7 @@
     "declarationMap": true /* Generates a sourcemap for each corresponding '.d.ts' file. */,
     "removeComments": false /* Do not emit comments to output. */,
     "moduleResolution": "node",
-
+    "preserveSymlinks": true,
     /* Strict Type-Checking Options */
     "strict": true /* Enable all strict type-checking options. */,
 

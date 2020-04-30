@@ -5,15 +5,15 @@ export function string(token, source) {
     let processed;
     let inner = slice(token.data, source);
     switch (token.quote) {
-        case QuoteType.Double:
+        case 1 /* Double */:
             processed = inner.replace(`\\"`, `"`);
             break;
-        case QuoteType.Single:
+        case 0 /* Single */:
             processed = inner.replace(`\\'`, `'`);
             break;
     }
     return {
-        type: AstNodeType.String,
+        type: "String" /* String */,
         span: token.span,
         string: processed,
         token,
@@ -27,7 +27,7 @@ export function number(token, source) {
         : parseInt(wholeString, 10);
     let num = token.negative ? wholeNumber * -1 : wholeNumber;
     return {
-        type: AstNodeType.Number,
+        type: "Number" /* Number */,
         span: token.span,
         number: num,
         token,
@@ -35,26 +35,26 @@ export function number(token, source) {
 }
 export function thisReference(token) {
     return {
-        type: AstNodeType.ThisReference,
+        type: "ThisReference" /* ThisReference */,
         span: token.span,
     };
 }
 export function varReference(token) {
     return {
-        type: AstNodeType.VarReference,
+        type: "VarReference" /* VarReference */,
         span: token.span,
     };
 }
 export function argReference(token) {
     return {
-        type: AstNodeType.ArgReference,
+        type: "ArgReference" /* ArgReference */,
         span: token.span,
         token,
     };
 }
 export function call(body, { span, before, after }) {
     return {
-        type: AstNodeType.Call,
+        type: "Call" /* Call */,
         span,
         before,
         after,
@@ -63,7 +63,7 @@ export function call(body, { span, before, after }) {
 }
 export function path({ head, tail }, span) {
     return {
-        type: AstNodeType.Path,
+        type: "Path" /* Path */,
         span,
         head,
         tail,
@@ -71,7 +71,7 @@ export function path({ head, tail }, span) {
 }
 export function member(dot, span) {
     return {
-        type: AstNodeType.Member,
+        type: "Member" /* Member */,
         dot,
         span,
     };

@@ -7,9 +7,6 @@ export declare function complete<T extends Debuggable>(source: CombinatorType<T>
 export declare function present<T extends Debuggable>(source: CombinatorType<T>): CombinatorType<T>;
 export declare function combinatorName(c: CombinatorType): string;
 export declare function unreachable(value: never): never;
-export declare type Dict<T> = {
-    [key: number]: T;
-};
 export declare function join<T>(...items: Array<T | null | undefined>): T[];
 export declare function unwrap<T>(v: T | null | undefined): T;
 //# sourceMappingURL=utils.d.ts.map

@@ -1,3 +1,7 @@
+/*
+  This file type infers reliably, and being explicit would be very annoying
+*/
+/* eslint-disable @typescript-eslint/explicit-function-return-type */
 import Any from "./combinators/any";
 import Pattern from "./combinators/pattern";
 import Seq from "./combinators/seq";

@@ -3,7 +3,7 @@ import type { Token, RootToken } from "../read/tokens";
 import { unwrap } from "../read/utils";
 import { slice } from "../span";
 import { AstNode, formatAstNode } from "./nodes";
-import { ParseResult, isErr, ErrorReason, isParseErr } from "./shape";
+import { ParseResult, ErrorReason, isParseErr } from "./shape";
 
 export interface ParseTrace {
   shape: { desc: string };

@@ -20,7 +20,7 @@ export default class Seq<T extends Debuggable[]> extends AbstractCombinator<T> {
         out.push(value);
         current = next.rest;
       } else {
-        return result as any;
+        return result as Result<[Snippet, T]>;
       }
     }
 

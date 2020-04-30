@@ -1,10 +1,10 @@
 import type { ParserArrow, ParseResult } from "../../shape";
 
 export type UnionResult<
-  T extends ReadonlyArray<ParserArrow<void, ParseResult<any>>>
+  T extends ReadonlyArray<ParserArrow<void, ParseResult<unknown>>>
 > = {
   [P in keyof T]: P extends number
-    ? T[P] extends ParserArrow<any, ParseResult<infer R>>
+    ? T[P] extends ParserArrow<unknown, ParseResult<infer R>>
       ? R
       : never
     : never;

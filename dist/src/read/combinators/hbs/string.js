@@ -12,5 +12,5 @@ export default class SomeString extends AbstractCombinator {
         return input.invoke(any("QUOTED_STRING", SINGLE_QUOTED, DOUBLE_QUOTED));
     }
 }
-export const SINGLE_QUOTED = seq("SINGLE_QUOTED", tag(`'`), pattern(/^(\\'|[^'])*/u, "single quote body"), tag(`'`)).map(([open, body, close]) => ok(stringToken({ data: body.span, quote: QuoteType.Single }, range(open, close))));
-export const DOUBLE_QUOTED = seq("DOUBLE_QUOTED", tag(`"`), pattern(/^(\\"|[^"])*/u, "double quote body"), tag(`"`)).map(([open, body, close]) => ok(stringToken({ data: body.span, quote: QuoteType.Double }, range(open, close))));
+export const SINGLE_QUOTED = seq("SINGLE_QUOTED", tag(`'`), pattern(/^(\\'|[^'])*/u, "single quote body"), tag(`'`)).map(([open, body, close]) => ok(stringToken({ data: body.span, quote: 0 /* Single */ }, range(open, close))));
+export const DOUBLE_QUOTED = seq("DOUBLE_QUOTED", tag(`"`), pattern(/^(\\"|[^"])*/u, "double quote body"), tag(`"`)).map(([open, body, close]) => ok(stringToken({ data: body.span, quote: 1 /* Double */ }, range(open, close))));

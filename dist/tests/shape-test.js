@@ -14,6 +14,7 @@ export class CustomArray extends Array {
         if (new.target !== CustomArray) {
             throw new Error(`CustomArray is final -- don't subclass`);
         }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         super(...args);
     }
     breakableReduce(callback, init) {

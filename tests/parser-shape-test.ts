@@ -19,36 +19,67 @@ import {
 import type * as qunit from "qunit";
 import { module, printIndentedItems, test } from "./helpers";
 import {
-  OpName,
   STATE,
+  Step,
+  step,
+  steps,
   StringTrace,
-  trace,
+  TraceBuilder,
   TracedEvaluator,
   Tracer,
   VOID,
+  Steps,
 } from "./tracer";
 
 type Arrow<In, Out> = ops.Arrow<In, Out>;
 
 const ERR = err("mismatch");
 
-function int(value: string): Step {
-  return steps(
-    state("open-parens", ERR),
-    ["parens(AllOk)", ERR],
-    state("int", ok(value)),
-    ["expr(FirstOk)", ok(value)]
-  );
-}
+type MaybeWS = string | null;
 
-@module("math parser")
+type Expr =
+  | string
+  | [Expr, MaybeWS, "+", MaybeWS, Expr]
+  | ["(", MaybeWS, Expr, MaybeWS, ")"];
+
+const takeInt: ParseArrow<Expr> = fromState(
+  state => state.parser.tryMatch(/^\d+/),
+  "int"
+);
+const takePlus = exact("+");
+const takeWS: Arrow<unknown, null | string> = fromState(
+  state => state.parser.match(/^\s+/),
+  "ws?"
+);
+const maybeWS = fallible(takeWS);
+
+const takeParens: ParseArrow<Expr> = recurse(() =>
+  ops.allOk(
+    [
+      exact("(", "open-parens"),
+      maybeWS,
+      takeSum,
+      maybeWS,
+      exact(")", "close-parens"),
+    ],
+    "parens"
+  )
+);
+
+const takeExpr: ParseArrow<Expr> = ops.firstOk(takeParens, takeInt, "expr");
+
+const takeSum = ops.allOk(
+  [takeExpr, maybeWS, takePlus, maybeWS, takeExpr],
+  "sum"
+);
+
+@module("math reader")
 export class MathParserTest {
   declare assert: qunit.Assert;
   private evaluator = parserEvaluator();
   declare parser: Parser;
 
-  @test plus() {
-    Error.stackTraceLimit = 10000;
+  @test plus(): void {
     console.log(printIndentedItems([toIndented(printAST(takeSum))]));
     this.assertInvoke(
       takeSum,
@@ -83,7 +114,7 @@ export class MathParserTest {
     );
   }
 
-  @test paren() {
+  @test paren(): void {
     this.assertInvoke(
       takeSum,
       VOID,
@@ -194,7 +225,7 @@ export class MathParserTest {
     source: string,
     expectedOutput: U,
     ...expectedTraceRecords: StringTrace[]
-  ) {
+  ): void {
     let step = `source: ${JSON.stringify(source)}`;
 
     this.assert.step(step);
@@ -220,110 +251,25 @@ export class MathParserTest {
   }
 }
 
-export function traceStep(
-  opName: OpName,
-  input: unknown,
-  output: unknown
-): TraceBuilder;
-export function traceStep(
-  callback: (builder: TraceBuilder) => TraceBuilder
-): TraceBuilder;
-export function traceStep(
-  opName: OpName | ((builder: TraceBuilder) => TraceBuilder),
-  input?: unknown,
-  output?: unknown
-): TraceBuilder {
-  if (opName instanceof TraceBuilder) {
-    return opName;
-  } else if (typeof opName === "function") {
-    return opName(new TraceBuilder());
-  } else {
-    return new TraceBuilder().step(opName, input, output);
-  }
+function int(value: string): Step {
+  return steps(
+    state("open-parens", ERR),
+    ["parens(AllOk)", ERR],
+    state("int", ok(value)),
+    ["expr(FirstOk)", ok(value)]
+  );
 }
 
-function step(name: OpName, input: unknown, output: unknown): Step {
-  return {
-    type: "step",
-    name,
-    input,
-    output,
-  };
-}
-
-export function token(label: string, value: unknown): Step {
-  return steps(state(label, value), step("Pure", value, ok(value)), [
-    `ok[${label}](Pipeline)`,
-    VOID,
-    ok(value),
-  ]);
-}
-
-export function merge(head: unknown[], tail: unknown): Step {
-  return step("ifOk(Pure)", [head, tail], ok([...head, tail]));
-}
-
-type Step =
-  | {
-      type: "step";
-      name: OpName;
-      input: unknown;
-      output: unknown;
-    }
-  | [OpName, unknown, unknown]
-  | [OpName, unknown] // VOID input
-  | {
-      type: "multiple";
-      builder: TraceBuilder;
-    }
-  | { type: "traces"; traces: StringTrace[] };
-
-function steps(...steps: Step[]): { type: "traces"; traces: StringTrace[] } {
-  let builder = new TraceBuilder();
-
-  for (let step of steps) {
-    if (Array.isArray(step)) {
-      if (step.length === 3) {
-        builder = builder.into(step[0], step[1], step[2]);
-      } else {
-        builder = builder.into(step[0], VOID, step[1]);
-      }
-    } else {
-      switch (step.type) {
-        case "step":
-          builder = builder.step(step.name, step.input, step.output);
-          break;
-        case "multiple":
-          builder = builder.addTraces(step.builder.done());
-          break;
-        case "traces":
-          builder = builder.addTraces(step.traces);
-          break;
-      }
-    }
-  }
-
-  return { type: "traces", traces: builder.done() };
-}
-
-export function getState(): Step {
-  let builder = new TraceBuilder().addTraces([
-    `State: ${formatUnknown(STATE)}`,
-  ]);
-
-  return { type: "traces", traces: builder.done() };
-}
-
-function fallibleState(label: string, value: unknown) {
+function fallibleState(label: string, value: unknown): Steps {
   return steps(state(label, value), step("Pure", value, ok(value)), [
     `ok[${label}](Pipeline)`,
     ok(value),
   ]);
 }
 
-export function state(out: unknown): Step;
-export function state(label: string, out: unknown): Step;
-export function state(...args: [string | unknown, unknown?]): Step {
+function state(out: unknown): Step;
+function state(label: string, out: unknown): Step;
+function state(...args: [string | unknown, unknown?]): Step {
   let out = args.length === 2 ? args[1] : args[0];
   let label = args.length === 2 ? (args[0] as string) : undefined;
 
@@ -333,30 +279,6 @@ export function state(...args: [string | unknown, unknown?]): Step {
     .into({ type: "Pipeline", label }, VOID, out);
 
   return { type: "multiple", builder };
-}
-
-class TraceBuilder {
-  constructor(private traces: StringTrace[] = []) {}
-
-  addTraces(traces: StringTrace[]): this {
-    this.traces.push(...traces);
-    return this;
-  }
-
-  step(opName: OpName, input: unknown, output: unknown): this {
-    this.traces.push(trace(opName, input, output));
-
-    return this;
-  }
-
-  into(opName: OpName, input: unknown, output: unknown) {
-    this.traces = [trace(opName, input, output, this.traces)];
-    return this;
-  }
-
-  done(): StringTrace[] {
-    return this.traces;
-  }
 }
 
 class State implements RawFormattable {
@@ -444,43 +366,6 @@ type ArrowResult<T extends Arrow<unknown, unknown>> = T extends Arrow<
   : never;
 
 type ParseArrow<Out> = Arrow<unknown, Result<Out>>;
-
-type MaybeWS = string | null;
-
-type Expr =
-  | string
-  | [Expr, MaybeWS, "+", MaybeWS, Expr]
-  | ["(", MaybeWS, Expr, MaybeWS, ")"];
-
-const takeInt: ParseArrow<Expr> = fromState(
-  state => state.parser.tryMatch(/^\d+/),
-  "int"
-);
-const takePlus = exact("+");
-const takeWS: Arrow<unknown, null | string> = fromState(
-  state => state.parser.match(/^\s+/),
-  "ws?"
-);
-const maybeWS = fallible(takeWS);
-
-const takeParens: ParseArrow<Expr> = recurse(() =>
-  ops.allOk(
-    [
-      exact("(", "open-parens"),
-      maybeWS,
-      takeSum,
-      maybeWS,
-      exact(")", "close-parens"),
-    ],
-    "parens"
-  )
-);
-const takeExpr: ParseArrow<Expr> = ops.firstOk(takeParens, takeInt, "expr");
-
-const takeSum = ops.allOk(
-  [takeExpr, maybeWS, takePlus, maybeWS, takeExpr],
-  "sum"
-);
 
 type ParserEvaluator = ops.StatefulEvaluator<{
   parser: Parser;

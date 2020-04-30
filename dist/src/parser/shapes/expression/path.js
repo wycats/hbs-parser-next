@@ -7,9 +7,9 @@ import { ArgRefArrow } from "./args-ref";
 import { SexpArrow } from "./sexp";
 import { VarRefArrow } from "./var-ref";
 export const PathMemberArrow = ParserArrow.start()
-    .token(TokenType.Dot)
+    .token("Dot" /* Dot */)
     .named("dot")
-    .extend("id", ParserArrow.start().token(TokenType.Identifier))
+    .extend("id", ParserArrow.start().token("Identifier" /* Identifier */))
     .ifOk(({ dot, id }) => ast.member(dot, id.span))
     .atomic()
     .label("PathMember");

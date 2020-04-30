@@ -10,7 +10,7 @@ export default class Maybe<
     super();
   }
 
-  get name() {
+  get name(): string {
     return `maybe ${this.combinator.name}`;
   }
 

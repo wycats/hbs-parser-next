@@ -14,18 +14,18 @@ export function serializeNode(token, source) {
     }
     switch (token.type) {
         // leaf tokens
-        case TokenType.Dot:
-        case TokenType.Eq:
-        case TokenType.Identifier:
-        case TokenType.WS:
-        case TokenType.Text:
-        case TokenType.AttributeName:
+        case "Dot" /* Dot */:
+        case "Eq" /* Eq */:
+        case "Identifier" /* Identifier */:
+        case "WS" /* WS */:
+        case "Text" /* Text */:
+        case "AttributeName" /* AttributeName */:
             return [slice(token.span, source)];
-        case TokenType.String: {
-            let quote = token.quote === QuoteType.Single ? `'` : `"`;
+        case "String" /* String */: {
+            let quote = token.quote === 0 /* Single */ ? `'` : `"`;
             return [quote, slice(token.data, source), quote];
         }
-        case TokenType.Number: {
+        case "Number" /* Number */: {
             let out = [];
             if (token.negative) {
                 out.push(slice(token.negative, source));
@@ -36,58 +36,58 @@ export function serializeNode(token, source) {
             }
             return out;
         }
-        case TokenType.ArgName:
+        case "ArgName" /* ArgName */:
             return ["@", slice(token.name, source)];
-        case TokenType.AttributeValue:
+        case "AttributeValue" /* AttributeValue */:
             return serializeAttributeValue(token, source);
-        case TokenType.Argument:
+        case "Argument" /* Argument */:
             return ["@", slice(token.name, source)];
-        case TokenType.Sexp:
+        case "Sexp" /* Sexp */:
             return ["(", ...serializeList(token.children, source), ")"];
-        case TokenType.UntrustedInterpolate:
+        case "Interpolate" /* UntrustedInterpolate */:
             return ["{{", ...serializeList(token.children, source), "}}"];
-        case TokenType.TrustedInterpolate:
+        case "TrustedInterpolate" /* TrustedInterpolate */:
             return ["{{{", ...serializeList(token.children, source), "}}}"];
-        case TokenType.Block:
+        case "Block" /* Block */:
             return [
                 ...serializeNode(token.open, source),
                 ...serializeList(token.body, source),
                 ...serializeNode(token.close, source),
             ];
-        case TokenType.OpenBlock:
+        case "OpenBlock" /* OpenBlock */:
             return [
                 "{{#",
                 ...serializeList(token.name, source),
                 ...serializeList(token.head, source),
                 "}}",
             ];
-        case TokenType.BlockParams:
+        case "BlockParams" /* BlockParams */:
             return ["as |", ...serializeList(token.params, source), "|"];
-        case TokenType.CloseBlock:
+        case "CloseBlock" /* CloseBlock */:
             return ["{{/", ...serializeList(token.name, source), "}}"];
-        case TokenType.Comment:
+        case "Comment" /* Comment */:
             return ["<!--", slice(token.data, source), "-->"];
-        case TokenType.StartTag:
+        case "StartTag" /* StartTag */:
             return [
                 "<",
                 ...serializeList(token.name, source),
                 ...serializeList(token.attributes, source),
                 ">",
             ];
-        case TokenType.EndTag:
+        case "EndTag" /* EndTag */:
             return [
                 "</",
                 ...serializeList(token.name, source),
                 ...serializeNode(token.trailing, source),
                 ">",
             ];
-        case TokenType.ValuedAttribute:
+        case "ValuedAttribute" /* ValuedAttribute */:
             return [
                 ...serializeNode(token.name, source),
                 "=",
                 ...serializeNode(token.value, source),
             ];
-        case TokenType.StringInterpolation:
+        case "StringInterpolation" /* StringInterpolation */:
             return serializeList(token.parts, source);
         default:
             return unreachable(token);
@@ -105,9 +105,9 @@ function serializeAttributeValue(token, source) {
 }
 function serializeQuote(token) {
     switch (token.valueType) {
-        case AttributeValueType.SingleQuoted:
+        case "SingleQuoted" /* SingleQuoted */:
             return `'`;
-        case AttributeValueType.DoubleQuoted:
+        case "DoubleQuoted" /* DoubleQuoted */:
             return `"`;
         default:
             return "";

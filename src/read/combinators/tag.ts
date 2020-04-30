@@ -6,7 +6,7 @@ export default class Tag extends AbstractCombinator<Snippet> {
     super();
   }
 
-  get name() {
+  get name(): string {
     return JSON.stringify(this.source);
   }
 

@@ -194,3 +194,58 @@ export function raw(value) {
 export const STATE = raw("<State>");
 export const VOID = raw("<void>");
 export const STATE_TRACE = `State: ${formatUnknown(STATE)}`;
+export class TraceBuilder {
+    constructor(traces = []) {
+        this.traces = traces;
+    }
+    addTraces(traces) {
+        this.traces.push(...traces);
+        return this;
+    }
+    step(opName, input, output) {
+        this.traces.push(trace(opName, input, output));
+        return this;
+    }
+    into(opName, input, output) {
+        this.traces = [trace(opName, input, output, this.traces)];
+        return this;
+    }
+    done() {
+        return this.traces;
+    }
+}
+export function step(name, input, output) {
+    return {
+        type: "step",
+        name,
+        input,
+        output,
+    };
+}
+export function steps(...steps) {
+    let builder = new TraceBuilder();
+    for (let step of steps) {
+        if (Array.isArray(step)) {
+            if (step.length === 3) {
+                builder = builder.into(step[0], step[1], step[2]);
+            }
+            else {
+                builder = builder.into(step[0], VOID, step[1]);
+            }
+        }
+        else {
+            switch (step.type) {
+                case "step":
+                    builder = builder.step(step.name, step.input, step.output);
+                    break;
+                case "multiple":
+                    builder = builder.addTraces(step.builder.done());
+                    break;
+                case "traces":
+                    builder = builder.addTraces(step.traces);
+                    break;
+            }
+        }
+    }
+    return { type: "traces", traces: builder.done() };
+}

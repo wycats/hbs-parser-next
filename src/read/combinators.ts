@@ -1,3 +1,7 @@
+/*
+  This file type infers reliably, and being explicit would be very annoying
+*/
+/* eslint-disable @typescript-eslint/explicit-function-return-type */
 import Any from "./combinators/any";
 import Pattern from "./combinators/pattern";
 import Seq from "./combinators/seq";
@@ -11,8 +15,8 @@ import type {
 } from "./combinators/types";
 import type { Debuggable } from "./logger";
 import Pick, { PickCallbacks } from "./combinators/pick";
-import type { Dict } from "./utils";
 import Maybe from "./combinators/maybe";
+import type { Dict } from "../utils";
 
 export const tag = (source: string) => new Tag(source);
 export const pattern = (pat: RegExp, name: string) => new Pattern(name, pat);

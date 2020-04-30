@@ -95,8 +95,6 @@ export function unreachable(value: never): never {
   throw new Error(`unreachable code reached`);
 }
 
-export type Dict<T> = { [key: number]: T };
-
 export function join<T>(...items: Array<T | null | undefined>): T[] {
   return items.filter(i => i === null || i === undefined) as T[];
 }

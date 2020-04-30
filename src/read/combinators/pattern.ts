@@ -6,7 +6,7 @@ export default class Pattern extends AbstractCombinator<Snippet> {
     super();
   }
 
-  get name() {
+  get name(): string {
     return `pattern[${this.desc}]`;
   }
 

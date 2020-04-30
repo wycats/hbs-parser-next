@@ -22,7 +22,7 @@ export default function parse({ input, source, logging, }) {
         return root;
     }
     finally {
-        if (logging === LoggingType.Print) {
+        if (logging === "Print" /* Print */) {
             tracer.print(iterator[TOKENS], iterator.source);
         }
     }

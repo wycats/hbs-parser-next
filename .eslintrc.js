@@ -8,14 +8,24 @@ module.exports = {
   env: {
     browser: true,
   },
+  settings: {
+    "import/resolver": {
+      typescript: {
+        directory: ["{src,tests,docs}/tsconfig.json"],
+      },
+      webpack: true,
+    },
+  },
   overrides: [
     {
       files: ["**/*.ts"],
       plugins: ["@glimmerx", "@typescript-eslint", "prettier"],
       extends: [
-        "plugin:@typescript-eslint/eslint-recommended",
         "plugin:@typescript-eslint/recommended",
         "prettier/@typescript-eslint",
+        "plugin:import/errors",
+        "plugin:import/warnings",
+        "plugin:import/typescript",
       ],
       rules: {
         "@glimmerx/template-vars": "error",
@@ -23,12 +33,16 @@ module.exports = {
           "error",
           {
             allowExpressions: true,
+            allowTypedFunctionExpressions: true,
+            allowHigherOrderFunctions: true,
           },
         ],
+        "@typescript-eslint/no-empty-interface": "off",
         "@typescript-eslint/no-unused-vars": [
           "error",
           { argsIgnorePattern: "^_" },
         ],
+        "import/export": "off",
         "prefer-const": "off",
         "no-constant-condition": [
           "error",
@@ -36,9 +50,13 @@ module.exports = {
             checkLoops: false,
           },
         ],
+        "@typescript-eslint/no-explicit-any": [
+          "error",
+          { ignoreRestArgs: true },
+        ],
         "@typescript-eslint/no-use-before-define": [
           "error",
-          { functions: false, classes: false },
+          { functions: false, classes: false, variables: false },
         ],
       },
     },

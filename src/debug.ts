@@ -1,9 +1,11 @@
+import type { Dict } from "./utils";
+
 export const FORMAT = Symbol("FORMAT");
 export const SNAPSHOT = Symbol("CLONE");
 
 export function hasFormat(input: unknown): input is RawFormattable {
   return (
-    input !== null && typeof input === "object" && FORMAT in (input as any)
+    input !== null && typeof input === "object" && FORMAT in (input as Dict)
   );
 }
 
@@ -68,7 +70,7 @@ export function formatFormatted(value: Formatted): string {
   }
 }
 
-function formatJSON(input: unknown) {
+function formatJSON(input: unknown): string {
   if (input === null || input === undefined) {
     return JSON.stringify(input);
   } else {

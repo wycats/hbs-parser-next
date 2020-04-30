@@ -4,4 +4,4 @@ import { ParserArrow } from "../shape";
 import "../../read/tokens";
 export const HeadArrow = ExpressionArrow.label("BlockHead");
 export const BlockBodyArrow = TopLevelArrow.repeat();
-export const BlockArrow = ParserArrow.start().parent("block", TokenType.Block, BlockBodyArrow.fallible());
+export const BlockArrow = ParserArrow.start().parent("block", "Block" /* Block */, BlockBodyArrow.fallible());

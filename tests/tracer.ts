@@ -201,8 +201,7 @@ export class TracedEvaluator<OriginalState>
   }
 }
 
-export type InnerNestedStringTrace = [string, StringTrace[]];
-export interface NestedStringTrace extends InnerNestedStringTrace {}
+export type NestedStringTrace = [string, StringTrace[]];
 export type StringTrace = string | NestedStringTrace;
 
 export class Tracer implements RawFormattable {
@@ -238,18 +237,18 @@ export class Tracer implements RawFormattable {
     return this.stack;
   }
 
-  pushLeaf(leaf: string) {
+  pushLeaf(leaf: string): void {
     this.currentChildren.push(leaf);
   }
 
-  preInvoke(name: string) {
+  preInvoke(name: string): void {
     this.linear.push(["enter", name]);
     let record = [name, []] as StringTrace;
     this.currentChildren.push(record);
     this.stack.push(record);
   }
 
-  postInvoke(desc: string) {
+  postInvoke(desc: string): void {
     this.linear.push(["exit", desc]);
 
     let last = this.stack.pop() as [string, StringTrace[]];
@@ -351,3 +350,83 @@ export function raw(value: string): Formattable {
 export const STATE = raw("<State>");
 export const VOID = raw("<void>");
 export const STATE_TRACE = `State: ${formatUnknown(STATE)}`;
+
+export class TraceBuilder {
+  constructor(private traces: StringTrace[] = []) {}
+
+  addTraces(traces: StringTrace[]): this {
+    this.traces.push(...traces);
+    return this;
+  }
+
+  step(opName: OpName, input: unknown, output: unknown): this {
+    this.traces.push(trace(opName, input, output));
+
+    return this;
+  }
+
+  into(opName: OpName, input: unknown, output: unknown): this {
+    this.traces = [trace(opName, input, output, this.traces)];
+    return this;
+  }
+
+  done(): StringTrace[] {
+    return this.traces;
+  }
+}
+
+export function step(name: OpName, input: unknown, output: unknown): Step {
+  return {
+    type: "step",
+    name,
+    input,
+    output,
+  };
+}
+
+export type Step =
+  | {
+      type: "step";
+      name: OpName;
+      input: unknown;
+      output: unknown;
+    }
+  | [OpName, unknown, unknown]
+  | [OpName, unknown] // VOID input
+  | {
+      type: "multiple";
+      builder: TraceBuilder;
+    }
+  | { type: "traces"; traces: StringTrace[] };
+
+export type Steps = { type: "traces"; traces: StringTrace[] };
+
+export function steps(
+  ...steps: Step[]
+): { type: "traces"; traces: StringTrace[] } {
+  let builder = new TraceBuilder();
+
+  for (let step of steps) {
+    if (Array.isArray(step)) {
+      if (step.length === 3) {
+        builder = builder.into(step[0], step[1], step[2]);
+      } else {
+        builder = builder.into(step[0], VOID, step[1]);
+      }
+    } else {
+      switch (step.type) {
+        case "step":
+          builder = builder.step(step.name, step.input, step.output);
+          break;
+        case "multiple":
+          builder = builder.addTraces(step.builder.done());
+          break;
+        case "traces":
+          builder = builder.addTraces(step.traces);
+          break;
+      }
+    }
+  }
+
+  return { type: "traces", traces: builder.done() };
+}

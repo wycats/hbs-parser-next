@@ -48,17 +48,17 @@ export const ATTRIBUTE_VALUE = combinator(() => pick({
     sq: seq("sq", tag(`'`), new StringInterpolation(SQ_STRING_INTERPOLATE), tag(`'`)),
     unquoted: pattern(/^[^\u0009\u000A\u000C\u0020>\0"'<=`]+/u, `unquoted contents`),
 }, {
-    interpolate: interpolate => ok(attrValue({ type: AttributeValueType.Interpolate, value: interpolate }, interpolate.span)),
+    interpolate: interpolate => ok(attrValue({ type: "Interpolate" /* Interpolate */, value: interpolate }, interpolate.span)),
     dq: ([open, value, close]) => ok(attrValue({
-        type: AttributeValueType.DoubleQuoted,
+        type: "DoubleQuoted" /* DoubleQuoted */,
         value,
     }, range(open, close))),
     sq: ([open, value, close]) => ok(attrValue({
-        type: AttributeValueType.SingleQuoted,
+        type: "SingleQuoted" /* SingleQuoted */,
         value,
     }, range(open, close))),
     unquoted: value => ok(attrValue({
-        type: AttributeValueType.Unquoted,
+        type: "Unquoted" /* Unquoted */,
         value: stringInterpolation([text(value.span)], value.span),
     }, value.span)),
 }));

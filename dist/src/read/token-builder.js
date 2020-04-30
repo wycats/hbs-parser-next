@@ -9,7 +9,7 @@ export function str(name) {
         let start = builder.consume(name[0]);
         let data = builder.consume(name.slice(1, -1));
         let end = builder.consume(name.slice(-1));
-        let quote = name[0] === `'` ? tokens.QuoteType.Single : tokens.QuoteType.Double;
+        let quote = name[0] === `'` ? 0 /* Single */ : 1 /* Double */;
         return tokens.stringToken({ data, quote }, range(start, end));
     };
 }
@@ -117,7 +117,7 @@ export function attrInterpolate(...tokenList) {
     return builder => {
         let value = interpolate(...tokenList)(builder);
         return tokens.attrValue({
-            type: tokens.AttributeValueType.Interpolate,
+            type: "Interpolate" /* Interpolate */,
             value,
         }, value.span);
     };
@@ -252,7 +252,7 @@ export function attr(options) {
                         let quoteEnd = builder.consume(`"`);
                         let interpolation = tokens.stringInterpolation([tokens.text(valueSpan)], valueSpan);
                         valueToken = tokens.attrValue({
-                            type: tokens.AttributeValueType.DoubleQuoted,
+                            type: "DoubleQuoted" /* DoubleQuoted */,
                             value: interpolation,
                         }, range(quoteStart, quoteEnd));
                         break;
@@ -263,7 +263,7 @@ export function attr(options) {
                         let quoteEnd = builder.consume(`'`);
                         let interpolation = tokens.stringInterpolation([tokens.text(valueSpan)], valueSpan);
                         valueToken = tokens.attrValue({
-                            type: tokens.AttributeValueType.SingleQuoted,
+                            type: "SingleQuoted" /* SingleQuoted */,
                             value: interpolation,
                         }, range(quoteStart, quoteEnd));
                         break;
@@ -272,7 +272,7 @@ export function attr(options) {
                         let valueSpan = builder.consume(rawValue);
                         let interpolation = tokens.stringInterpolation([tokens.text(valueSpan)], valueSpan);
                         valueToken = tokens.attrValue({
-                            type: tokens.AttributeValueType.Unquoted,
+                            type: "Unquoted" /* Unquoted */,
                             value: interpolation,
                         }, valueSpan);
                     }
@@ -289,11 +289,11 @@ export function attr(options) {
 function quoteType(quote) {
     switch (quote) {
         case `"`:
-            return tokens.AttributeValueType.DoubleQuoted;
+            return "DoubleQuoted" /* DoubleQuoted */;
         case `'`:
-            return tokens.AttributeValueType.SingleQuoted;
+            return "SingleQuoted" /* SingleQuoted */;
         default:
-            return tokens.AttributeValueType.Unquoted;
+            return "Unquoted" /* Unquoted */;
     }
 }
 export class TokenBuilder {

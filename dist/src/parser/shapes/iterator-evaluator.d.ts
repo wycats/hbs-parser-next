@@ -1,7 +1,7 @@
+import { Result } from "../shape";
 import type TokensIterator from "../tokens-iterator";
 import type * as ops from "./core-operations";
-import type { SimpleEvaluator, FallibleArrows, MapFallibleArrows } from "./core-operations";
-import { Result } from "../shape";
+import type { FallibleArrows, MapFallibleArrows, SimpleEvaluator } from "./core-operations";
 export declare abstract class PureEvaluatorImpl<State> implements ops.StatefulEvaluator<State> {
     protected delegate: ops.StatefulEvaluator<State>;
     constructor(delegate?: ops.StatefulEvaluator<State>);

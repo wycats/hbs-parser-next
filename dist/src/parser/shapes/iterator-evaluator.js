@@ -1,4 +1,5 @@
-import { isOk, ok, isErr } from "../shape";
+import { isErr, isOk, ok } from "../shape";
+/* eslint-enable import/no-duplicates */
 export class PureEvaluatorImpl {
     constructor(delegate) {
         this.delegate = delegate ?? this;

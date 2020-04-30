@@ -14,9 +14,9 @@ export const PositionalArrow = recurse(() => WsArrow.named("before")
     .ifOk(out => ast.positional(out, { span: range(...out) }))
     .label("Positional"));
 export const NamedArgumentArrow = recurse(() => ParserArrow.start()
-    .token(TokenType.Identifier)
+    .token("Identifier" /* Identifier */)
     .named("id")
-    .extend("eq", ParserArrow.start().token(TokenType.Eq))
+    .extend("eq", ParserArrow.start().token("Eq" /* Eq */))
     .extend("expr", ExpressionArrow)
     .extend("trailingWS", MaybeWsArrow.fallible())
     .ifOk(({ id, expr, trailingWS }) => ast.namedArg({ name: id, value: expr }, {

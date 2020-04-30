@@ -9,12 +9,6 @@ import { many } from "./multi";
 import { root } from "./tokens";
 import { complete, map, mapResult } from "./utils";
 import { BLOCK, INTERPOLATE } from "./hbs";
-export var LoggingType;
-(function (LoggingType) {
-    LoggingType["Return"] = "Return";
-    LoggingType["Print"] = "Print";
-    LoggingType["None"] = "Off";
-})(LoggingType || (LoggingType = {}));
 export const CONTENT = combinator(() => any("CONTENT", COMMENT, END_TAG, START_TAG, TEXT));
 export const TOP_LEVEL = {
     name: "TOP_LEVEL",
@@ -24,11 +18,11 @@ export const TOP_LEVEL = {
 };
 export function read(source, { logging } = {}) {
     try {
-        let input = Snippet.input(source, new Logger(logging === LoggingType.Return || logging === LoggingType.Print));
+        let input = Snippet.input(source, new Logger(logging === "Return" /* Return */ || logging === "Print" /* Print */));
         let result = input.invoke(complete(map(many(TOP_LEVEL), tokens => {
             return ok(root(tokens, range(...tokens)));
         })));
-        if (logging === LoggingType.Return) {
+        if (logging === "Return" /* Return */) {
             return {
                 root: mapResult(result, ([, token]) => ok(token)),
                 trace: getTrace(),
@@ -39,7 +33,7 @@ export function read(source, { logging } = {}) {
         }
     }
     finally {
-        if (logging === LoggingType.Print) {
+        if (logging === "Print" /* Print */) {
             printTrace();
         }
     }

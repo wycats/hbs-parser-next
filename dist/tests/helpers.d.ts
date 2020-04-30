@@ -4,10 +4,8 @@ export declare function eqResult(left: Result<Snippet>, right: Result<Snippet>):
 export declare function eqSnippet(left: Snippet, right: Snippet): void;
 export declare function eqSnippets(left: Snippet[], right: Snippet[]): void;
 export declare function eqError(left: Result<unknown>, right: Err): void;
-export declare type ListIndentedItem = [string, IndentedItem[]];
-export interface InnerIndentedItem extends ListIndentedItem {
-}
-export declare type IndentedItem = string | InnerIndentedItem;
+export declare type IndentedItemTuple = [string, IndentedItem[]];
+export declare type IndentedItem = string | IndentedItemTuple;
 export declare function printIndentedItems(nodes: IndentedItem[]): string;
 export declare function module(name: string): <T extends {
     new (): object;

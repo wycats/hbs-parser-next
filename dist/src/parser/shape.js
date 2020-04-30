@@ -384,7 +384,7 @@ export class ParserArrow {
         });
     }
     present() {
-        return this.core.andThen(this, this.core.Arr(list => list.length > 0
+        return this.core.andThen(this, this.core.Arr((list) => list.length > 0
             ? parseOk(undefined)
             : parseErr("unknown", { type: "empty" })));
     }
@@ -420,6 +420,7 @@ export class ParserArrow {
         return this.core.lookahead();
     }
 }
+// Convenience function so I can avoid infinite loop pain during development
 function loop(callback) {
     let count = 0;
     while (true) {

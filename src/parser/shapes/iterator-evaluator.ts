@@ -1,11 +1,14 @@
+import { isErr, isOk, ok, Result } from "../shape";
 import type TokensIterator from "../tokens-iterator";
+
+/* eslint-disable import/no-duplicates */
 import type * as ops from "./core-operations";
 import type {
-  SimpleEvaluator,
   FallibleArrows,
   MapFallibleArrows,
+  SimpleEvaluator,
 } from "./core-operations";
-import { isOk, ok, Result, isErr } from "../shape";
+/* eslint-enable import/no-duplicates */
 
 export abstract class PureEvaluatorImpl<State>
   implements ops.StatefulEvaluator<State> {

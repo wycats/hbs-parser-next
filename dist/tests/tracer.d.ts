@@ -26,9 +26,7 @@ export declare class TracedEvaluator<OriginalState> implements ops.StatefulEvalu
     Reduce<In, Out>(...args: [State & OriginalState, [Out, Iterable<In>], ops.ReduceOperation<In, Out>]): Out;
     Repeat<In, Out>(...args: [State & OriginalState, In, ops.RepeatOperation<State & OriginalState, In, Out>]): Out[];
 }
-export declare type InnerNestedStringTrace = [string, StringTrace[]];
-export interface NestedStringTrace extends InnerNestedStringTrace {
-}
+export declare type NestedStringTrace = [string, StringTrace[]];
 export declare type StringTrace = string | NestedStringTrace;
 export declare class Tracer implements RawFormattable {
     input: number[];
@@ -54,4 +52,33 @@ export declare function raw(value: string): Formattable;
 export declare const STATE: Formattable;
 export declare const VOID: Formattable;
 export declare const STATE_TRACE: string;
+export declare class TraceBuilder {
+    private traces;
+    constructor(traces?: StringTrace[]);
+    addTraces(traces: StringTrace[]): this;
+    step(opName: OpName, input: unknown, output: unknown): this;
+    into(opName: OpName, input: unknown, output: unknown): this;
+    done(): StringTrace[];
+}
+export declare function step(name: OpName, input: unknown, output: unknown): Step;
+export declare type Step = {
+    type: "step";
+    name: OpName;
+    input: unknown;
+    output: unknown;
+} | [OpName, unknown, unknown] | [OpName, unknown] | {
+    type: "multiple";
+    builder: TraceBuilder;
+} | {
+    type: "traces";
+    traces: StringTrace[];
+};
+export declare type Steps = {
+    type: "traces";
+    traces: StringTrace[];
+};
+export declare function steps(...steps: Step[]): {
+    type: "traces";
+    traces: StringTrace[];
+};
 //# sourceMappingURL=tracer.d.ts.map

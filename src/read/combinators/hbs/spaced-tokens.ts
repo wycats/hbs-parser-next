@@ -14,7 +14,7 @@ export default class SpacedTokens extends AbstractCombinator<PresentTokens> {
     this.path = new SimplePath(disallowedKeywords);
   }
 
-  get name() {
+  get name(): string {
     if (this.disallowedKeywords) {
       return `SPACED_TOKENS • not ${JSON.stringify(this.disallowedKeywords)}`;
     } else {

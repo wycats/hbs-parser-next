@@ -11,6 +11,14 @@
         "isDefault": true
       },
       "label": "tsc: watch - tsconfig.json"
+    },
+    {
+      "type": "shell",
+      "command": "pnpm run lint",
+      "group": "build",
+      "problemMatcher": ["$eslint-stylish"],
+      "label": "lint:watch",
+      "detail": "esw .eslintrc.js '{src,docs,test}/**/*.ts'"
     }
   ]
 }

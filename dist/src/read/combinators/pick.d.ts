@@ -2,7 +2,7 @@ import { Result, Snippet } from "../../snippet";
 import type { Debuggable } from "../logger";
 import { AbstractCombinator } from "./base";
 import type { Combinators } from "./types";
-import type { Dict } from "../utils";
+import type { Dict } from "../../utils";
 export default class Pick<T extends Dict<Debuggable>, U extends PickCallbacks<T>> extends AbstractCombinator<UnionCallbacks<U>> {
     private combinators;
     private callbacks;

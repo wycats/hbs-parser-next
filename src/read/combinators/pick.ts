@@ -2,7 +2,7 @@ import { ok, Result, Snippet, err } from "../../snippet";
 import type { Debuggable } from "../logger";
 import { AbstractCombinator } from "./base";
 import type { Combinators, CombinatorType } from "./types";
-import type { Dict } from "../utils";
+import type { Dict } from "../../utils";
 
 export default class Pick<
   T extends Dict<Debuggable>,
@@ -24,10 +24,12 @@ export default class Pick<
 
       if (firstResult.kind === "ok") {
         let [next, value] = firstResult.value;
-        let result = this.callbacks[name as any](value as any);
+        let result = ((this.callbacks as unknown) as Dict<Function>)[name](
+          value
+        );
 
         if (result.kind === "ok") {
-          return ok([next, result.value as any]);
+          return ok([next, result.value]);
         } else {
           return result;
         }
@@ -43,8 +45,10 @@ export type PickCallbacks<T extends { [key: string]: Debuggable }> = {
 };
 
 type UnionCallbacks<
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   T extends { [key: string]: (input: any) => Result<Debuggable> }
 > = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [P in keyof T]: T[P] extends (input: any) => Result<infer R>
     ? R extends Debuggable
       ? R

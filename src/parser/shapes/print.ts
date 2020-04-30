@@ -38,7 +38,7 @@ export function toIndented(ast: PrintedAST, key?: string): IndentedItem {
   }
 }
 
-function keyed(head: string, key?: string) {
+function keyed(head: string, key?: string): string {
   if (key) {
     return `${key}: ${head}`;
   } else {

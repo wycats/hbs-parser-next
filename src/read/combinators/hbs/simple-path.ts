@@ -1,7 +1,7 @@
 import { ok, Result, Snippet } from "../../../snippet";
 import { combinator } from "../../combinator";
 import { DOT, ID } from "../../hbs";
-import type { PresentTokens, Token } from "../../tokens";
+import type { PresentTokens } from "../../tokens";
 import { AbstractCombinator } from "../base";
 import Head from "./head";
 

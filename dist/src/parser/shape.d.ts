@@ -61,8 +61,8 @@ export declare function isParseErr<T>(input: ParseResult<T>): input is ParseErr;
 export declare function mapResult<T, U>(result: ParseResult<T>, callback: (input: T) => ParseResult<U>): ParseResult<U>;
 export declare type Thunk<T> = () => T;
 export declare type Step<T, U> = (iterator: TokensIterator, prev: ParseResult<T>) => ParseResult<U>;
-export declare type ArrowResult<T extends ParserArrow<any, any>> = T extends ParserArrow<unknown, infer R> ? R : never;
-export declare type FallibleArrowResult<T extends ParserArrow<any, ParseResult<any>>> = T extends ParserArrow<unknown, ParseResult<infer R>> ? ParseResult<R> : never;
+export declare type ArrowResult<T extends ParserArrow<unknown, unknown>> = T extends ParserArrow<unknown, infer R> ? R : never;
+export declare type FallibleArrowResult<T extends ParserArrow<unknown, ParseResult<unknown>>> = T extends ParserArrow<unknown, ParseResult<infer R>> ? ParseResult<R> : never;
 export declare type SourceStep<U> = (iterator: TokensIterator) => ParseResult<U>;
 export declare const SOURCE: ParseResult<void>;
 export interface ParserArrowCore {

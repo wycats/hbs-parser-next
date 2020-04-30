@@ -1,4 +1,4 @@
-import type { ParserArrow, ParseResult, Result, Err } from "../shape";
+import type { Err, Result } from "../shape";
 
 export class Arrow<In, Out> {
   static delay<A extends Arrow<unknown, unknown>>(callback: () => A): A {
@@ -54,7 +54,7 @@ export class DelayedArrow<In, Out> implements Arrow<In, Out> {
 }
 
 // PureEvaluator includes methods that can plausibly work
-// in the absence of any state.
+// in the absence of unknown state.
 export interface SimpleEvaluator<State> {}
 
 // StatefulEvaluator includes methods that can only work by
@@ -134,7 +134,7 @@ export interface SimpleEvaluator<State> {
 }
 
 export interface OperationMap {
-  Pure: PureOperation<any, unknown>;
+  Pure: PureOperation<unknown, unknown>;
 }
 
 export function pure<In, Out>(
@@ -165,7 +165,7 @@ export interface SimpleEvaluator<State> {
 }
 
 export interface OperationMap {
-  Zip: ZipOperation<any, unknown, any, unknown>;
+  Zip: ZipOperation<unknown, unknown, unknown, unknown>;
 }
 
 export function zip<In1, Out1, In2, Out2>(
@@ -194,7 +194,7 @@ export interface SimpleEvaluator<State> {
 }
 
 export interface OperationMap extends BaseOperation {
-  Pipeline: PipelineOperation<any, unknown, unknown>;
+  Pipeline: PipelineOperation<unknown, unknown, unknown>;
 }
 
 export function pipeline<LeftIn, Middle, RightOut>(
@@ -224,7 +224,7 @@ export interface SimpleEvaluator<State> {
 }
 
 export interface OperationMap extends BaseOperation {
-  MapResult: MapResultOperation<any, unknown, unknown, unknown>;
+  MapResult: MapResultOperation<unknown, unknown, unknown, unknown>;
 }
 
 export function mapResult<LeftIn, ResultInner, IfOkOut, IfErrOut>(
@@ -253,7 +253,7 @@ export interface SimpleEvaluator<State> {
 }
 
 export interface OperationMap extends BaseOperation {
-  BothOk: BothOkOperation<any, unknown, unknown>;
+  BothOk: BothOkOperation<unknown, unknown, unknown>;
 }
 
 export function bothOk<In, LeftOut, RightOut>(
@@ -300,7 +300,7 @@ export interface SimpleEvaluator<State> {
 }
 
 export interface OperationMap extends BaseOperation {
-  AllOk: AllOkOperation<any, FallibleArrows<any>>;
+  AllOk: AllOkOperation<unknown, FallibleArrows<unknown>>;
 }
 
 export function allOk<In, Arrows extends FallibleArrows<In>>(
@@ -327,7 +327,7 @@ export interface SimpleEvaluator<State> {
 }
 
 export interface OperationMap extends BaseOperation {
-  FirstOk: FirstOkOperation<any, unknown, unknown>;
+  FirstOk: FirstOkOperation<unknown, unknown, unknown>;
 }
 
 export function firstOk<In, LeftOut, RightOut>(
@@ -355,7 +355,7 @@ export interface SimpleEvaluator<State> {
 }
 
 export interface OperationMap extends BaseOperation {
-  MapInput: MapInputOperation<any, unknown>;
+  MapInput: MapInputOperation<unknown, unknown>;
 }
 
 export function mapInput<ArrowIn, MapOut>(
@@ -383,7 +383,7 @@ export interface SimpleEvaluator<State> {
 }
 
 export interface OperationMap {
-  Merge: MergeOperation<any, unknown, unknown>;
+  Merge: MergeOperation<unknown, unknown, unknown>;
 }
 
 export function merge<In, LeftOut, RightOut>(
@@ -412,7 +412,7 @@ export interface SimpleEvaluator<State> {
 }
 
 export interface OperationMap {
-  KeepAndThen: KeepAndThenOperation<any, unknown, unknown>;
+  KeepAndThen: KeepAndThenOperation<unknown, unknown, unknown>;
 }
 
 export function keepAndThen<In, LeftOut, RightOut>(
@@ -439,7 +439,7 @@ export interface StatefulEvaluator<State> {
 }
 
 export interface OperationMap {
-  Repeat: RepeatOperation<any, any, unknown>;
+  Repeat: RepeatOperation<unknown, unknown, unknown>;
 }
 
 export function repeat<State, In, Out>(
@@ -486,7 +486,7 @@ export interface SimpleEvaluator<State> {
 }
 
 export interface OperationMap {
-  Reduce: ReduceOperation<any, unknown>;
+  Reduce: ReduceOperation<unknown, unknown>;
 }
 
 export function reduce<In, Out>(

@@ -1,34 +1,34 @@
 import "../nodes";
 export function root(children, span) {
     return {
-        type: AstNodeType.Root,
+        type: "Root" /* Root */,
         span,
         children,
     };
 }
 export function text(token) {
     return {
-        type: AstNodeType.Text,
+        type: "Text" /* Text */,
         span: token.span,
     };
 }
 export function interpolate(body, base) {
     return {
-        type: AstNodeType.Interpolate,
+        type: "Interpolate" /* Interpolate */,
         ...base,
         body,
     };
 }
 export function blockParams(params, span) {
     return {
-        type: AstNodeType.BlockParams,
+        type: "BlockParams" /* BlockParams */,
         params,
         span,
     };
 }
 export function openBlock({ head, positional = null, named = null, params = null, }, base) {
     return {
-        type: AstNodeType.OpenBlock,
+        type: "OpenBlock" /* OpenBlock */,
         ...base,
         head,
         positional,
@@ -38,14 +38,14 @@ export function openBlock({ head, positional = null, named = null, params = null
 }
 export function closeBlock(name, base) {
     return {
-        type: AstNodeType.CloseBlock,
+        type: "CloseBlock" /* CloseBlock */,
         ...base,
         name,
     };
 }
 export function block({ open, body, close, }, base) {
     return {
-        type: AstNodeType.Block,
+        type: "Block" /* Block */,
         ...base,
         open,
         body,

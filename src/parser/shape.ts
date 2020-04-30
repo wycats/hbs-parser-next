@@ -196,11 +196,11 @@ export type Step<T, U> = (
 ) => ParseResult<U>;
 
 export type ArrowResult<
-  T extends ParserArrow<any, any>
+  T extends ParserArrow<unknown, unknown>
 > = T extends ParserArrow<unknown, infer R> ? R : never;
 
 export type FallibleArrowResult<
-  T extends ParserArrow<any, ParseResult<any>>
+  T extends ParserArrow<unknown, ParseResult<unknown>>
 > = T extends ParserArrow<unknown, ParseResult<infer R>>
   ? ParseResult<R>
   : never;
@@ -739,7 +739,7 @@ export class ParserArrow<T, U> {
   ): ParserArrow<Pre, ParseResult<void>> {
     return this.core.andThen(
       this,
-      this.core.Arr(list =>
+      this.core.Arr((list: unknown[]) =>
         list.length > 0
           ? (parseOk(undefined) as ParseResult<void>)
           : (parseErr("unknown", { type: "empty" }) as ParseResult<void>)
@@ -814,7 +814,8 @@ export type ResultObject<K extends string, T> = {
   [P in K]: T;
 };
 
-function loop(callback: (i: number) => "break" | "continue" | undefined) {
+// Convenience function so I can avoid infinite loop pain during development
+function loop(callback: (i: number) => "break" | "continue" | undefined): void {
   let count = 0;
 
   while (true) {

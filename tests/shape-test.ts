@@ -20,6 +20,7 @@ export class CustomArray<T> extends Array<T>
       throw new Error(`CustomArray is final -- don't subclass`);
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     super(...(args as any));
   }
 
@@ -159,26 +160,26 @@ export class ArrowEvaluationTest {
     return op.invoke(null, this.evaluator, input);
   }
 
-  @test pure(assert: qunit.Assert) {
+  @test pure(assert: qunit.Assert): void {
     assert.equal(this.invoke(increment, 1), 2);
   }
 
-  @test zip(assert: qunit.Assert) {
+  @test zip(assert: qunit.Assert): void {
     let zipped = ops.zip(increment, decrement);
     assert.deepEqual(this.invoke(zipped, [5, 5]), [6, 4]);
   }
 
-  @test pipeline(assert: qunit.Assert) {
+  @test pipeline(assert: qunit.Assert): void {
     let pipeline = ops.pipeline(increment, double);
     assert.deepEqual(this.invoke(pipeline, 5), 12);
   }
 
-  @test merge(assert: qunit.Assert) {
+  @test merge(assert: qunit.Assert): void {
     let concurrent = ops.merge(increment, double);
     assert.deepEqual(this.invoke(concurrent, 5), [6, 10]);
   }
 
-  @test mergeAndThen(assert: qunit.Assert) {
+  @test mergeAndThen(assert: qunit.Assert): void {
     let pipeline = ops.keepAndThen(increment, double);
     assert.deepEqual(this.invoke(pipeline, 5), [6, 12]);
   }
@@ -191,7 +192,7 @@ class Tracer {
   private stack: StringTrace[] = [];
   constructor(public input: number[] = []) {}
 
-  toJSON() {
+  toJSON(): string {
     return "<State>";
   }
 
@@ -215,17 +216,17 @@ class Tracer {
     return this.stack;
   }
 
-  pushLeaf(leaf: string) {
+  pushLeaf(leaf: string): void {
     this.currentChildren.push(leaf);
   }
 
-  preInvoke(name: string) {
+  preInvoke(name: string): void {
     let record = [name, []] as StringTrace;
     this.currentChildren.push(record);
     this.stack.push(record);
   }
 
-  postInvoke(desc: string) {
+  postInvoke(desc: string): void {
     let last = this.stack.pop() as [string, StringTrace[]];
     last[0] = desc;
   }
@@ -268,7 +269,7 @@ function format(op: { type: string; label?: string }): string {
   return op.label ? `${op.label}(${op.type})` : op.type;
 }
 
-export function formatJSON(input: unknown) {
+export function formatJSON(input: unknown): string {
   return JSON.stringify(input)
     .replace(/\\?"/g, `'`)
     .replace(/'(<.*?>)'/, "$1");
@@ -415,7 +416,7 @@ export class StatefulArrowEvaluationTest {
     input: T,
     expectedOutput: U,
     ...expectedTraceRecords: StringTrace[]
-  ) {
+  ): void {
     let actual = this.invoke(arrow, input);
     this.assert.deepEqual(
       actual,
@@ -434,11 +435,11 @@ export class StatefulArrowEvaluationTest {
     return op.invoke(this.tracer, this.evaluator, input);
   }
 
-  @test pure() {
+  @test pure(): void {
     this.assertInvoke(increment, 1, 2, incrementTrace(1, 2));
   }
 
-  @test zip() {
+  @test zip(): void {
     this.assertInvoke(
       ops.zip(increment, decrement),
       [5, 5],
@@ -450,14 +451,14 @@ export class StatefulArrowEvaluationTest {
     );
   }
 
-  @test pipeline() {
+  @test pipeline(): void {
     this.assertInvoke(ops.pipeline(increment, double), 5, 12, [
       formatOp(5, { type: "Pipeline" }, 12),
       [incrementTrace(5, 6), doubleTrace(6, 12)],
     ]);
   }
 
-  @test merge() {
+  @test merge(): void {
     this.assertInvoke(
       ops.merge(increment, double),
       5,
@@ -469,7 +470,7 @@ export class StatefulArrowEvaluationTest {
     );
   }
 
-  @test mergeAndThen() {
+  @test mergeAndThen(): void {
     this.assertInvoke(
       ops.keepAndThen(increment, double),
       5,
@@ -512,7 +513,7 @@ export class StatefulArrowEvaluationTest {
     );
   }
 
-  @test repeat() {
+  @test repeat(): void {
     this.tracer.input = [1, 2, 3];
 
     let extract = ops.pure<[unknown, Tracer], Result<number>>(([, state]) => {

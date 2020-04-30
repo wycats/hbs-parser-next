@@ -7,18 +7,27 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 };
 import { baseErr as err, baseOk as ok, FORMAT, formatUnknown, ops, printAST, SNAPSHOT, StatefulEvaluatorImpl, toIndented, } from "hbs-parser-next";
 import { module, printIndentedItems, test } from "./helpers";
-import { STATE, trace, TracedEvaluator, Tracer, VOID, } from "./tracer";
+import { STATE, step, steps, TraceBuilder, TracedEvaluator, Tracer, VOID, } from "./tracer";
 const ERR = err("mismatch");
-function int(value) {
-    return steps(state("open-parens", ERR), ["parens(AllOk)", ERR], state("int", ok(value)), ["expr(FirstOk)", ok(value)]);
-}
+const takeInt = fromState(state => state.parser.tryMatch(/^\d+/), "int");
+const takePlus = exact("+");
+const takeWS = fromState(state => state.parser.match(/^\s+/), "ws?");
+const maybeWS = fallible(takeWS);
+const takeParens = recurse(() => ops.allOk([
+    exact("(", "open-parens"),
+    maybeWS,
+    takeSum,
+    maybeWS,
+    exact(")", "close-parens"),
+], "parens"));
+const takeExpr = ops.firstOk(takeParens, takeInt, "expr");
+const takeSum = ops.allOk([takeExpr, maybeWS, takePlus, maybeWS, takeExpr], "sum");
 let MathParserTest = /** @class */ (() => {
     let MathParserTest = class MathParserTest {
         constructor() {
             this.evaluator = parserEvaluator();
         }
         plus() {
-            Error.stackTraceLimit = 10000;
             console.log(printIndentedItems([toIndented(printAST(takeSum))]));
             this.assertInvoke(takeSum, VOID, "1+1", ok(["1", null, "+", null, "1"]), ...steps(int("1"), fallibleState("ws?", null), state("+", ok("+")), fallibleState("ws?", null), int("1"), ["sum(AllOk)", ok(["1", null, "+", null, "1"])]).traces);
             this.assertInvoke(takeSum, VOID, "1 + 1", ok(["1", " ", "+", " ", "1"]), ...steps(int("1"), fallibleState("ws?", " "), state("+", ok("+")), fallibleState("ws?", " "), int("1"), ["sum(AllOk)", ok(["1", " ", "+", " ", "1"])]).traces);
@@ -83,72 +92,13 @@ let MathParserTest = /** @class */ (() => {
         test
     ], MathParserTest.prototype, "paren", null);
     MathParserTest = __decorate([
-        module("math parser")
+        module("math reader")
     ], MathParserTest);
     return MathParserTest;
 })();
 export { MathParserTest };
-export function traceStep(opName, input, output) {
-    if (opName instanceof TraceBuilder) {
-        return opName;
-    }
-    else if (typeof opName === "function") {
-        return opName(new TraceBuilder());
-    }
-    else {
-        return new TraceBuilder().step(opName, input, output);
-    }
-}
-function step(name, input, output) {
-    return {
-        type: "step",
-        name,
-        input,
-        output,
-    };
-}
-export function token(label, value) {
-    return steps(state(label, value), step("Pure", value, ok(value)), [
-        `ok[${label}](Pipeline)`,
-        VOID,
-        ok(value),
-    ]);
-}
-export function merge(head, tail) {
-    return step("ifOk(Pure)", [head, tail], ok([...head, tail]));
-}
-function steps(...steps) {
-    let builder = new TraceBuilder();
-    for (let step of steps) {
-        if (Array.isArray(step)) {
-            if (step.length === 3) {
-                builder = builder.into(step[0], step[1], step[2]);
-            }
-            else {
-                builder = builder.into(step[0], VOID, step[1]);
-            }
-        }
-        else {
-            switch (step.type) {
-                case "step":
-                    builder = builder.step(step.name, step.input, step.output);
-                    break;
-                case "multiple":
-                    builder = builder.addTraces(step.builder.done());
-                    break;
-                case "traces":
-                    builder = builder.addTraces(step.traces);
-                    break;
-            }
-        }
-    }
-    return { type: "traces", traces: builder.done() };
-}
-export function getState() {
-    let builder = new TraceBuilder().addTraces([
-        `State: ${formatUnknown(STATE)}`,
-    ]);
-    return { type: "traces", traces: builder.done() };
+function int(value) {
+    return steps(state("open-parens", ERR), ["parens(AllOk)", ERR], state("int", ok(value)), ["expr(FirstOk)", ok(value)]);
 }
 function fallibleState(label, value) {
     return steps(state(label, value), step("Pure", value, ok(value)), [
@@ -156,7 +106,7 @@ function fallibleState(label, value) {
         ok(value),
     ]);
 }
-export function state(...args) {
+function state(...args) {
     let out = args.length === 2 ? args[1] : args[0];
     let label = args.length === 2 ? args[0] : undefined;
     let builder = new TraceBuilder()
@@ -164,26 +114,6 @@ export function state(...args) {
         .step("Pure", STATE, out)
         .into({ type: "Pipeline", label }, VOID, out);
     return { type: "multiple", builder };
-}
-class TraceBuilder {
-    constructor(traces = []) {
-        this.traces = traces;
-    }
-    addTraces(traces) {
-        this.traces.push(...traces);
-        return this;
-    }
-    step(opName, input, output) {
-        this.traces.push(trace(opName, input, output));
-        return this;
-    }
-    into(opName, input, output) {
-        this.traces = [trace(opName, input, output, this.traces)];
-        return this;
-    }
-    done() {
-        return this.traces;
-    }
 }
 class State {
     constructor(tracer, parser) {
@@ -243,19 +173,6 @@ function recurse(callback) {
 function exact(s, label = s) {
     return fromState(state => state.parser.tryMatch(s), label);
 }
-const takeInt = fromState(state => state.parser.tryMatch(/^\d+/), "int");
-const takePlus = exact("+");
-const takeWS = fromState(state => state.parser.match(/^\s+/), "ws?");
-const maybeWS = fallible(takeWS);
-const takeParens = recurse(() => ops.allOk([
-    exact("(", "open-parens"),
-    maybeWS,
-    takeSum,
-    maybeWS,
-    exact(")", "close-parens"),
-], "parens"));
-const takeExpr = ops.firstOk(takeParens, takeInt, "expr");
-const takeSum = ops.allOk([takeExpr, maybeWS, takePlus, maybeWS, takeExpr], "sum");
 function parserEvaluator() {
     let tracer = new TracedEvaluator();
     let evaluator = new StatefulEvaluatorImpl(tracer);

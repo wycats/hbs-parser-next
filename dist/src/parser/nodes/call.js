@@ -1,7 +1,7 @@
 import "../nodes";
 export function callBody({ head, positional = null, named = null, }, base) {
     return {
-        type: AstNodeType.CallBody,
+        type: "CallBody" /* CallBody */,
         ...base,
         head,
         positional,
@@ -10,7 +10,7 @@ export function callBody({ head, positional = null, named = null, }, base) {
 }
 export function namedArg({ name, value }, base) {
     return {
-        type: AstNodeType.NamedArgument,
+        type: "NamedArgument" /* NamedArgument */,
         ...base,
         name: name.span,
         value,
@@ -18,14 +18,14 @@ export function namedArg({ name, value }, base) {
 }
 export function namedArgs(args, base) {
     return {
-        type: AstNodeType.NamedArguments,
+        type: "NamedArguments" /* NamedArguments */,
         ...base,
         args,
     };
 }
 export function positional(args, base) {
     return {
-        type: AstNodeType.PositionalArguments,
+        type: "PositionalArguments" /* PositionalArguments */,
         ...base,
         args,
     };

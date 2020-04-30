@@ -10,7 +10,7 @@ export function unwrap<T>(input: Result<T>): T {
   }
 }
 
-export function eqResult(left: Result<Snippet>, right: Result<Snippet>) {
+export function eqResult(left: Result<Snippet>, right: Result<Snippet>): void {
   assert.strictEqual(left.kind, right.kind);
 
   if (left.kind === "ok" && right.kind === "ok") {
@@ -24,11 +24,11 @@ export function eqResult(left: Result<Snippet>, right: Result<Snippet>) {
   }
 }
 
-export function eqSnippet(left: Snippet, right: Snippet) {
+export function eqSnippet(left: Snippet, right: Snippet): void {
   assert.ok(left.eq(right), `left=${left.fmt()} right=${right.fmt()}`);
 }
 
-export function eqSnippets(left: Snippet[], right: Snippet[]) {
+export function eqSnippets(left: Snippet[], right: Snippet[]): void {
   if (left.length !== right.length) {
     assert.ok(
       false,
@@ -46,7 +46,7 @@ export function eqSnippets(left: Snippet[], right: Snippet[]) {
   }
 }
 
-export function eqError(left: Result<unknown>, right: Err) {
+export function eqError(left: Result<unknown>, right: Err): void {
   if (left.kind === "err") {
     assert.ok(
       left.snippet.eq(right.snippet),
@@ -58,9 +58,8 @@ export function eqError(left: Result<unknown>, right: Err) {
   }
 }
 
-export type ListIndentedItem = [string, IndentedItem[]];
-export interface InnerIndentedItem extends ListIndentedItem {}
-export type IndentedItem = string | InnerIndentedItem;
+export type IndentedItemTuple = [string, IndentedItem[]];
+export type IndentedItem = string | IndentedItemTuple;
 
 const SIMPLE = true;
 const SPACE = "   ";
@@ -97,7 +96,11 @@ function printNode(node: IndentedItem, indent: string): string {
   return out;
 }
 
-function printChildNode(node: IndentedItem, indent: string, isLast: boolean) {
+function printChildNode(
+  node: IndentedItem,
+  indent: string,
+  isLast: boolean
+): string {
   let out = indent;
 
   if (isLast) {
@@ -121,7 +124,7 @@ export function module(
   return c => c;
 }
 
-export function test(target: object, name: string) {
+export function test(target: object, name: string): void {
   qunitTest(name, assert => {
     let constructor = target.constructor as {
       new (): {
@@ -130,6 +133,12 @@ export function test(target: object, name: string) {
     };
     let instance = new constructor();
     instance.assert = assert;
-    return (instance as any)[name](assert);
+    return (instance as { assert: qunit.Assert } & Dict<Function>)[name](
+      assert
+    );
   });
+}
+
+interface Dict<T = unknown> {
+  [key: string]: T;
 }
