@@ -1,4 +1,5 @@
-import { AstNodeType, BaseNode, ExpressionAstNode } from "../nodes";
+import type { BaseNode, ExpressionAstNode } from "../node-types";
+import { AstNodeType } from "../node";
 import { SourceSpan } from "../../span";
 import { StringToken, IdentifierToken, NumberToken, ArgumentToken, DotToken } from "../../read/tokens";
 import type { CallBodyNode } from "./call";

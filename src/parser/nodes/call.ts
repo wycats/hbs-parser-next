@@ -1,4 +1,5 @@
-import { AstNodeType, ExpressionAstNode, BaseNode } from "../nodes";
+import type { ExpressionAstNode, BaseNode } from "../node-types";
+import { AstNodeType } from "../node";
 import type { SourceSpan } from "../../span";
 import type { IdentifierToken } from "../../read/tokens";
 

@@ -1,6 +1,7 @@
 import type { CombinatorDebugType, CombinatorType } from "./combinators/types";
-import { Debuggable } from "./logger";
-import type { Result, Snippet } from "../snippet";
+import type { Debuggable } from "./logger";
+import { Result, Snippet } from "../snippet";
+import type { Token, RootToken } from "./tokens";
 export declare type RowResult = "success" | "error" | "start";
 export declare type RowStyle = {
     result: RowResult;
@@ -33,4 +34,6 @@ export declare function printTrace(indent?: number, nestedError?: number, parent
 export declare function indent(): void;
 export declare function outdent(): void;
 export declare function indentWS(): string;
+export declare function formatDebuggable(debuggable: Debuggable): string;
+export declare function debugFormatToken(token: Token | RootToken): string;
 //# sourceMappingURL=debug.d.ts.map

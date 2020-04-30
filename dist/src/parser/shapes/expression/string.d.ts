@@ -1,3 +1,2 @@
-import * as ast from "../../nodes";
-export declare const StringArrow: import("../../shape").ParserArrow<void, (import("../../shape").Err & import("../../shape").ParseErr) | (import("../../shape").Ok<ast.StringNode> & import("../../shape").ParseOk<ast.StringNode>)>;
+export declare const StringArrow: import("../../shape").ParserArrow<void, (import("../../shape").Err & import("../../shape").ParseErr) | (import("../../shape").Ok<import("../../create-node").StringNode> & import("../../shape").ParseOk<import("../../create-node").StringNode>)>;
 //# sourceMappingURL=string.d.ts.map

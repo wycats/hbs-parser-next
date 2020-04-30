@@ -1,6 +1,6 @@
 import "../read/read";
 import { ParseTracer } from "./debug";
-import * as ast from "./nodes";
+import * as a from "./create-node";
 import { ParserArrow } from "./shape";
 import { TopLevelArrow } from "./shapes/top-level";
 import TokensIterator, { TOKENS } from "./tokens-iterator";
@@ -15,7 +15,7 @@ export default function parse({ input, source, logging, }) {
         let topLevel = TopLevelArrow.repeat()
             .fallible()
             .checkNext(ParserArrow.start().eof())
-            .ifOk(nodes => ast.root(nodes, range(...nodes)))
+            .ifOk(nodes => a.root(nodes, range(...nodes)))
             .label("root");
         let state = iterator.arrowState;
         let [, root] = topLevel.invoke(state);

@@ -1,5 +1,5 @@
-import type { AstNode } from "./nodes";
-import * as ast from "./nodes";
+import type { AstNode } from "./node-types";
+import type * as ast from "./node-types";
 import { SourceSpan } from "../span";
 import { CurriedToken } from "../read/token-builder";
 import type { Token, WSToken } from "../read/tokens";

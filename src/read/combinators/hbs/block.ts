@@ -1,9 +1,9 @@
 import { fatalError, ok, Result, Snippet } from "../../../snippet";
 import { range } from "../../../span";
 import { any, maybe, seq, tag } from "../../combinators";
-import { ID, SIMPLE_PATH, WS } from "../../hbs";
+// eslint-disable-next-line import/no-cycle
+import { WS } from "../../hbs";
 import { many } from "../../multi";
-import { TOP_LEVEL } from "../../read";
 import {
   block,
   blockParams,
@@ -16,7 +16,13 @@ import {
   OpenBlockToken,
 } from "../../tokens";
 import { AbstractCombinator } from "../base";
+// eslint-disable-next-line import/no-cycle
+import { TOP_LEVEL } from "../../read";
+import { SIMPLE_PATH } from "./simple-path";
+// eslint-disable-next-line import/no-cycle
 import SpacedTokens from "./spaced-tokens";
+import { ID } from "../core";
+import { combinator } from "../../combinator";
 
 export default class Block extends AbstractCombinator<BlockToken> {
   readonly name = "BLOCK";
@@ -34,6 +40,8 @@ export default class Block extends AbstractCombinator<BlockToken> {
     );
   }
 }
+
+export const BLOCK = combinator(() => new Block());
 
 const BLOCK_SPACED_TOKENS = new SpacedTokens(["as"]);
 
@@ -66,7 +74,7 @@ export class OpenBlock extends AbstractCombinator<OpenBlockToken> {
   }
 }
 
-const OPEN_BLOCK = new OpenBlock();
+const OPEN_BLOCK = combinator(() => new OpenBlock());
 
 // tslint:disable-next-line:max-classes-per-file
 class BlockParams extends AbstractCombinator<BlockParamsToken> {
@@ -86,9 +94,8 @@ class BlockParams extends AbstractCombinator<BlockParamsToken> {
   }
 }
 
-const BLOCK_PARAMS = new BlockParams();
+const BLOCK_PARAMS = combinator(() => new BlockParams());
 
-// tslint:disable-next-line:max-classes-per-file
 export class CloseBlock extends AbstractCombinator<CloseBlockToken> {
   readonly name = "CLOSE_BLOCK";
 

@@ -1,7 +1,8 @@
-import { TokenType } from "../../../read/tokens";
+import { TokenType } from "../../../read/token-enum";
 import { slice } from "../../../span";
-import * as ast from "../../nodes";
 import { parseErr, parseOk, ParserArrow, ParseResult } from "../../shape";
+import type * as ast from "../../node-types";
+import { thisReference, varReference } from "../../create-node";
 
 export const VarRefArrow: ParserArrow<
   void,
@@ -25,9 +26,9 @@ export const VarRefArrow: ParserArrow<
   .extend("source", ParserArrow.start().source().fallible())
   .ifOk(({ id, source }) => {
     if (slice(id.span, source) === "this") {
-      return ast.thisReference(id);
+      return thisReference(id);
     } else {
-      return ast.varReference(id);
+      return varReference(id);
     }
   })
   .label("VarRef");

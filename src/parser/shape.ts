@@ -1,5 +1,6 @@
-import type { Token, TokenType, TokenMap } from "../read/tokens";
-import TokensIterator, { ITERATOR_SOURCE } from "./tokens-iterator";
+import type { Token, TokenMap } from "../read/tokens";
+import type { TokenType } from "../read/token-enum";
+import type { default as TokensIterator } from "./tokens-iterator";
 import {
   FORMAT,
   Formatted,
@@ -9,6 +10,7 @@ import {
   RawFormattable,
 } from "../debug";
 
+export const ITERATOR_SOURCE = Symbol("SOURCE");
 export const EXPAND = Symbol("EXPAND");
 export const RESULT_KIND = Symbol("RESULT_KIND");
 

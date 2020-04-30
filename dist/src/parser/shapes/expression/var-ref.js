@@ -1,7 +1,7 @@
 import "../../../read/tokens";
 import { slice } from "../../../span";
-import * as ast from "../../nodes";
 import { parseErr, parseOk, ParserArrow } from "../../shape";
+import { thisReference, varReference } from "../../create-node";
 export const VarRefArrow = ParserArrow.start()
     .token("Identifier" /* Identifier */)
     .named("id")
@@ -17,10 +17,10 @@ export const VarRefArrow = ParserArrow.start()
     .extend("source", ParserArrow.start().source().fallible())
     .ifOk(({ id, source }) => {
     if (slice(id.span, source) === "this") {
-        return ast.thisReference(id);
+        return thisReference(id);
     }
     else {
-        return ast.varReference(id);
+        return varReference(id);
     }
 })
     .label("VarRef");

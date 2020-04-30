@@ -1,10 +1,9 @@
 import type { ParentToken, Token } from "../read/tokens";
 import type { ParseTracer } from "./debug";
-import { ArrowState, ParserArrow, ParseResult } from "./shape";
+import { ArrowState, ParserArrow, ParseResult, ITERATOR_SOURCE } from "./shape";
 export declare const TOKENS: unique symbol;
 export declare const CONTEXT: unique symbol;
 export declare const POS: unique symbol;
-export declare const ITERATOR_SOURCE: unique symbol;
 export declare class PeekedToken {
     #private;
     private iterator;

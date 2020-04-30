@@ -1,5 +1,5 @@
-import { ITERATOR_SOURCE } from "./tokens-iterator";
 import { FORMAT, SNAPSHOT, formatUnknown, } from "../debug";
+export const ITERATOR_SOURCE = Symbol("SOURCE");
 export const EXPAND = Symbol("EXPAND");
 export const RESULT_KIND = Symbol("RESULT_KIND");
 export function parseOk(value) {

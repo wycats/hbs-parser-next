@@ -43,6 +43,7 @@ module.exports = {
           { argsIgnorePattern: "^_" },
         ],
         "import/export": "off",
+        "import/no-cycle": ["error"],
         "prefer-const": "off",
         "no-constant-condition": [
           "error",

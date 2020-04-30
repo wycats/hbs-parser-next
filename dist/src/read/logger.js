@@ -1,6 +1,4 @@
-import { Snippet } from "../snippet";
 import { indent, outdent, preInvoke, postInvoke } from "./debug";
-import { debugFormatToken } from "./tokens";
 export class Logger {
     constructor(enableLogging) {
         this.enableLogging = enableLogging;
@@ -33,29 +31,5 @@ export function isTransparent(c) {
     }
     else {
         return c.kind === "transparent";
-    }
-}
-export function formatDebuggable(debuggable) {
-    if (typeof debuggable === "string") {
-        return debuggable;
-    }
-    else if (debuggable === null) {
-        return "null";
-    }
-    else if (Array.isArray(debuggable)) {
-        if (debuggable.length <= 2) {
-            return `[${debuggable
-                .map(formatDebuggable)
-                .join(", ")}]`;
-        }
-        else {
-            return `[${formatDebuggable(debuggable[0])}, ${formatDebuggable(debuggable[1])}, ${formatDebuggable(debuggable[2])}, ...]`;
-        }
-    }
-    else if (debuggable instanceof Snippet) {
-        return debuggable.fmt();
-    }
-    else {
-        return debugFormatToken(debuggable);
     }
 }

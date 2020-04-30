@@ -1,4 +1,4 @@
-import * as ast from "./nodes";
+import * as a from "./create-node";
 import * as b from "../read/token-builder";
 import { span, range } from "../span";
 import { TokenBuilder } from "../read/token-builder";
@@ -27,7 +27,7 @@ export default class AstBuilder {
     }
 }
 export function text(chars) {
-    return builder => ast.text(builder.token(b.text(chars)));
+    return builder => a.text(builder.token(b.text(chars)));
 }
 function normalizeExpr(expr) {
     if (typeof expr === "string") {
@@ -116,9 +116,9 @@ function curriedNamed(obj) {
             else {
                 expr = normalizeExpr(value)(builder);
             }
-            args.push(ast.namedArg({ name, value: expr }, { span: range(name, expr), after }));
+            args.push(a.namedArg({ name, value: expr }, { span: range(name, expr), after }));
         }
-        return ast.namedArgs(args, { span: range(...args), before: leading });
+        return a.namedArgs(args, { span: range(...args), before: leading });
     };
 }
 function curriedPositional(...parts) {
@@ -144,7 +144,7 @@ function curriedPositional(...parts) {
             }
         }
         let end = builder.pos;
-        return ast.positional(args, {
+        return a.positional(args, {
             span: { start, end },
             ...(currentWS ? { after: currentWS } : {}),
         });
@@ -160,10 +160,10 @@ export function block(parts) {
         let closeStart = builder.consume(`{{/`);
         let closeHead = head(builder);
         let closeEnd = builder.consume(`}}`);
-        return ast.block({
-            open: ast.openBlock({ ...open }, { span: range(openStart, openEnd) }),
+        return a.block({
+            open: a.openBlock({ ...open }, { span: range(openStart, openEnd) }),
             body: [],
-            close: ast.closeBlock(closeHead.span, {
+            close: a.closeBlock(closeHead.span, {
                 span: range(closeStart, closeEnd),
             }),
         }, { span: range(openStart, closeEnd) });
@@ -176,7 +176,7 @@ export function interpolate(...parts) {
         let body = callBody(...parts)(builder);
         builder.consume("}}");
         let end = builder.pos;
-        return ast.interpolate(body, { span: { start, end } });
+        return a.interpolate(body, { span: { start, end } });
     };
 }
 function assert(input, cb) {
@@ -192,7 +192,7 @@ export function call(...parts) {
         let body = callBody(...parts)(builder);
         builder.consume(")");
         let end = builder.pos;
-        return ast.call(body, { span: { start, end } });
+        return a.call(body, { span: { start, end } });
     };
 }
 function callBody(...parts) {
@@ -203,7 +203,7 @@ function callBody(...parts) {
         let positionalNodes = positional && positional(builder);
         let namedNode = named && named(builder);
         let after = afterWS && builder.token(afterWS);
-        return ast.callBody({
+        return a.callBody({
             head: headNode,
             positional: positionalNodes,
             named: namedNode,
@@ -220,13 +220,13 @@ function callBody(...parts) {
 export function ref(name) {
     return builder => {
         if (name === "this") {
-            return ast.thisReference(builder.token(b.id("this")));
+            return a.thisReference(builder.token(b.id("this")));
         }
         else if (name.startsWith("@")) {
-            return ast.argReference(builder.token(b.arg(name)));
+            return a.argReference(builder.token(b.arg(name)));
         }
         else {
-            return ast.varReference(builder.token(b.id(name)));
+            return a.varReference(builder.token(b.id(name)));
         }
     };
 }
@@ -239,14 +239,14 @@ export function path(curriedHead, ...tailParts) {
             return member(part)(builder);
         });
         let end = builder.pos;
-        return ast.path({ head, tail }, { start, end });
+        return a.path({ head, tail }, { start, end });
     };
 }
 export function member(part) {
     return builder => {
         let dot = builder.token(b.dot);
         let span = builder.consume(part);
-        return ast.member(dot, span);
+        return a.member(dot, span);
     };
 }
 /**
@@ -256,19 +256,19 @@ export function member(part) {
 export function str(body) {
     return builder => {
         let tok = builder.token(b.str(body));
-        return ast.string(tok, builder.source);
+        return a.string(tok, builder.source);
     };
 }
 export function int(body) {
     return builder => {
         let tok = builder.token(b.int(body));
-        return ast.number(tok, builder.source);
+        return a.number(tok, builder.source);
     };
 }
 export function decimal(body) {
     return builder => {
         let tok = builder.token(b.decimal(body));
-        return ast.number(tok, builder.source);
+        return a.number(tok, builder.source);
     };
 }
 export function root(...children) {
@@ -276,5 +276,5 @@ export function root(...children) {
     let start = builder.pos;
     let out = children.map(child => child(builder));
     let end = builder.pos;
-    return { root: ast.root(out, span(start, end)), source: builder.source };
+    return { root: a.root(out, span(start, end)), source: builder.source };
 }

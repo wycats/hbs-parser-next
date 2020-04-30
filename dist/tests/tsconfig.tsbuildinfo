@@ -227,28 +227,33 @@
         "affectsGlobalScope": false
       },
       "../src/read/tokens.d.ts": {
-        "version": "02fde1246c52f673b1b27787f1301b0ee53400d8e939aacd3f2438896ad6d854",
-        "signature": "02fde1246c52f673b1b27787f1301b0ee53400d8e939aacd3f2438896ad6d854",
+        "version": "cd47dc7b0aa077366440906b257daf532d69f60582fcd3b75d3e014092fe9f5b",
+        "signature": "cd47dc7b0aa077366440906b257daf532d69f60582fcd3b75d3e014092fe9f5b",
+        "affectsGlobalScope": false
+      },
+      "../src/parser/node.d.ts": {
+        "version": "3da597c5e5d59210f5e03952472a1391fa87f2947573f0d2cc9127ccf226c33c",
+        "signature": "3da597c5e5d59210f5e03952472a1391fa87f2947573f0d2cc9127ccf226c33c",
         "affectsGlobalScope": false
       },
       "../src/parser/nodes/call.d.ts": {
-        "version": "d2390bc1947a8277fe6cb6b619f19ca0dd26fa4af8125e7a124b0452e9993fe3",
-        "signature": "d2390bc1947a8277fe6cb6b619f19ca0dd26fa4af8125e7a124b0452e9993fe3",
+        "version": "3c3cc476042df405a864b4c88754051227b5cda7f4499fb5664113694af4d879",
+        "signature": "3c3cc476042df405a864b4c88754051227b5cda7f4499fb5664113694af4d879",
         "affectsGlobalScope": false
       },
       "../src/parser/nodes/top-level.d.ts": {
-        "version": "03edbbd04e7b41d8aae37f1892b957509ca8d0064eed846f1a1d6bacf059aebc",
-        "signature": "03edbbd04e7b41d8aae37f1892b957509ca8d0064eed846f1a1d6bacf059aebc",
+        "version": "087e9341de3fbcdc9175287d359f6beeed41168503f40836c60abc62fbe3b1d9",
+        "signature": "087e9341de3fbcdc9175287d359f6beeed41168503f40836c60abc62fbe3b1d9",
         "affectsGlobalScope": false
       },
       "../src/parser/nodes/expression.d.ts": {
-        "version": "cb34cb002892006e1ed018fd5aa24c7a2f9c626a311b8cc4fe632193e57e95fd",
-        "signature": "cb34cb002892006e1ed018fd5aa24c7a2f9c626a311b8cc4fe632193e57e95fd",
+        "version": "09d6293606566ebf987b62fdc51f1f79a8b3d4ba82142153ea13e53c6b8a1c1f",
+        "signature": "09d6293606566ebf987b62fdc51f1f79a8b3d4ba82142153ea13e53c6b8a1c1f",
         "affectsGlobalScope": false
       },
-      "../src/parser/nodes.d.ts": {
-        "version": "1494cec344feaf84fbfc603002a3459a7bfac14c318989f5dda1b47c95747422",
-        "signature": "1494cec344feaf84fbfc603002a3459a7bfac14c318989f5dda1b47c95747422",
+      "../src/parser/node-types.d.ts": {
+        "version": "e9e51512237ab1c6771400c5401ec33c499b70c77c523d8ba9cb681a688e01b5",
+        "signature": "e9e51512237ab1c6771400c5401ec33c499b70c77c523d8ba9cb681a688e01b5",
         "affectsGlobalScope": false
       },
       "../src/read/token-builder.d.ts": {
@@ -257,8 +262,8 @@
         "affectsGlobalScope": false
       },
       "../src/parser/ast-builder.d.ts": {
-        "version": "8916576f3038f30ebde1d9ef4b446d98a60b58e225328b05b931fc3b59e483e1",
-        "signature": "8916576f3038f30ebde1d9ef4b446d98a60b58e225328b05b931fc3b59e483e1",
+        "version": "709d93675b6ae9e3d665dd7b362fadc680d1d935ba39bbc954c59111c99fa028",
+        "signature": "709d93675b6ae9e3d665dd7b362fadc680d1d935ba39bbc954c59111c99fa028",
         "affectsGlobalScope": false
       },
       "../src/parser/debug.d.ts": {
@@ -267,8 +272,8 @@
         "affectsGlobalScope": false
       },
       "../src/parser/tokens-iterator.d.ts": {
-        "version": "d3bbb32927eb7ab22de5ab3818cb6a3515e5323c93a10276c130355cea168363",
-        "signature": "d3bbb32927eb7ab22de5ab3818cb6a3515e5323c93a10276c130355cea168363",
+        "version": "4b0833ada5836a7d016daf680f27ee67fb011f429cc1dd6bf349205f0594fe54",
+        "signature": "4b0833ada5836a7d016daf680f27ee67fb011f429cc1dd6bf349205f0594fe54",
         "affectsGlobalScope": false
       },
       "../src/debug.d.ts": {
@@ -277,8 +282,8 @@
         "affectsGlobalScope": false
       },
       "../src/parser/shape.d.ts": {
-        "version": "af9cd1aecc805a062a876b2f94f6d7447df25bc5b792f90ac4b2c3a7e40dc03e",
-        "signature": "af9cd1aecc805a062a876b2f94f6d7447df25bc5b792f90ac4b2c3a7e40dc03e",
+        "version": "75e68a0c80bdcefdd6a60b9197a0981f9983ff7ee1bc5a080557d42700a2efd3",
+        "signature": "75e68a0c80bdcefdd6a60b9197a0981f9983ff7ee1bc5a080557d42700a2efd3",
         "affectsGlobalScope": false
       },
       "../src/parser/shapes/core-operations.d.ts": {
@@ -292,8 +297,8 @@
         "affectsGlobalScope": false
       },
       "../src/read/logger.d.ts": {
-        "version": "3a87b32c3fe0bcefe5e9ef8ce713845d55322a0e77e373ad8a26f8ac00fd83fa",
-        "signature": "3a87b32c3fe0bcefe5e9ef8ce713845d55322a0e77e373ad8a26f8ac00fd83fa",
+        "version": "728911865bce8865f2c5236e4fe42440d14d0e0833b7fbb49e64c534e36e7758",
+        "signature": "728911865bce8865f2c5236e4fe42440d14d0e0833b7fbb49e64c534e36e7758",
         "affectsGlobalScope": false
       },
       "../src/snippet.d.ts": {
@@ -367,8 +372,8 @@
         "affectsGlobalScope": false
       },
       "../src/read/debug.d.ts": {
-        "version": "f984c3fb6923fa73b6456f20c5a8d467490b3a32949498967195840ddac0df31",
-        "signature": "f984c3fb6923fa73b6456f20c5a8d467490b3a32949498967195840ddac0df31",
+        "version": "4bc09ba926fc490a6d8f8ddb25a25d055585a68ee873ba038554b9823ee460b5",
+        "signature": "4bc09ba926fc490a6d8f8ddb25a25d055585a68ee873ba038554b9823ee460b5",
         "affectsGlobalScope": false
       },
       "../src/read/read.d.ts": {
@@ -377,8 +382,8 @@
         "affectsGlobalScope": false
       },
       "../src/parser/parse.d.ts": {
-        "version": "83f2bf80de326a0ddf2950c5a6f5a2ff439783b062c0e725bf0a75d4a7c83c03",
-        "signature": "83f2bf80de326a0ddf2950c5a6f5a2ff439783b062c0e725bf0a75d4a7c83c03",
+        "version": "fae6df7a5837b8023629b3664b7bb7671ef425865478f49573749a71ccc20cee",
+        "signature": "fae6df7a5837b8023629b3664b7bb7671ef425865478f49573749a71ccc20cee",
         "affectsGlobalScope": false
       },
       "../src/parser/shapes/iterator-evaluator.d.ts": {
@@ -442,8 +447,8 @@
         "affectsGlobalScope": false
       },
       "../src/index.d.ts": {
-        "version": "c8d0dd42e565fb5fd9cb2e13b034d6137f7994e19a4136b5ec21672ca8e39143",
-        "signature": "c8d0dd42e565fb5fd9cb2e13b034d6137f7994e19a4136b5ec21672ca8e39143",
+        "version": "56afdcb9d042791a5ae4fb5403fe4184e0203b49458f2f90f04ea4988582cad3",
+        "signature": "56afdcb9d042791a5ae4fb5403fe4184e0203b49458f2f90f04ea4988582cad3",
         "affectsGlobalScope": false
       },
       "../../types/qunit.d.ts": {
@@ -833,7 +838,7 @@
         "../../node_modules/@types/node/util.d.ts",
         "../src/debug.d.ts",
         "../src/parser/ast-builder.d.ts",
-        "../src/parser/nodes.d.ts",
+        "../src/parser/node-types.d.ts",
         "../src/parser/parse.d.ts",
         "../src/parser/shape.d.ts",
         "../src/parser/shapes/core-operations.d.ts",
@@ -857,7 +862,7 @@
         "../../node_modules/@types/node/ts3.2/fs.d.ts",
         "../../node_modules/@types/node/ts3.2/util.d.ts",
         "../../node_modules/@types/node/util.d.ts",
-        "../src/parser/nodes.d.ts",
+        "../src/parser/node-types.d.ts",
         "../src/read/token-builder.d.ts",
         "../src/read/tokens.d.ts",
         "../src/span.d.ts"
@@ -869,23 +874,31 @@
         "../../node_modules/@types/node/util.d.ts",
         "../src/read/tokens.d.ts"
       ],
-      "../src/parser/nodes.d.ts": [
+      "../src/parser/node-types.d.ts": [
         "../../node_modules/@types/node/fs.d.ts",
         "../../node_modules/@types/node/ts3.2/fs.d.ts",
         "../../node_modules/@types/node/ts3.2/util.d.ts",
         "../../node_modules/@types/node/util.d.ts",
+        "../src/parser/node.d.ts",
         "../src/parser/nodes/call.d.ts",
         "../src/parser/nodes/expression.d.ts",
         "../src/parser/nodes/top-level.d.ts",
         "../src/read/tokens.d.ts",
         "../src/span.d.ts"
       ],
+      "../src/parser/node.d.ts": [
+        "../../node_modules/@types/node/fs.d.ts",
+        "../../node_modules/@types/node/ts3.2/fs.d.ts",
+        "../../node_modules/@types/node/ts3.2/util.d.ts",
+        "../../node_modules/@types/node/util.d.ts"
+      ],
       "../src/parser/nodes/call.d.ts": [
         "../../node_modules/@types/node/fs.d.ts",
         "../../node_modules/@types/node/ts3.2/fs.d.ts",
         "../../node_modules/@types/node/ts3.2/util.d.ts",
         "../../node_modules/@types/node/util.d.ts",
-        "../src/parser/nodes.d.ts",
+        "../src/parser/node-types.d.ts",
+        "../src/parser/node.d.ts",
         "../src/read/tokens.d.ts",
         "../src/span.d.ts"
       ],
@@ -894,7 +907,8 @@
         "../../node_modules/@types/node/ts3.2/fs.d.ts",
         "../../node_modules/@types/node/ts3.2/util.d.ts",
         "../../node_modules/@types/node/util.d.ts",
-        "../src/parser/nodes.d.ts",
+        "../src/parser/node-types.d.ts",
+        "../src/parser/node.d.ts",
         "../src/parser/nodes/call.d.ts",
         "../src/read/tokens.d.ts",
         "../src/span.d.ts"
@@ -904,7 +918,8 @@
         "../../node_modules/@types/node/ts3.2/fs.d.ts",
         "../../node_modules/@types/node/ts3.2/util.d.ts",
         "../../node_modules/@types/node/util.d.ts",
-        "../src/parser/nodes.d.ts",
+        "../src/parser/node-types.d.ts",
+        "../src/parser/node.d.ts",
         "../src/parser/nodes/call.d.ts",
         "../src/read/tokens.d.ts",
         "../src/span.d.ts"
@@ -914,7 +929,7 @@
         "../../node_modules/@types/node/ts3.2/fs.d.ts",
         "../../node_modules/@types/node/ts3.2/util.d.ts",
         "../../node_modules/@types/node/util.d.ts",
-        "../src/parser/nodes.d.ts",
+        "../src/parser/node-types.d.ts",
         "../src/parser/shape.d.ts",
         "../src/read/read.d.ts",
         "../src/read/tokens.d.ts"
@@ -1149,6 +1164,7 @@
         "../../node_modules/@types/node/util.d.ts",
         "../src/read/combinators/types.d.ts",
         "../src/read/logger.d.ts",
+        "../src/read/tokens.d.ts",
         "../src/snippet.d.ts"
       ],
       "../src/read/hbs.d.ts": [
@@ -2055,9 +2071,13 @@
     },
     "exportedModulesMap": {
       "../src/index.d.ts": [
+        "../../node_modules/@types/node/fs.d.ts",
+        "../../node_modules/@types/node/ts3.2/fs.d.ts",
+        "../../node_modules/@types/node/ts3.2/util.d.ts",
+        "../../node_modules/@types/node/util.d.ts",
         "../src/debug.d.ts",
         "../src/parser/ast-builder.d.ts",
-        "../src/parser/nodes.d.ts",
+        "../src/parser/node-types.d.ts",
         "../src/parser/parse.d.ts",
         "../src/parser/shape.d.ts",
         "../src/parser/shapes/core-operations.d.ts",
@@ -2077,7 +2097,11 @@
         "../src/span.d.ts"
       ],
       "../src/parser/ast-builder.d.ts": [
-        "../src/parser/nodes.d.ts",
+        "../../node_modules/@types/node/fs.d.ts",
+        "../../node_modules/@types/node/ts3.2/fs.d.ts",
+        "../../node_modules/@types/node/ts3.2/util.d.ts",
+        "../../node_modules/@types/node/util.d.ts",
+        "../src/parser/node-types.d.ts",
         "../src/read/token-builder.d.ts",
         "../src/read/tokens.d.ts",
         "../src/span.d.ts"
@@ -2085,32 +2109,62 @@
       "../src/parser/debug.d.ts": [
         "../src/read/tokens.d.ts"
       ],
-      "../src/parser/nodes.d.ts": [
+      "../src/parser/node-types.d.ts": [
+        "../../node_modules/@types/node/fs.d.ts",
+        "../../node_modules/@types/node/ts3.2/fs.d.ts",
+        "../../node_modules/@types/node/ts3.2/util.d.ts",
+        "../../node_modules/@types/node/util.d.ts",
+        "../src/parser/node.d.ts",
         "../src/parser/nodes/call.d.ts",
         "../src/parser/nodes/expression.d.ts",
         "../src/parser/nodes/top-level.d.ts",
         "../src/read/tokens.d.ts",
         "../src/span.d.ts"
       ],
+      "../src/parser/node.d.ts": [
+        "../../node_modules/@types/node/fs.d.ts",
+        "../../node_modules/@types/node/ts3.2/fs.d.ts",
+        "../../node_modules/@types/node/ts3.2/util.d.ts",
+        "../../node_modules/@types/node/util.d.ts"
+      ],
       "../src/parser/nodes/call.d.ts": [
-        "../src/parser/nodes.d.ts",
+        "../../node_modules/@types/node/fs.d.ts",
+        "../../node_modules/@types/node/ts3.2/fs.d.ts",
+        "../../node_modules/@types/node/ts3.2/util.d.ts",
+        "../../node_modules/@types/node/util.d.ts",
+        "../src/parser/node-types.d.ts",
+        "../src/parser/node.d.ts",
         "../src/read/tokens.d.ts",
         "../src/span.d.ts"
       ],
       "../src/parser/nodes/expression.d.ts": [
-        "../src/parser/nodes.d.ts",
+        "../../node_modules/@types/node/fs.d.ts",
+        "../../node_modules/@types/node/ts3.2/fs.d.ts",
+        "../../node_modules/@types/node/ts3.2/util.d.ts",
+        "../../node_modules/@types/node/util.d.ts",
+        "../src/parser/node-types.d.ts",
+        "../src/parser/node.d.ts",
         "../src/parser/nodes/call.d.ts",
         "../src/read/tokens.d.ts",
         "../src/span.d.ts"
       ],
       "../src/parser/nodes/top-level.d.ts": [
-        "../src/parser/nodes.d.ts",
+        "../../node_modules/@types/node/fs.d.ts",
+        "../../node_modules/@types/node/ts3.2/fs.d.ts",
+        "../../node_modules/@types/node/ts3.2/util.d.ts",
+        "../../node_modules/@types/node/util.d.ts",
+        "../src/parser/node-types.d.ts",
+        "../src/parser/node.d.ts",
         "../src/parser/nodes/call.d.ts",
         "../src/read/tokens.d.ts",
         "../src/span.d.ts"
       ],
       "../src/parser/parse.d.ts": [
-        "../src/parser/nodes.d.ts",
+        "../../node_modules/@types/node/fs.d.ts",
+        "../../node_modules/@types/node/ts3.2/fs.d.ts",
+        "../../node_modules/@types/node/ts3.2/util.d.ts",
+        "../../node_modules/@types/node/util.d.ts",
+        "../src/parser/node-types.d.ts",
         "../src/parser/shape.d.ts",
         "../src/read/read.d.ts",
         "../src/read/tokens.d.ts"
@@ -2144,6 +2198,10 @@
         "../src/parser/shapes/core-operations.d.ts"
       ],
       "../src/parser/tokens-iterator.d.ts": [
+        "../../node_modules/@types/node/fs.d.ts",
+        "../../node_modules/@types/node/ts3.2/fs.d.ts",
+        "../../node_modules/@types/node/ts3.2/util.d.ts",
+        "../../node_modules/@types/node/util.d.ts",
         "../src/parser/debug.d.ts",
         "../src/parser/shape.d.ts",
         "../src/read/tokens.d.ts"
@@ -2263,8 +2321,13 @@
         "../src/snippet.d.ts"
       ],
       "../src/read/debug.d.ts": [
+        "../../node_modules/@types/node/fs.d.ts",
+        "../../node_modules/@types/node/ts3.2/fs.d.ts",
+        "../../node_modules/@types/node/ts3.2/util.d.ts",
+        "../../node_modules/@types/node/util.d.ts",
         "../src/read/combinators/types.d.ts",
         "../src/read/logger.d.ts",
+        "../src/read/tokens.d.ts",
         "../src/snippet.d.ts"
       ],
       "../src/read/hbs.d.ts": [
@@ -2288,6 +2351,10 @@
         "../src/snippet.d.ts"
       ],
       "../src/read/logger.d.ts": [
+        "../../node_modules/@types/node/fs.d.ts",
+        "../../node_modules/@types/node/ts3.2/fs.d.ts",
+        "../../node_modules/@types/node/ts3.2/util.d.ts",
+        "../../node_modules/@types/node/util.d.ts",
         "../src/read/combinators/types.d.ts",
         "../src/read/tokens.d.ts",
         "../src/snippet.d.ts"
@@ -2311,6 +2378,10 @@
         "../src/span.d.ts"
       ],
       "../src/read/tokens.d.ts": [
+        "../../node_modules/@types/node/fs.d.ts",
+        "../../node_modules/@types/node/ts3.2/fs.d.ts",
+        "../../node_modules/@types/node/ts3.2/util.d.ts",
+        "../../node_modules/@types/node/util.d.ts",
         "../src/span.d.ts"
       ],
       "../src/read/utils.d.ts": [
@@ -2809,7 +2880,8 @@
       "../src/index.d.ts",
       "../src/parser/ast-builder.d.ts",
       "../src/parser/debug.d.ts",
-      "../src/parser/nodes.d.ts",
+      "../src/parser/node-types.d.ts",
+      "../src/parser/node.d.ts",
       "../src/parser/nodes/call.d.ts",
       "../src/parser/nodes/expression.d.ts",
       "../src/parser/nodes/top-level.d.ts",

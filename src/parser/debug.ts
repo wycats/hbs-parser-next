@@ -2,8 +2,9 @@ import { truncString } from "../read/debug";
 import type { Token, RootToken } from "../read/tokens";
 import { unwrap } from "../read/utils";
 import { slice } from "../span";
-import { AstNode, formatAstNode } from "./nodes";
+import type { AstNode } from "./node-types";
 import { ParseResult, ErrorReason, isParseErr } from "./shape";
+import { formatAstNode } from "./create-node";
 
 export interface ParseTrace {
   shape: { desc: string };

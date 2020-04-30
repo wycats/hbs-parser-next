@@ -1,12 +1,12 @@
 import type { TextToken } from "../../read/tokens";
 import type { SourceSpan } from "../../span";
-import {
+import type {
   AstNode,
-  AstNodeType,
   BaseNode,
   ExpressionAstNode,
   TopLevelAstNode,
-} from "../nodes";
+} from "../node-types";
+import { AstNodeType } from "../node";
 import type {
   CallBodyNode,
   PositionalArgumentsNode,

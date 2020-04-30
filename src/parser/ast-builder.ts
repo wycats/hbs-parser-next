@@ -1,5 +1,8 @@
-import type { AstNode } from "./nodes";
-import * as ast from "./nodes";
+// eslint-disable-next-line import/no-duplicates
+import type { AstNode } from "./node-types";
+// eslint-disable-next-line import/no-duplicates
+import type * as ast from "./node-types";
+import * as a from "./create-node";
 import * as b from "../read/token-builder";
 import { span, SourceSpan, range } from "../span";
 import { TokenBuilder, CurriedToken } from "../read/token-builder";
@@ -54,7 +57,7 @@ export default class AstBuilder {
 }
 
 export function text(chars: string): CurriedNode<ast.TextNode> {
-  return builder => ast.text(builder.token(b.text(chars)));
+  return builder => a.text(builder.token(b.text(chars)));
 }
 
 export type ExprInput = CurriedNode<ast.ExpressionAstNode> | string;
@@ -184,11 +187,11 @@ function curriedNamed(
       }
 
       args.push(
-        ast.namedArg({ name, value: expr }, { span: range(name, expr), after })
+        a.namedArg({ name, value: expr }, { span: range(name, expr), after })
       );
     }
 
-    return ast.namedArgs(args, { span: range(...args), before: leading });
+    return a.namedArgs(args, { span: range(...args), before: leading });
   };
 }
 
@@ -227,7 +230,7 @@ function curriedPositional(
 
     let end = builder.pos;
 
-    return ast.positional(args, {
+    return a.positional(args, {
       span: { start, end },
       ...(currentWS ? { after: currentWS } : {}),
     });
@@ -248,11 +251,11 @@ export function block(parts: BlockPart[]): CurriedNode<ast.BlockNode> {
     let closeHead = head(builder);
     let closeEnd = builder.consume(`}}`);
 
-    return ast.block(
+    return a.block(
       {
-        open: ast.openBlock({ ...open }, { span: range(openStart, openEnd) }),
+        open: a.openBlock({ ...open }, { span: range(openStart, openEnd) }),
         body: [],
-        close: ast.closeBlock(closeHead.span, {
+        close: a.closeBlock(closeHead.span, {
           span: range(closeStart, closeEnd),
         }),
       },
@@ -271,7 +274,7 @@ export function interpolate(
     builder.consume("}}");
     let end = builder.pos;
 
-    return ast.interpolate(body, { span: { start, end } });
+    return a.interpolate(body, { span: { start, end } });
   };
 }
 
@@ -294,7 +297,7 @@ export function call(...parts: CallPart[]): CurriedNode<ast.CallNode> {
     builder.consume(")");
     let end = builder.pos;
 
-    return ast.call(body, { span: { start, end } });
+    return a.call(body, { span: { start, end } });
   };
 }
 
@@ -310,7 +313,7 @@ function callBody(...parts: CallPart[]): CurriedNode<ast.CallBodyNode> {
     let namedNode = named && named(builder);
     let after = afterWS && builder.token(afterWS);
 
-    return ast.callBody(
+    return a.callBody(
       {
         head: headNode,
         positional: positionalNodes,
@@ -335,11 +338,11 @@ export function ref(
 > {
   return builder => {
     if (name === "this") {
-      return ast.thisReference(builder.token(b.id("this")));
+      return a.thisReference(builder.token(b.id("this")));
     } else if (name.startsWith("@")) {
-      return ast.argReference(builder.token(b.arg(name)));
+      return a.argReference(builder.token(b.arg(name)));
     } else {
-      return ast.varReference(builder.token(b.id(name)));
+      return a.varReference(builder.token(b.id(name)));
     }
   };
 }
@@ -360,7 +363,7 @@ export function path(
     });
     let end = builder.pos;
 
-    return ast.path({ head, tail }, { start, end });
+    return a.path({ head, tail }, { start, end });
   };
 }
 
@@ -368,7 +371,7 @@ export function member(part: string): CurriedNode<ast.MemberNode> {
   return builder => {
     let dot = builder.token(b.dot);
     let span = builder.consume(part);
-    return ast.member(dot, span);
+    return a.member(dot, span);
   };
 }
 
@@ -379,21 +382,21 @@ export function member(part: string): CurriedNode<ast.MemberNode> {
 export function str(body: string): CurriedNode<ast.StringNode> {
   return builder => {
     let tok = builder.token(b.str(body));
-    return ast.string(tok, builder.source);
+    return a.string(tok, builder.source);
   };
 }
 
 export function int(body: string): CurriedNode<ast.NumberNode> {
   return builder => {
     let tok = builder.token(b.int(body));
-    return ast.number(tok, builder.source);
+    return a.number(tok, builder.source);
   };
 }
 
 export function decimal(body: string): CurriedNode<ast.NumberNode> {
   return builder => {
     let tok = builder.token(b.decimal(body));
-    return ast.number(tok, builder.source);
+    return a.number(tok, builder.source);
   };
 }
 
@@ -405,5 +408,5 @@ export function root(
   let out = children.map(child => child(builder));
   let end = builder.pos;
 
-  return { root: ast.root(out, span(start, end)), source: builder.source };
+  return { root: a.root(out, span(start, end)), source: builder.source };
 }

@@ -1,6 +1,6 @@
 import { LoggingType } from "../read/read";
 import type * as tokens from "../read/tokens";
-import * as ast from "./nodes";
+import type * as ast from "./node-types";
 import { ParseResult } from "./shape";
 export interface ParseOptions {
     input: tokens.RootToken;

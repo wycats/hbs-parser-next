@@ -4,12 +4,15 @@ import { combinator } from "./combinator";
 import { any } from "./combinators";
 import { Logger } from "./logger";
 import { printTrace, StateRow, getTrace } from "./debug";
+// eslint-disable-next-line import/no-cycle
 import { COMMENT, END_TAG, START_TAG, TEXT } from "./html";
 import { many } from "./multi";
 import { root, RootToken, Token } from "./tokens";
 import { complete, map, mapResult } from "./utils";
 import type { CombinatorType } from "./combinators/types";
-import { BLOCK, INTERPOLATE } from "./hbs";
+import { INTERPOLATE } from "./hbs";
+// eslint-disable-next-line import/no-cycle
+import { BLOCK } from "./combinators/hbs/block";
 
 export const enum LoggingType {
   Return = "Return",

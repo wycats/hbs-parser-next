@@ -57,11 +57,11 @@ export const ATTRIBUTE_NAME: CombinatorType<AttributeNameToken> = pattern(
   "ATTRIBUTE_NAME"
 ).map(name => ok(attrName(name.span)));
 
-export const ARG_NAME: CombinatorType<ArgNameToken> = seq(
-  "ARG_NAME",
-  tag("@"),
-  ATTRIBUTE_NAME
-).map(([at, attr]) => ok(argName(attr.span, range(at.span, attr.span))));
+export const ARG_NAME: CombinatorType<ArgNameToken> = combinator(() =>
+  seq("ARG_NAME", tag("@"), ATTRIBUTE_NAME).map(([at, attr]) =>
+    ok(argName(attr.span, range(at.span, attr.span)))
+  )
+);
 
 export const ANY_ATTR_NAME = any("ANY_ATTR_NAME", ARG_NAME, ATTRIBUTE_NAME);
 

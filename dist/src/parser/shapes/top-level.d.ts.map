@@ -1,1 +1,1 @@
-{"version":3,"file":"top-level.d.ts","sourceRoot":"","sources":["../../../../src/parser/shapes/top-level.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,KAAK,GAAG,MAAM,UAAU,CAAC;AAKrC,oBAAY,YAAY,GAAG,GAAG,CAAC,QAAQ,GAAG,GAAG,CAAC,eAAe,CAAC;AAE9D,eAAO,MAAM,aAAa,mKAEzB,CAAC"}
+{"version":3,"file":"top-level.d.ts","sourceRoot":"","sources":["../../../../src/parser/shapes/top-level.ts"],"names":[],"mappings":"AAEA,OAAO,EAAE,WAAW,EAAW,MAAM,UAAU,CAAC;AAKhD,eAAO,MAAM,gBAAgB,sNAK5B,CAAC;AAEF,eAAO,MAAM,aAAa,gJAEzB,CAAC"}

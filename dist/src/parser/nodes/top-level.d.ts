@@ -1,6 +1,7 @@
 import type { TextToken } from "../../read/tokens";
 import type { SourceSpan } from "../../span";
-import { AstNode, AstNodeType, BaseNode, ExpressionAstNode, TopLevelAstNode } from "../nodes";
+import type { AstNode, BaseNode, ExpressionAstNode, TopLevelAstNode } from "../node-types";
+import { AstNodeType } from "../node";
 import type { CallBodyNode, PositionalArgumentsNode, NamedArgumentsNode } from "./call";
 export interface RootNode extends BaseNode {
     type: AstNodeType.Root;

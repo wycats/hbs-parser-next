@@ -1,9 +1,8 @@
 import { unwrap } from "../read/utils";
-import { parseErr, isErr, isOk, parseOk, isParseErr, } from "./shape";
+import { parseErr, isErr, isOk, parseOk, isParseErr, ITERATOR_SOURCE, } from "./shape";
 export const TOKENS = Symbol("TOKENS");
 export const CONTEXT = Symbol("CONTEXT");
 export const POS = Symbol("POS");
-export const ITERATOR_SOURCE = Symbol("SOURCE");
 export class PeekedToken {
     constructor(iterator, desc, pos) {
         this.iterator = iterator;

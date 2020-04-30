@@ -24,37 +24,12 @@ import type {
   PositionalArgumentsNode,
   CallBodyNode,
 } from "./nodes/call";
+import { AstNodeType } from "./node";
 
 export interface BaseNode {
   span: SourceSpan;
   before?: WSToken;
   after?: WSToken;
-}
-
-export const enum AstNodeType {
-  Root = "Root",
-  Text = "Text",
-  Interpolate = "Interpolate",
-
-  // Internal
-  NamedArgument = "NamedArgument",
-  NamedArguments = "NamedArguments",
-  PositionalArguments = "PositionalArguments",
-  Member = "Member",
-  CallBody = "CallBody",
-  OpenBlock = "OpenBlock",
-  BlockParams = "BlockParams",
-  CloseBlock = "CloseBlock",
-
-  // Expressions
-  Block = "Block",
-  Call = "Call",
-  Path = "Path",
-  String = "String",
-  Number = "Number",
-  ThisReference = "ThisReference",
-  VarReference = "VarReference",
-  ArgReference = "ArgReference",
 }
 
 export interface TopLevelNodeMap {
@@ -97,17 +72,29 @@ export interface AstNodeMap
 
 export type AstNode = AstNodeMap[keyof AstNodeMap];
 
-export * from "./nodes/top-level";
-export * from "./nodes/expression";
-export * from "./nodes/call";
-
-export function formatAstNode(node: AstNode): string {
-  return `<${node.type}:${node.span.start}..${node.span.end}>`;
-}
-
-export function extendNode<N extends AstNode>(
-  node: N,
-  base: Partial<BaseNode>
-): N {
-  return { ...node, ...base };
-}
+export type {
+  RootNode,
+  TextNode,
+  InterpolateNode,
+  BlockParamsNode,
+  OpenBlockNode,
+  CloseBlockNode,
+  BlockNode,
+} from "./nodes/top-level";
+export type {
+  StringNode,
+  NumberNode,
+  ThisReferenceNode,
+  VarReferenceNode,
+  ArgReferenceNode,
+  CallNode,
+  PathNode,
+  PathTailNode,
+  MemberNode,
+} from "./nodes/expression";
+export type {
+  CallBodyNode,
+  NamedArgumentNode,
+  NamedArgumentsNode,
+  PositionalArgumentsNode,
+} from "./nodes/call";

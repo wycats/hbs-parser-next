@@ -1,4 +1,4 @@
-import { formatDebuggable } from "./logger";
+import { Snippet } from "../snippet";
 const ERROR = "color: red";
 const SUCCESS = "color: green";
 const NORMAL = "color: #333";
@@ -142,4 +142,31 @@ export function outdent() {
 }
 export function indentWS() {
     return " ".repeat(TAB);
+}
+export function formatDebuggable(debuggable) {
+    if (typeof debuggable === "string") {
+        return debuggable;
+    }
+    else if (debuggable === null) {
+        return "null";
+    }
+    else if (Array.isArray(debuggable)) {
+        if (debuggable.length <= 2) {
+            return `[${debuggable
+                .map(formatDebuggable)
+                .join(", ")}]`;
+        }
+        else {
+            return `[${formatDebuggable(debuggable[0])}, ${formatDebuggable(debuggable[1])}, ${formatDebuggable(debuggable[2])}, ...]`;
+        }
+    }
+    else if (debuggable instanceof Snippet) {
+        return debuggable.fmt();
+    }
+    else {
+        return debugFormatToken(debuggable);
+    }
+}
+export function debugFormatToken(token) {
+    return `<token:${token.type}>`;
 }

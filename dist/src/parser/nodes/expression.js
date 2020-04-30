@@ -1,4 +1,4 @@
-import "../nodes";
+import "../node";
 import { slice } from "../../span";
 import "../../read/tokens";
 export function string(token, source) {

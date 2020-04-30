@@ -4,7 +4,7 @@ import { PresentTokens, id } from "../../tokens";
 import { pattern, any } from "../../combinators";
 import { map } from "../../utils";
 import { ok } from "../../../snippet";
-import { SIMPLE_PATH } from "../../hbs";
+import { SIMPLE_PATH } from "../hbs/simple-path";
 
 // https://www.w3.org/TR/2011/WD-html5-20110113/tokenization.html#tag-name-state
 export const TAG_NAME = combinator(() =>

@@ -185,6 +185,3 @@ export function isParentToken(token) {
             return false;
     }
 }
-export function debugFormatToken(token) {
-    return `<token:${token.type}>`;
-}

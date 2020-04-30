@@ -1,5 +1,5 @@
 import * as a from "./parser/ast-builder";
-import * as ast from "./parser/nodes";
+import * as ast from "./parser/node-types";
 import * as ops from "./parser/shapes/core-operations";
 import * as combinators from "./read/combinators";
 import * as multi from "./read/multi";
@@ -20,10 +20,10 @@ export {
 export type { Result as BaseResult } from "./parser/shape";
 export * from "./parser/shapes/iterator-evaluator";
 export * from "./parser/shapes/print";
-export { trunc } from "./read/debug";
+export { trunc, formatDebuggable } from "./read/debug";
 export type { StateRow as ReadTrace } from "./read/debug";
 export * from "./read/hbs";
-export { formatDebuggable, Logger } from "./read/logger";
+export { Logger } from "./read/logger";
 export type { Debuggable } from "./read/logger";
 export * from "./read/read";
 export * from "./read/serialize";

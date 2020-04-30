@@ -1,7 +1,7 @@
 import "../../read/tokens";
-import * as ast from "../nodes";
+import { text } from "../create-node";
 import { ParserArrow } from "../shape";
 export const TextArrow = ParserArrow.start()
     .token("Text" /* Text */)
-    .ifOk(text => ast.text(text))
+    .ifOk(text)
     .label("Text");

@@ -1,10 +1,12 @@
-import { SEXP, wrap, NUMBER, NAMED, WS, STRING } from "../../hbs";
+// eslint-disable-next-line import/no-cycle
+import { SEXP, NUMBER, NAMED, WS, STRING } from "../../hbs";
 import { any } from "../../combinators";
 import type { Token, PresentTokens } from "../../tokens";
 import { AbstractCombinator } from "../base";
 import { Snippet, Result, ok } from "../../../snippet";
 import type { CombinatorType } from "../types";
 import SimplePath from "./simple-path";
+import { wrap } from "../core";
 
 export default class SpacedTokens extends AbstractCombinator<PresentTokens> {
   private path: CombinatorType<Token[]>;

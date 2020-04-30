@@ -1,6 +1,7 @@
 import type { Token, TokenType, TokenMap } from "../read/tokens";
-import TokensIterator, { ITERATOR_SOURCE } from "./tokens-iterator";
+import type { default as TokensIterator } from "./tokens-iterator";
 import { FORMAT, Formatted, SNAPSHOT, Formattable, RawFormattable } from "../debug";
+export declare const ITERATOR_SOURCE: unique symbol;
 export declare const EXPAND: unique symbol;
 export declare const RESULT_KIND: unique symbol;
 export declare type ResultValue<T extends ParseResult<unknown>> = T extends ParseResult<infer R> ? R : never;

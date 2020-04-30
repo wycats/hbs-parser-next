@@ -1,7 +1,7 @@
-import { ExpressionArrow } from "./expression";
 import { TopLevelArrow } from "./top-level";
 import { ParserArrow } from "../shape";
-import { TokenType } from "../../read/tokens";
+import { TokenType } from "../../read/token-enum";
+import { ExpressionArrow } from "./expression/path";
 
 export const HeadArrow = ExpressionArrow.label("BlockHead");
 

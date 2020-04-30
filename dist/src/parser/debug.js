@@ -1,8 +1,8 @@
 import { truncString } from "../read/debug";
 import { unwrap } from "../read/utils";
 import { slice } from "../span";
-import { formatAstNode } from "./nodes";
 import { isParseErr } from "./shape";
+import { formatAstNode } from "./create-node";
 export class ParseTracer {
     constructor(token) {
         this.stack = [

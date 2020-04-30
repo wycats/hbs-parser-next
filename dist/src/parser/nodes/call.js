@@ -1,4 +1,4 @@
-import "../nodes";
+import "../node";
 export function callBody({ head, positional = null, named = null, }, base) {
     return {
         type: "CallBody" /* CallBody */,

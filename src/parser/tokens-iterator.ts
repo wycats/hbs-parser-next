@@ -10,12 +10,12 @@ import {
   ParserArrow,
   ParseResult,
   isParseErr,
+  ITERATOR_SOURCE,
 } from "./shape";
 
 export const TOKENS = Symbol("TOKENS");
 export const CONTEXT = Symbol("CONTEXT");
 export const POS = Symbol("POS");
-export const ITERATOR_SOURCE = Symbol("SOURCE");
 
 export class PeekedToken {
   #committed = false;

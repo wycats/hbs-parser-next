@@ -283,5 +283,4 @@ export interface TokenMap extends HBSTokenMap, HTMLTokenMap {
 }
 export declare type Token = TokenMap[keyof TokenMap];
 export declare type PresentTokens = [Token, ...Token[]];
-export declare function debugFormatToken(token: Token | RootToken): string;
 //# sourceMappingURL=tokens.d.ts.map

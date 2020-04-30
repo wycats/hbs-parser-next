@@ -1,6 +1,7 @@
 import type { CombinatorDebugType, CombinatorType } from "./combinators/types";
-import { Debuggable, formatDebuggable } from "./logger";
-import type { Result, Snippet } from "../snippet";
+import type { Debuggable } from "./logger";
+import { Result, Snippet } from "../snippet";
+import type { Token, RootToken } from "./tokens";
 
 const ERROR = "color: red";
 const SUCCESS = "color: green";
@@ -236,4 +237,30 @@ export function outdent(): void {
 
 export function indentWS(): string {
   return " ".repeat(TAB);
+}
+
+export function formatDebuggable(debuggable: Debuggable): string {
+  if (typeof debuggable === "string") {
+    return debuggable;
+  } else if (debuggable === null) {
+    return "null";
+  } else if (Array.isArray(debuggable)) {
+    if (debuggable.length <= 2) {
+      return `[${(debuggable as Debuggable[])
+        .map(formatDebuggable)
+        .join(", ")}]`;
+    } else {
+      return `[${formatDebuggable(debuggable[0])}, ${formatDebuggable(
+        debuggable[1]
+      )}, ${formatDebuggable(debuggable[2])}, ...]`;
+    }
+  } else if (debuggable instanceof Snippet) {
+    return debuggable.fmt();
+  } else {
+    return debugFormatToken(debuggable);
+  }
+}
+
+export function debugFormatToken(token: Token | RootToken): string {
+  return `<token:${token.type}>`;
 }

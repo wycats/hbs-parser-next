@@ -237,28 +237,38 @@
         "affectsGlobalScope": false
       },
       "../../src/read/tokens.ts": {
-        "version": "918bdd2e8b4530e0003970360f51b69d10c673b3ee1dcf0fa07647faf8950f04",
-        "signature": "02fde1246c52f673b1b27787f1301b0ee53400d8e939aacd3f2438896ad6d854",
+        "version": "d7c5051d54fc1faaf9ca0352a62d5181537409d2b15a8947439a6ee4ddbc6fd9",
+        "signature": "cd47dc7b0aa077366440906b257daf532d69f60582fcd3b75d3e014092fe9f5b",
+        "affectsGlobalScope": false
+      },
+      "../../src/parser/node.ts": {
+        "version": "ce0c1d305d5191dff35e9e641918d186250bfd3f23aec2cb895847caa0872f11",
+        "signature": "3da597c5e5d59210f5e03952472a1391fa87f2947573f0d2cc9127ccf226c33c",
         "affectsGlobalScope": false
       },
       "../../src/parser/nodes/call.ts": {
-        "version": "b727a5d0bf0003806c6a63b3812c9ca24da5561ad97df024609fcd1d6e0a0590",
-        "signature": "d2390bc1947a8277fe6cb6b619f19ca0dd26fa4af8125e7a124b0452e9993fe3",
+        "version": "32108df07edf49005419a5f806b57c76def8462b4eceeafeaca03714e8c9db1c",
+        "signature": "3c3cc476042df405a864b4c88754051227b5cda7f4499fb5664113694af4d879",
         "affectsGlobalScope": false
       },
       "../../src/parser/nodes/top-level.ts": {
-        "version": "6805858c27de36a55c057724351aba34b15eed756f35105ed3f322fd82192cfb",
-        "signature": "03edbbd04e7b41d8aae37f1892b957509ca8d0064eed846f1a1d6bacf059aebc",
+        "version": "2b2b4873056c424941b4caf689166ebf63f56071072e0f69ba7b13d4eeb3a9c4",
+        "signature": "087e9341de3fbcdc9175287d359f6beeed41168503f40836c60abc62fbe3b1d9",
         "affectsGlobalScope": false
       },
       "../../src/parser/nodes/expression.ts": {
-        "version": "2acad21ef860d2436f6e1fded83200ac7166b5da436b3e156b0e303fe2094695",
-        "signature": "cb34cb002892006e1ed018fd5aa24c7a2f9c626a311b8cc4fe632193e57e95fd",
+        "version": "43be1a5c466fa55d1513103d22cc8d9e22711560b42bd223aabf00f4e7dfe18f",
+        "signature": "09d6293606566ebf987b62fdc51f1f79a8b3d4ba82142153ea13e53c6b8a1c1f",
         "affectsGlobalScope": false
       },
-      "../../src/parser/nodes.ts": {
-        "version": "4fc3d0ef525e1e8d075842d2fddfb310f7425301ed02c6bcc757c098e60c5c20",
-        "signature": "1494cec344feaf84fbfc603002a3459a7bfac14c318989f5dda1b47c95747422",
+      "../../src/parser/node-types.ts": {
+        "version": "88296b3115e45ca35890ad700747b9a3e8eae5fbc70bf1969327343536d4cb46",
+        "signature": "e9e51512237ab1c6771400c5401ec33c499b70c77c523d8ba9cb681a688e01b5",
+        "affectsGlobalScope": false
+      },
+      "../../src/parser/create-node.ts": {
+        "version": "02028a8c619abd5cd3ca998505a8d2eeee507c135749673b7e359f4d50b832f8",
+        "signature": "64b798214bea630d352405551c7c618d5e77f358a75996beda2da85d5e32fd2d",
         "affectsGlobalScope": false
       },
       "../../src/read/combinators/types.ts": {
@@ -267,13 +277,13 @@
         "affectsGlobalScope": false
       },
       "../../src/read/debug.ts": {
-        "version": "712e03462ee434fe143811440bcec777f717ed10e55e90c377a385a7688c7c41",
-        "signature": "f984c3fb6923fa73b6456f20c5a8d467490b3a32949498967195840ddac0df31",
+        "version": "9bdf536f736240046a39408e86c019dd652f5e02f83bbe267a3825c6335c734a",
+        "signature": "4bc09ba926fc490a6d8f8ddb25a25d055585a68ee873ba038554b9823ee460b5",
         "affectsGlobalScope": false
       },
       "../../src/read/logger.ts": {
-        "version": "3dddb0959e470fe644441988820174124d8f7d6dbc4e04f1293d82965d87377c",
-        "signature": "3a87b32c3fe0bcefe5e9ef8ce713845d55322a0e77e373ad8a26f8ac00fd83fa",
+        "version": "753c05e0f8eb61c4ee79f0a5d5c535cd51a56635efe8ac1e42eaa9bca0140a1c",
+        "signature": "728911865bce8865f2c5236e4fe42440d14d0e0833b7fbb49e64c534e36e7758",
         "affectsGlobalScope": false
       },
       "../../src/snippet.ts": {
@@ -292,23 +302,23 @@
         "affectsGlobalScope": false
       },
       "../../src/parser/ast-builder.ts": {
-        "version": "3858190a859165545ee662c7036de30081901c813a76bd3c2ae5d1baef419392",
-        "signature": "8916576f3038f30ebde1d9ef4b446d98a60b58e225328b05b931fc3b59e483e1",
+        "version": "cbf50a6fa0eea2cc336fb57a7f0ccb5853d9ff8b5224a761a6b9046b390c04a9",
+        "signature": "709d93675b6ae9e3d665dd7b362fadc680d1d935ba39bbc954c59111c99fa028",
         "affectsGlobalScope": false
       },
       "../../src/parser/debug.ts": {
-        "version": "cb0433233150aaf56c228496f06f9724a78117c18c160a2c51043fa55a9b9ac4",
+        "version": "aecf55855af7bca2ccbe3b9b6bd344c9321c07951558427c9af4c0b571b81ce2",
         "signature": "280b0f3de0b87a5b18cc3e2fddd3868af32801c9251aa660f04762b77cff73be",
         "affectsGlobalScope": false
       },
       "../../src/parser/tokens-iterator.ts": {
-        "version": "1aa68abe3d06889a75e4e43974238395b458532b87493ff9ae033d9bab785580",
-        "signature": "d3bbb32927eb7ab22de5ab3818cb6a3515e5323c93a10276c130355cea168363",
+        "version": "ba37add9a2f280cd0f6fb485c3aed1aaa53dd23cced97cc5b01e64f91f079dc2",
+        "signature": "4b0833ada5836a7d016daf680f27ee67fb011f429cc1dd6bf349205f0594fe54",
         "affectsGlobalScope": false
       },
       "../../src/parser/shape.ts": {
-        "version": "0830f91d6b90c9f76f071c35ec94280c2bf3e68ac92713489e4195d85ab7f585",
-        "signature": "af9cd1aecc805a062a876b2f94f6d7447df25bc5b792f90ac4b2c3a7e40dc03e",
+        "version": "7652e611bc8b9d010a1d3c1fc1d2a73d629b0e496aedc946baad54e457ad4004",
+        "signature": "75e68a0c80bdcefdd6a60b9197a0981f9983ff7ee1bc5a080557d42700a2efd3",
         "affectsGlobalScope": false
       },
       "../../src/parser/shapes/core-operations.ts": {
@@ -476,14 +486,24 @@
         "signature": "d1479b4c62531afd8bf76e133a4d88b0e01429ef97b3b171469c2d676d1e28b3",
         "affectsGlobalScope": false
       },
-      "../../src/parser/shapes/expression/number.ts": {
-        "version": "ee79c1023168c0f9cba06091591c6e4ae50da3a6be936c41d61186129c67a13f",
-        "signature": "4f3adfd659bca57233f480b0e7f887c14f1786bdb7fab335950e6da0660bce2e",
+      "../../src/parser/shapes/expression/args-ref.ts": {
+        "version": "30f038de2c230f8ec282f823643dbc9042dd385fafb1e705852360b78ccd0ace",
+        "signature": "49e7ee3845f4c2e1f39df5dea36530b02eb1cf7a82f348e877d1df3d8bd2000f",
         "affectsGlobalScope": false
       },
-      "../../src/parser/shapes/expression/args-ref.ts": {
-        "version": "8a8326100343e657820ae678309658b8c2fae4ad0bf153ddf3f09ebee1635f61",
-        "signature": "2460ce079d685dfceb555f98aa0da1cab001593514f6bd32fa6948fe8c979823",
+      "../../src/parser/shapes/expression/var-ref.ts": {
+        "version": "9f34140a75275ad8f9cf7ffbd94146ed4f3af5b37d19ae4b96609ce2104a7f38",
+        "signature": "b3e02a13220642304a83326fa535632b6c5c84e271e781c307c8e64de8c5ce9b",
+        "affectsGlobalScope": false
+      },
+      "../../src/parser/shapes/expression/string.ts": {
+        "version": "7853bdba4792bbb915dbeb4c41ad532602203b953966eed606cdbdccee74f9df",
+        "signature": "de45127505fd799fabacd6a0bb1d85e7b5032b5a00f0f5bfff9329b1a5abff63",
+        "affectsGlobalScope": false
+      },
+      "../../src/parser/shapes/expression/number.ts": {
+        "version": "090d765e4087fde0e3e0f0a930c74aabe08b11208b8c8f16fffe373760b4a690",
+        "signature": "20787c2d71832a11c22a8999db2b6195861b5a4c8b94b5dac78abe2777ee6445",
         "affectsGlobalScope": false
       },
       "../../src/parser/shapes/internal/ws.ts": {
@@ -491,54 +511,24 @@
         "signature": "c3407ba1c60e4f20a3aa523d3d99be855c97b7c47f4dc6930cdb961c140e325b",
         "affectsGlobalScope": false
       },
-      "../../src/parser/shapes/internal/call-body.ts": {
-        "version": "aaa0eef2561552a4e8324e8e49edca78138e6b8d3dcd95279d42c5665bf47583",
-        "signature": "72f6da8b610e85cd1284cc486bea99bfdc3135ef79a5097cd127f10c2fcba0e0",
-        "affectsGlobalScope": false
-      },
-      "../../src/parser/shapes/expression/sexp.ts": {
-        "version": "20596aaa1ee97ba19617b9dee6bf85964cc86159dfc1131e1e1570b7fad5f394",
-        "signature": "5ea6cfe2cd8ff03aa131ce2ff2095e7ac398c6ae2a190048ef39e63cdebd5582",
-        "affectsGlobalScope": false
-      },
-      "../../src/parser/shapes/expression/var-ref.ts": {
-        "version": "ed9bd7a3060a184765f9cabd1651919f386f4743a0f1ea9463bf8da92f17df01",
-        "signature": "44b29ac0270a01da2882fd75b0887a385fce406ad7d6b0df6635c4f52808978e",
-        "affectsGlobalScope": false
-      },
       "../../src/parser/shapes/expression/path.ts": {
-        "version": "bb13ea07d51d5f8ec9333f08940503eb6a2bd0171ef05b01b3de57cd2176c996",
-        "signature": "76e7ba79ad4b5f39673df62163ad13d90f37a4a366374006fe571ecec7fbf6eb",
-        "affectsGlobalScope": false
-      },
-      "../../src/parser/shapes/expression/string.ts": {
-        "version": "b3f927f4df6e1c981fcda4949b10189846404b4be09125c673ac0b62a205bc38",
-        "signature": "14066e6cd6ce057df82ab58833488218bf07156168aa62f90aef32fa1b3a0826",
-        "affectsGlobalScope": false
-      },
-      "../../src/parser/shapes/expression.ts": {
-        "version": "e95cb1c3fa94349fd9d9920eb146e707b3afb5f8a5a94622552280dc22c6e37a",
-        "signature": "a845f6bfe97f12359a51fd4f1662768f46da433e0bb3dc3335deabfb82b08958",
-        "affectsGlobalScope": false
-      },
-      "../../src/parser/shapes/interpolate.ts": {
-        "version": "f04f867bd9ef02a1c1901a04269c3e2cae0e9abc5b74ba640b957f394b78e6a5",
-        "signature": "01c7f3d632b24cdb37a2b440d4210ef3e5dc45bfa8c1710e2b4708e2616e6d28",
+        "version": "e98cc9e8e407e2859312bf8822f94d093e5e0baf9860614a95d62e537fdbed4d",
+        "signature": "8b20d100efab6c7cffa27acc83c837521aeaf09f66442476863e7c400157db17",
         "affectsGlobalScope": false
       },
       "../../src/parser/shapes/text.ts": {
-        "version": "a0d9075dd0a13cf28d3e52ec2fca88105e68e18a2fdbdd303692a480b8f6731c",
-        "signature": "56b83d749216e7f41639608e772c9e2f6b70d968d2663ad6997b719ddff7b3d1",
+        "version": "c147b96cd0eecd2f9427bc38c5597ff5f5da7fce9dd1d514ac6005064515bc88",
+        "signature": "4e93bca6d918d3c273bf2178f8fca32c206431848e08a495ed94d7788e2bb2ab",
         "affectsGlobalScope": false
       },
       "../../src/parser/shapes/top-level.ts": {
-        "version": "78b58da731e9ec94a0f87e18c7a1fca621b7c0518c2ce0fb0aa1611e1cb5ab12",
-        "signature": "c5c007be412a5e3f7a78f768e16ec02508982354e2c5e379796d74f8d66d14f4",
+        "version": "8c269e4acb365a325e9b9d7e01a4b79ae4bec1b66fcc08a24b9753cb76a93788",
+        "signature": "e91c94af007b45fa0bff9cbec62d4aa99dec04244c10197de0426953f8669e8c",
         "affectsGlobalScope": false
       },
       "../../src/parser/parse.ts": {
-        "version": "e61e83834129f33cb3b6c0b5b71ef7e9fe2562bf6a31956967404a4d7820c920",
-        "signature": "83f2bf80de326a0ddf2950c5a6f5a2ff439783b062c0e725bf0a75d4a7c83c03",
+        "version": "235100668cfc0f5ffa297e4c6b246c24a7b9d4283a0a62993703518b4080a785",
+        "signature": "fae6df7a5837b8023629b3664b7bb7671ef425865478f49573749a71ccc20cee",
         "affectsGlobalScope": false
       },
       "../../src/parser/shapes/iterator-evaluator.ts": {
@@ -557,12 +547,12 @@
         "affectsGlobalScope": false
       },
       "../../src/index.ts": {
-        "version": "c5c3b47d6aeeda17cc0ad9e87deac26ee26bf4d2035b8e1623fd4c9bf3e57e65",
-        "signature": "c8d0dd42e565fb5fd9cb2e13b034d6137f7994e19a4136b5ec21672ca8e39143",
+        "version": "4052c06e6779bbabddcf3c9788cd7ed3bfe3b9bbc112c485dd785085b8581f7f",
+        "signature": "56afdcb9d042791a5ae4fb5403fe4184e0203b49458f2f90f04ea4988582cad3",
         "affectsGlobalScope": false
       },
       "../../src/parser/shapes/block.ts": {
-        "version": "2fad982076e7e8aea67ac75eac5787589c449e54358b0bce8a12cc89ae6138d7",
+        "version": "64bbf19b1ebc84b752804a2378d175b1e3dbffa3a3cad38b659efb6eb4cc62b2",
         "signature": "ec3a6e939bacdd2a778ab2bf3d86c33bc31676d4655ba88dd9abc003c2047a33",
         "affectsGlobalScope": false
       },
@@ -1584,7 +1574,7 @@
         "../../node_modules/@types/node/util.d.ts",
         "../../src/debug.ts",
         "../../src/parser/ast-builder.ts",
-        "../../src/parser/nodes.ts",
+        "../../src/parser/node-types.ts",
         "../../src/parser/parse.ts",
         "../../src/parser/shape.ts",
         "../../src/parser/shapes/core-operations.ts",
@@ -1608,41 +1598,61 @@
         "../../node_modules/@types/node/ts3.2/fs.d.ts",
         "../../node_modules/@types/node/ts3.2/util.d.ts",
         "../../node_modules/@types/node/util.d.ts",
-        "../../src/parser/nodes.ts",
+        "../../src/parser/create-node.ts",
+        "../../src/parser/node-types.ts",
         "../../src/parser/nodes/call.ts",
         "../../src/read/token-builder.ts",
         "../../src/read/tokens.ts",
         "../../src/span.ts"
+      ],
+      "../../src/parser/create-node.ts": [
+        "../../node_modules/@types/node/fs.d.ts",
+        "../../node_modules/@types/node/ts3.2/fs.d.ts",
+        "../../node_modules/@types/node/ts3.2/util.d.ts",
+        "../../node_modules/@types/node/util.d.ts",
+        "../../src/parser/node-types.ts",
+        "../../src/parser/nodes/call.ts",
+        "../../src/parser/nodes/expression.ts",
+        "../../src/parser/nodes/top-level.ts"
       ],
       "../../src/parser/debug.ts": [
         "../../node_modules/@types/node/fs.d.ts",
         "../../node_modules/@types/node/ts3.2/fs.d.ts",
         "../../node_modules/@types/node/ts3.2/util.d.ts",
         "../../node_modules/@types/node/util.d.ts",
-        "../../src/parser/nodes.ts",
+        "../../src/parser/create-node.ts",
+        "../../src/parser/node-types.ts",
         "../../src/parser/shape.ts",
         "../../src/read/debug.ts",
         "../../src/read/tokens.ts",
         "../../src/read/utils.ts",
         "../../src/span.ts"
       ],
-      "../../src/parser/nodes.ts": [
+      "../../src/parser/node-types.ts": [
         "../../node_modules/@types/node/fs.d.ts",
         "../../node_modules/@types/node/ts3.2/fs.d.ts",
         "../../node_modules/@types/node/ts3.2/util.d.ts",
         "../../node_modules/@types/node/util.d.ts",
+        "../../src/parser/node.ts",
         "../../src/parser/nodes/call.ts",
         "../../src/parser/nodes/expression.ts",
         "../../src/parser/nodes/top-level.ts",
         "../../src/read/tokens.ts",
         "../../src/span.ts"
       ],
+      "../../src/parser/node.ts": [
+        "../../node_modules/@types/node/fs.d.ts",
+        "../../node_modules/@types/node/ts3.2/fs.d.ts",
+        "../../node_modules/@types/node/ts3.2/util.d.ts",
+        "../../node_modules/@types/node/util.d.ts"
+      ],
       "../../src/parser/nodes/call.ts": [
         "../../node_modules/@types/node/fs.d.ts",
         "../../node_modules/@types/node/ts3.2/fs.d.ts",
         "../../node_modules/@types/node/ts3.2/util.d.ts",
         "../../node_modules/@types/node/util.d.ts",
-        "../../src/parser/nodes.ts",
+        "../../src/parser/node-types.ts",
+        "../../src/parser/node.ts",
         "../../src/read/tokens.ts",
         "../../src/span.ts"
       ],
@@ -1651,7 +1661,8 @@
         "../../node_modules/@types/node/ts3.2/fs.d.ts",
         "../../node_modules/@types/node/ts3.2/util.d.ts",
         "../../node_modules/@types/node/util.d.ts",
-        "../../src/parser/nodes.ts",
+        "../../src/parser/node-types.ts",
+        "../../src/parser/node.ts",
         "../../src/parser/nodes/call.ts",
         "../../src/read/tokens.ts",
         "../../src/span.ts"
@@ -1661,7 +1672,8 @@
         "../../node_modules/@types/node/ts3.2/fs.d.ts",
         "../../node_modules/@types/node/ts3.2/util.d.ts",
         "../../node_modules/@types/node/util.d.ts",
-        "../../src/parser/nodes.ts",
+        "../../src/parser/node-types.ts",
+        "../../src/parser/node.ts",
         "../../src/parser/nodes/call.ts",
         "../../src/read/tokens.ts",
         "../../src/span.ts"
@@ -1671,8 +1683,9 @@
         "../../node_modules/@types/node/ts3.2/fs.d.ts",
         "../../node_modules/@types/node/ts3.2/util.d.ts",
         "../../node_modules/@types/node/util.d.ts",
+        "../../src/parser/create-node.ts",
         "../../src/parser/debug.ts",
-        "../../src/parser/nodes.ts",
+        "../../src/parser/node-types.ts",
         "../../src/parser/shape.ts",
         "../../src/parser/shapes/top-level.ts",
         "../../src/parser/tokens-iterator.ts",
@@ -1695,7 +1708,7 @@
         "../../node_modules/@types/node/ts3.2/util.d.ts",
         "../../node_modules/@types/node/util.d.ts",
         "../../src/parser/shape.ts",
-        "../../src/parser/shapes/expression.ts",
+        "../../src/parser/shapes/expression/path.ts",
         "../../src/parser/shapes/top-level.ts",
         "../../src/read/tokens.ts"
       ],
@@ -1706,24 +1719,13 @@
         "../../node_modules/@types/node/util.d.ts",
         "../../src/parser/shape.ts"
       ],
-      "../../src/parser/shapes/expression.ts": [
-        "../../node_modules/@types/node/fs.d.ts",
-        "../../node_modules/@types/node/ts3.2/fs.d.ts",
-        "../../node_modules/@types/node/ts3.2/util.d.ts",
-        "../../node_modules/@types/node/util.d.ts",
-        "../../src/parser/shape.ts",
-        "../../src/parser/shapes/expression/number.ts",
-        "../../src/parser/shapes/expression/path.ts",
-        "../../src/parser/shapes/expression/sexp.ts",
-        "../../src/parser/shapes/expression/string.ts",
-        "../../src/parser/shapes/internal/any.ts"
-      ],
       "../../src/parser/shapes/expression/args-ref.ts": [
         "../../node_modules/@types/node/fs.d.ts",
         "../../node_modules/@types/node/ts3.2/fs.d.ts",
         "../../node_modules/@types/node/ts3.2/util.d.ts",
         "../../node_modules/@types/node/util.d.ts",
-        "../../src/parser/nodes.ts",
+        "../../src/parser/create-node.ts",
+        "../../src/parser/node-types.ts",
         "../../src/parser/shape.ts",
         "../../src/read/tokens.ts"
       ],
@@ -1732,7 +1734,7 @@
         "../../node_modules/@types/node/ts3.2/fs.d.ts",
         "../../node_modules/@types/node/ts3.2/util.d.ts",
         "../../node_modules/@types/node/util.d.ts",
-        "../../src/parser/nodes.ts",
+        "../../src/parser/create-node.ts",
         "../../src/parser/shape.ts",
         "../../src/read/tokens.ts"
       ],
@@ -1741,32 +1743,25 @@
         "../../node_modules/@types/node/ts3.2/fs.d.ts",
         "../../node_modules/@types/node/ts3.2/util.d.ts",
         "../../node_modules/@types/node/util.d.ts",
-        "../../src/parser/nodes.ts",
+        "../../src/parser/create-node.ts",
+        "../../src/parser/node-types.ts",
         "../../src/parser/nodes/expression.ts",
         "../../src/parser/shape.ts",
         "../../src/parser/shapes/expression/args-ref.ts",
-        "../../src/parser/shapes/expression/sexp.ts",
+        "../../src/parser/shapes/expression/number.ts",
+        "../../src/parser/shapes/expression/string.ts",
         "../../src/parser/shapes/expression/var-ref.ts",
         "../../src/parser/shapes/internal/any.ts",
+        "../../src/parser/shapes/internal/ws.ts",
         "../../src/read/tokens.ts",
         "../../src/span.ts"
-      ],
-      "../../src/parser/shapes/expression/sexp.ts": [
-        "../../node_modules/@types/node/fs.d.ts",
-        "../../node_modules/@types/node/ts3.2/fs.d.ts",
-        "../../node_modules/@types/node/ts3.2/util.d.ts",
-        "../../node_modules/@types/node/util.d.ts",
-        "../../src/parser/nodes.ts",
-        "../../src/parser/shape.ts",
-        "../../src/parser/shapes/internal/call-body.ts",
-        "../../src/read/tokens.ts"
       ],
       "../../src/parser/shapes/expression/string.ts": [
         "../../node_modules/@types/node/fs.d.ts",
         "../../node_modules/@types/node/ts3.2/fs.d.ts",
         "../../node_modules/@types/node/ts3.2/util.d.ts",
         "../../node_modules/@types/node/util.d.ts",
-        "../../src/parser/nodes.ts",
+        "../../src/parser/create-node.ts",
         "../../src/parser/shape.ts",
         "../../src/read/tokens.ts"
       ],
@@ -1775,7 +1770,8 @@
         "../../node_modules/@types/node/ts3.2/fs.d.ts",
         "../../node_modules/@types/node/ts3.2/util.d.ts",
         "../../node_modules/@types/node/util.d.ts",
-        "../../src/parser/nodes.ts",
+        "../../src/parser/create-node.ts",
+        "../../src/parser/node-types.ts",
         "../../src/parser/shape.ts",
         "../../src/read/tokens.ts",
         "../../src/span.ts"
@@ -1787,36 +1783,12 @@
         "../../node_modules/@types/node/util.d.ts",
         "../../src/parser/shape.ts"
       ],
-      "../../src/parser/shapes/internal/call-body.ts": [
-        "../../node_modules/@types/node/fs.d.ts",
-        "../../node_modules/@types/node/ts3.2/fs.d.ts",
-        "../../node_modules/@types/node/ts3.2/util.d.ts",
-        "../../node_modules/@types/node/util.d.ts",
-        "../../src/parser/nodes.ts",
-        "../../src/parser/shape.ts",
-        "../../src/parser/shapes/expression.ts",
-        "../../src/parser/shapes/internal/ws.ts",
-        "../../src/parser/shapes/interpolate.ts",
-        "../../src/read/tokens.ts",
-        "../../src/span.ts"
-      ],
       "../../src/parser/shapes/internal/ws.ts": [
         "../../node_modules/@types/node/fs.d.ts",
         "../../node_modules/@types/node/ts3.2/fs.d.ts",
         "../../node_modules/@types/node/ts3.2/util.d.ts",
         "../../node_modules/@types/node/util.d.ts",
         "../../src/parser/shape.ts",
-        "../../src/read/tokens.ts"
-      ],
-      "../../src/parser/shapes/interpolate.ts": [
-        "../../node_modules/@types/node/fs.d.ts",
-        "../../node_modules/@types/node/ts3.2/fs.d.ts",
-        "../../node_modules/@types/node/ts3.2/util.d.ts",
-        "../../node_modules/@types/node/util.d.ts",
-        "../../src/parser/nodes.ts",
-        "../../src/parser/shape.ts",
-        "../../src/parser/shapes/expression.ts",
-        "../../src/parser/shapes/internal/call-body.ts",
         "../../src/read/tokens.ts"
       ],
       "../../src/parser/shapes/iterator-evaluator.ts": [
@@ -1840,7 +1812,7 @@
         "../../node_modules/@types/node/ts3.2/fs.d.ts",
         "../../node_modules/@types/node/ts3.2/util.d.ts",
         "../../node_modules/@types/node/util.d.ts",
-        "../../src/parser/nodes.ts",
+        "../../src/parser/create-node.ts",
         "../../src/parser/shape.ts",
         "../../src/read/tokens.ts"
       ],
@@ -1849,10 +1821,12 @@
         "../../node_modules/@types/node/ts3.2/fs.d.ts",
         "../../node_modules/@types/node/ts3.2/util.d.ts",
         "../../node_modules/@types/node/util.d.ts",
-        "../../src/parser/nodes.ts",
+        "../../src/parser/create-node.ts",
+        "../../src/parser/shape.ts",
+        "../../src/parser/shapes/expression/path.ts",
         "../../src/parser/shapes/internal/any.ts",
-        "../../src/parser/shapes/interpolate.ts",
-        "../../src/parser/shapes/text.ts"
+        "../../src/parser/shapes/text.ts",
+        "../../src/read/tokens.ts"
       ],
       "../../src/parser/tokens-iterator.ts": [
         "../../node_modules/@types/node/fs.d.ts",
@@ -2184,6 +2158,7 @@
         "../../node_modules/@types/node/util.d.ts",
         "../../src/read/combinators/types.ts",
         "../../src/read/logger.ts",
+        "../../src/read/tokens.ts",
         "../../src/snippet.ts"
       ],
       "../../src/read/hbs.ts": [
@@ -2757,7 +2732,7 @@
       "../../src/index.ts": [
         "../../src/debug.ts",
         "../../src/parser/ast-builder.ts",
-        "../../src/parser/nodes.ts",
+        "../../src/parser/node-types.ts",
         "../../src/parser/parse.ts",
         "../../src/parser/shape.ts",
         "../../src/parser/shapes/core-operations.ts",
@@ -2777,15 +2752,22 @@
         "../../src/span.ts"
       ],
       "../../src/parser/ast-builder.ts": [
-        "../../src/parser/nodes.ts",
+        "../../src/parser/node-types.ts",
         "../../src/read/token-builder.ts",
         "../../src/read/tokens.ts",
         "../../src/span.ts"
       ],
+      "../../src/parser/create-node.ts": [
+        "../../src/parser/node-types.ts",
+        "../../src/parser/nodes/call.ts",
+        "../../src/parser/nodes/expression.ts",
+        "../../src/parser/nodes/top-level.ts"
+      ],
       "../../src/parser/debug.ts": [
         "../../src/read/tokens.ts"
       ],
-      "../../src/parser/nodes.ts": [
+      "../../src/parser/node-types.ts": [
+        "../../src/parser/node.ts",
         "../../src/parser/nodes/call.ts",
         "../../src/parser/nodes/expression.ts",
         "../../src/parser/nodes/top-level.ts",
@@ -2793,24 +2775,27 @@
         "../../src/span.ts"
       ],
       "../../src/parser/nodes/call.ts": [
-        "../../src/parser/nodes.ts",
+        "../../src/parser/node-types.ts",
+        "../../src/parser/node.ts",
         "../../src/read/tokens.ts",
         "../../src/span.ts"
       ],
       "../../src/parser/nodes/expression.ts": [
-        "../../src/parser/nodes.ts",
+        "../../src/parser/node-types.ts",
+        "../../src/parser/node.ts",
         "../../src/parser/nodes/call.ts",
         "../../src/read/tokens.ts",
         "../../src/span.ts"
       ],
       "../../src/parser/nodes/top-level.ts": [
-        "../../src/parser/nodes.ts",
+        "../../src/parser/node-types.ts",
+        "../../src/parser/node.ts",
         "../../src/parser/nodes/call.ts",
         "../../src/read/tokens.ts",
         "../../src/span.ts"
       ],
       "../../src/parser/parse.ts": [
-        "../../src/parser/nodes.ts",
+        "../../src/parser/node-types.ts",
         "../../src/parser/shape.ts",
         "../../src/read/read.ts",
         "../../src/read/tokens.ts"
@@ -2827,48 +2812,33 @@
       "../../src/parser/shapes/core-operations.ts": [
         "../../src/parser/shape.ts"
       ],
-      "../../src/parser/shapes/expression.ts": [
-        "../../src/parser/shape.ts"
-      ],
       "../../src/parser/shapes/expression/args-ref.ts": [
-        "../../src/parser/nodes.ts",
+        "../../src/parser/node-types.ts",
         "../../src/parser/shape.ts"
       ],
       "../../src/parser/shapes/expression/number.ts": [
-        "../../src/parser/nodes.ts",
+        "../../src/parser/create-node.ts",
         "../../src/parser/shape.ts"
       ],
       "../../src/parser/shapes/expression/path.ts": [
-        "../../src/parser/nodes.ts",
+        "../../src/parser/node-types.ts",
         "../../src/parser/nodes/expression.ts",
         "../../src/parser/shape.ts"
       ],
-      "../../src/parser/shapes/expression/sexp.ts": [
-        "../../src/parser/nodes.ts",
-        "../../src/parser/shape.ts"
-      ],
       "../../src/parser/shapes/expression/string.ts": [
-        "../../src/parser/nodes.ts",
+        "../../src/parser/create-node.ts",
         "../../src/parser/shape.ts"
       ],
       "../../src/parser/shapes/expression/var-ref.ts": [
-        "../../src/parser/nodes.ts",
+        "../../src/parser/node-types.ts",
         "../../src/parser/shape.ts"
       ],
       "../../src/parser/shapes/internal/any.ts": [
         "../../src/parser/shape.ts"
       ],
-      "../../src/parser/shapes/internal/call-body.ts": [
-        "../../src/parser/nodes.ts",
-        "../../src/parser/shape.ts"
-      ],
       "../../src/parser/shapes/internal/ws.ts": [
         "../../src/parser/shape.ts",
         "../../src/read/tokens.ts"
-      ],
-      "../../src/parser/shapes/interpolate.ts": [
-        "../../src/parser/nodes.ts",
-        "../../src/parser/shape.ts"
       ],
       "../../src/parser/shapes/iterator-evaluator.ts": [
         "../../src/parser/shape.ts",
@@ -2879,11 +2849,11 @@
         "../../src/parser/shapes/core-operations.ts"
       ],
       "../../src/parser/shapes/text.ts": [
-        "../../src/parser/nodes.ts",
+        "../../src/parser/create-node.ts",
         "../../src/parser/shape.ts"
       ],
       "../../src/parser/shapes/top-level.ts": [
-        "../../src/parser/nodes.ts",
+        "../../src/parser/create-node.ts",
         "../../src/parser/shape.ts"
       ],
       "../../src/parser/tokens-iterator.ts": [
@@ -3046,6 +3016,7 @@
       "../../src/read/debug.ts": [
         "../../src/read/combinators/types.ts",
         "../../src/read/logger.ts",
+        "../../src/read/tokens.ts",
         "../../src/snippet.ts"
       ],
       "../../src/read/hbs.ts": [
@@ -3212,8 +3183,10 @@
       "../../src/debug.ts",
       "../../src/index.ts",
       "../../src/parser/ast-builder.ts",
+      "../../src/parser/create-node.ts",
       "../../src/parser/debug.ts",
-      "../../src/parser/nodes.ts",
+      "../../src/parser/node-types.ts",
+      "../../src/parser/node.ts",
       "../../src/parser/nodes/call.ts",
       "../../src/parser/nodes/expression.ts",
       "../../src/parser/nodes/top-level.ts",
@@ -3221,17 +3194,13 @@
       "../../src/parser/shape.ts",
       "../../src/parser/shapes/block.ts",
       "../../src/parser/shapes/core-operations.ts",
-      "../../src/parser/shapes/expression.ts",
       "../../src/parser/shapes/expression/args-ref.ts",
       "../../src/parser/shapes/expression/number.ts",
       "../../src/parser/shapes/expression/path.ts",
-      "../../src/parser/shapes/expression/sexp.ts",
       "../../src/parser/shapes/expression/string.ts",
       "../../src/parser/shapes/expression/var-ref.ts",
       "../../src/parser/shapes/internal/any.ts",
-      "../../src/parser/shapes/internal/call-body.ts",
       "../../src/parser/shapes/internal/ws.ts",
-      "../../src/parser/shapes/interpolate.ts",
       "../../src/parser/shapes/iterator-evaluator.ts",
       "../../src/parser/shapes/print.ts",
       "../../src/parser/shapes/text.ts",

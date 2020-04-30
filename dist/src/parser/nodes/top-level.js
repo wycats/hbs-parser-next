@@ -1,4 +1,4 @@
-import "../nodes";
+import "../node";
 export function root(children, span) {
     return {
         type: "Root" /* Root */,

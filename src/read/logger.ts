@@ -1,6 +1,6 @@
-import { Result, Snippet } from "../snippet";
+import type { Result, Snippet } from "../snippet";
 import { indent, outdent, preInvoke, postInvoke } from "./debug";
-import { Token, LeafToken, RootToken, debugFormatToken } from "./tokens";
+import type { Token, LeafToken, RootToken } from "./tokens";
 import type { CombinatorType, CombinatorDebugType } from "./combinators/types";
 
 export type Debuggable =
@@ -56,27 +56,5 @@ export function isTransparent(c: CombinatorType): boolean {
     return false;
   } else {
     return c.kind === "transparent";
-  }
-}
-
-export function formatDebuggable(debuggable: Debuggable): string {
-  if (typeof debuggable === "string") {
-    return debuggable;
-  } else if (debuggable === null) {
-    return "null";
-  } else if (Array.isArray(debuggable)) {
-    if (debuggable.length <= 2) {
-      return `[${(debuggable as Debuggable[])
-        .map(formatDebuggable)
-        .join(", ")}]`;
-    } else {
-      return `[${formatDebuggable(debuggable[0])}, ${formatDebuggable(
-        debuggable[1]
-      )}, ${formatDebuggable(debuggable[2])}, ...]`;
-    }
-  } else if (debuggable instanceof Snippet) {
-    return debuggable.fmt();
-  } else {
-    return debugFormatToken(debuggable);
   }
 }

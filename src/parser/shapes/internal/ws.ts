@@ -1,4 +1,4 @@
-import { TokenType } from "../../../read/tokens";
+import { TokenType } from "../../../read/token-enum";
 import { ParserArrow } from "../../shape";
 
 export const MaybeWsArrow = ParserArrow.start()

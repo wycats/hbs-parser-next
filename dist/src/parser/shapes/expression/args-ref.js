@@ -1,7 +1,7 @@
 import "../../../read/tokens";
-import * as ast from "../../nodes";
 import { ParserArrow } from "../../shape";
+import { argReference } from "../../create-node";
 export const ArgRefArrow = ParserArrow.start()
     .token("Argument" /* Argument */)
-    .ifOk(ref => ast.argReference(ref))
+    .ifOk(ref => argReference(ref))
     .label("ArgRef");

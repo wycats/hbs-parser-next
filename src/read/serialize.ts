@@ -1,12 +1,12 @@
 import {
   RootToken,
   Token,
-  TokenType,
   AttributeValueType,
   AttributeValueToken,
   isInterpolateAttribute,
   QuoteType,
 } from "./tokens";
+import { TokenType } from "./token-enum";
 import { slice } from "../span";
 import { unreachable } from "./utils";
 
