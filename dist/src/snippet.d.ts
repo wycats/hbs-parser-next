@@ -1,5 +1,5 @@
 import type { Debuggable, Logger } from "./read/logger";
-import type { SourceSpan } from "./span";
+import { SourceSpan } from "./span";
 import type { CombinatorType } from "./read/combinators/types";
 export declare class Snippet {
     readonly source: string;

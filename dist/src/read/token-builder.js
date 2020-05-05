@@ -282,7 +282,7 @@ export function attr(options) {
                 valueToken = rawValue(builder);
             }
             let end = builder.pos;
-            return tokens.valuedAttr({ name: nameToken, value: valueToken }, { start, end });
+            return tokens.valuedAttr({ name: nameToken, value: valueToken }, span(start, end));
         };
     }
 }
@@ -305,7 +305,7 @@ export class TokenBuilder {
         this.output += chars;
         let start = this.pos;
         this.pos += chars.length;
-        return { start, end: this.pos };
+        return span(start, this.pos);
     }
     /**
      * This method is used by the AstBuilder to share an output

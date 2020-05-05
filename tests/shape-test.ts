@@ -257,7 +257,6 @@ function trace(
     ? [inParen, leftName]
     : leftName;
 
-  debugger;
   if (children) {
     return [formatOp(input, name, output), children];
   } else {
@@ -421,7 +420,7 @@ export class StatefulArrowEvaluationTest {
     this.assert.deepEqual(
       actual,
       expectedOutput,
-      `expected output to be ${formatJSON(expectedOutput)}`
+      `expected output to be ${expectedOutput}`
     );
 
     this.assert.deepEqual(
@@ -482,7 +481,7 @@ export class StatefulArrowEvaluationTest {
     );
   }
 
-  @test iterate() {
+  @test iterate(): void {
     this.assertInvoke(
       iterate(boringIncrement),
       [3, 6, 9],

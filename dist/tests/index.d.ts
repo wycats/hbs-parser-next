@@ -4,5 +4,5 @@ import "./combinators-test";
 import "./multi-test";
 import "./reader/index";
 import "./shape-test";
-import "./parser-shape-test";
+import "./parser-scenario/index";
 //# sourceMappingURL=index.d.ts.map

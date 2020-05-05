@@ -59,6 +59,8 @@ function iteration(
 
   let op = arrow.operation;
   switch (op.type) {
+    case "Id":
+      return "id";
     case "Source":
       return "source";
     case "Input":

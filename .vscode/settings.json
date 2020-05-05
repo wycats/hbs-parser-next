@@ -1,5 +1,5 @@
 {
-  "eslint.enable": true,
+  "eslint.enable": false,
   "eslint.packageManager": "pnpm",
   "typescript.tsdk": "node_modules/typescript/lib",
   "search.exclude": {

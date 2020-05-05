@@ -7,6 +7,7 @@ export declare abstract class PureEvaluatorImpl<State> implements ops.StatefulEv
     constructor(delegate?: ops.StatefulEvaluator<State>);
     Source<Out>(_state: State, _input: unknown, op: ops.SourceOperation<Out>): Out;
     abstract State(state: State, _input: void, _op: ops.StateOperation): State;
+    Id<In>(_state: State, input: In, _op: ops.IdOperation): In;
     Input<In>(_state: State, input: In, _op: ops.InputOperation<In>): In;
     Pure<In, Out>(_: State, input: In, op: ops.PureOperation<In, Out>): Out;
     Zip<In1, Out1, In2, Out2>(state: State, input: [In1, In2], op: ops.ZipOperation<In1, Out1, In2, Out2>): [Out1, Out2];
@@ -22,6 +23,7 @@ export declare abstract class PureEvaluatorImpl<State> implements ops.StatefulEv
     Reduce<In, Out>(state: State, [accum, input]: [Out, Iterable<In>], op: ops.ReduceOperation<In, Out>): Out;
 }
 export declare class StatefulEvaluatorImpl<State> extends PureEvaluatorImpl<State> implements SimpleEvaluator<State> {
+    static create<State>(delegate?: ops.StatefulEvaluator<State>): StatefulEvaluatorImpl<State>;
     State(state: State, _input: void, _op: ops.StateOperation): State;
     Repeat<In, Out>(state: State, input: In, op: ops.RepeatOperation<State, In, Out>): Out[];
 }

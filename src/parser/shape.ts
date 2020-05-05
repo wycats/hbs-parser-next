@@ -1,14 +1,13 @@
-import type { Token, TokenMap } from "../read/tokens";
-import type { TokenType } from "../read/token-enum";
-import type { default as TokensIterator } from "./tokens-iterator";
 import {
-  FORMAT,
   Formatted,
-  SNAPSHOT,
   formatUnknown,
-  Formattable,
-  RawFormattable,
+  SNAPSHOT,
+  SourceFormattable,
+  SOURCE_FORMAT,
 } from "../debug";
+import type { TokenType } from "../read/token-enum";
+import type { Token, TokenMap } from "../read/tokens";
+import type { default as TokensIterator } from "./tokens-iterator";
 
 export const ITERATOR_SOURCE = Symbol("SOURCE");
 export const EXPAND = Symbol("EXPAND");
@@ -24,8 +23,11 @@ export function parseOk<T>(value: T): ParseResult<T> {
   return {
     [RESULT_KIND]: "ok",
     kind: "ok",
-    [FORMAT]() {
-      return { type: "raw", value: `Ok(${value})` };
+    [SOURCE_FORMAT](source: string, nesting: number | undefined) {
+      return {
+        type: "raw",
+        value: `Ok(${formatUnknown(value, source, nesting)})`,
+      };
     },
     [SNAPSHOT]() {
       return this;
@@ -40,7 +42,7 @@ export function parseErr<T>(
 ): ParseResult<T> {
   return {
     [RESULT_KIND]: "err",
-    [FORMAT]() {
+    [SOURCE_FORMAT]() {
       return { type: "raw", value: `Err` } as const;
     },
     [SNAPSHOT]() {
@@ -59,7 +61,7 @@ export function fatalError<T>(
 ): ParseResult<T> {
   return {
     [RESULT_KIND]: "err",
-    [FORMAT]() {
+    [SOURCE_FORMAT](_source: string): Formatted {
       return { type: "raw", value: `Err` } as const;
     },
     [SNAPSHOT]() {
@@ -72,18 +74,19 @@ export function fatalError<T>(
   } as const;
 }
 
-export interface Ok<T> extends RawFormattable {
+export interface Ok<T> extends SourceFormattable {
   [RESULT_KIND]: "ok";
-  [FORMAT]: () => Formatted;
-  [SNAPSHOT]: () => Formattable;
   value: T;
 }
 
 export function ok<T>(value: T): Result<T> {
   return {
     [RESULT_KIND]: "ok",
-    [FORMAT]() {
-      return { type: "raw", value: `Ok(${formatUnknown(value)})` } as const;
+    [SOURCE_FORMAT](source: string, nesting: number | undefined) {
+      return {
+        type: "raw",
+        value: `Ok(${formatUnknown(value, source, nesting)})`,
+      } as const;
     },
     [SNAPSHOT]() {
       return this;
@@ -119,18 +122,19 @@ export type ErrorReason =
   | { type: "empty" }
   | { type: "lookahead"; expected: TokenType | "EOF"; actual: Token | "EOF" };
 
-export interface Err extends RawFormattable {
+export interface Err extends SourceFormattable {
   [RESULT_KIND]: "err";
-  [FORMAT]: () => Formatted;
-  [SNAPSHOT]: () => Formattable;
   reason: unknown;
 }
 
 export function err<T>(reason: unknown): Result<T> {
   return {
     [RESULT_KIND]: "err",
-    [FORMAT]() {
-      return { type: "raw", value: `Err` } as const;
+    [SOURCE_FORMAT](source: string, nesting: number | undefined): Formatted {
+      return {
+        type: "raw",
+        value: `Err(${formatUnknown(reason, source, nesting)})`,
+      } as const;
     },
     [SNAPSHOT]() {
       return this;

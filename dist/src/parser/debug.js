@@ -138,7 +138,7 @@ class PrintTracer {
     slice(token, length = 13) {
         if (token) {
             let span = token.span;
-            return truncString(slice({ start: span.start, end: this.source.length }, this.source), length);
+            return truncString(slice(span.withEnd(this.source.length), this.source), length);
         }
         else {
             return truncString("<eof>");

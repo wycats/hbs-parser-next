@@ -69,6 +69,30 @@ export interface BaseOperation {
   label?: string;
 }
 
+/// ID ///
+
+// This doesn't technically need a special operation, but it helps
+// with optimization. It's equivalent to `pure(v => v)`
+
+export interface IdOperation extends BaseOperation {
+  type: "Id";
+}
+
+export interface SimpleEvaluator<State> {
+  Id<T>(state: State, input: T, op: IdOperation): T;
+}
+
+export interface OperationMap {
+  Id: IdOperation;
+}
+
+export function id<Out>(label?: string): Arrow<unknown, Out> {
+  return new Arrow({
+    type: "Id",
+    label,
+  });
+}
+
 /// SOURCE ///
 
 export interface SourceOperation<Out> extends BaseOperation {

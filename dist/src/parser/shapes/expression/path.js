@@ -1,4 +1,4 @@
-import "../../../read/tokens";
+import "../../../read/token-enum";
 import { range } from "../../../span";
 import { member, call, path, } from "../../nodes/expression";
 import { ParserArrow, recurse, parseErr, parseOk, } from "../../shape";

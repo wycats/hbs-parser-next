@@ -39,7 +39,7 @@ export default class AstBuilder {
     this.output += chars;
     let start = this.pos;
     this.pos += chars.length;
-    return { start, end: this.pos };
+    return span(start, this.pos);
   }
 
   token<T extends Token>(token: CurriedToken<T>): T {
@@ -231,7 +231,7 @@ function curriedPositional(
     let end = builder.pos;
 
     return a.positional(args, {
-      span: { start, end },
+      span: span(start, end),
       ...(currentWS ? { after: currentWS } : {}),
     });
   };
@@ -274,7 +274,7 @@ export function interpolate(
     builder.consume("}}");
     let end = builder.pos;
 
-    return a.interpolate(body, { span: { start, end } });
+    return a.interpolate(body, { span: span(start, end) });
   };
 }
 
@@ -297,7 +297,7 @@ export function call(...parts: CallPart[]): CurriedNode<ast.CallNode> {
     builder.consume(")");
     let end = builder.pos;
 
-    return a.call(body, { span: { start, end } });
+    return a.call(body, { span: span(start, end) });
   };
 }
 
@@ -363,7 +363,7 @@ export function path(
     });
     let end = builder.pos;
 
-    return a.path({ head, tail }, { start, end });
+    return a.path({ head, tail }, span(start, end));
   };
 }
 

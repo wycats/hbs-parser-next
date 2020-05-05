@@ -27,7 +27,7 @@ export default class HTMLAttribute extends AbstractCombinator {
 export const ATTRIBUTE = new HTMLAttribute();
 // https://www.w3.org/TR/2011/WD-html5-20110113/tokenization.html#before-attribute-name-state
 export const ATTRIBUTE_NAME = pattern(/^[^\u0009\u000A\u000C\u0020/>\u0000"'<=].*?(?=[\u0009\u000A\u000C\u0020/=>\u0000"'<])/u, "ATTRIBUTE_NAME").map(name => ok(attrName(name.span)));
-export const ARG_NAME = seq("ARG_NAME", tag("@"), ATTRIBUTE_NAME).map(([at, attr]) => ok(argName(attr.span, range(at.span, attr.span))));
+export const ARG_NAME = combinator(() => seq("ARG_NAME", tag("@"), ATTRIBUTE_NAME).map(([at, attr]) => ok(argName(attr.span, range(at.span, attr.span)))));
 export const ANY_ATTR_NAME = any("ANY_ATTR_NAME", ARG_NAME, ATTRIBUTE_NAME);
 export const DQ_STRING_INTERPOLATE = combinator(() => any("DQ_STRING_INTERPOLATE", INTERPOLATE, pattern(/^[^"]+/, `dq text`).map(value => ok(text(value.span)))));
 export const SQ_STRING_INTERPOLATE = combinator(() => any("SQ_STRING_INTERPOLATE", INTERPOLATE, pattern(/^[^']+/, `sq text`).map(value => ok(text(value.span)))));

@@ -3,7 +3,47 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <script defer src="/docs.js"></script>
+    <script>
+      let _pc = 0;
+      let _count = 5;
+      let evaluate = fetch(0);
+
+      const OPS = [
+        function () {
+          _count--;
+        },
+        console.log.bind(undefined, 1),
+        console.log.bind(undefined, 2),
+      ];
+
+      outer: while (true) {
+        switch (pc) {
+          case 0:
+            (_pc = 1), fetch(_pc)();
+          case 1:
+            (_pc = 2), fetch(_pc)();
+          case 2:
+            evaluate();
+            break outer;
+        }
+      }
+
+      let count = 0;
+
+      function fetch(pc) {
+        switch (pc) {
+          case 0:
+            return console.log.bind(undefined, 0);
+          case 1:
+            return console.log.bind(undefined, 1);
+          case 2:
+            return decrement;
+          case 2:
+            return () => console.log(2);
+        }
+      }
+    </script>
+    <!-- <script defer src="/docs.js"></script> -->
   </head>
   <body></body>
 </html>

@@ -9,6 +9,7 @@ import {
   a,
   parse,
   LoggingType,
+  span,
 } from "hbs-parser-next";
 
 module("[READER] interpolation");
@@ -614,6 +615,6 @@ test("blocks with block params", assert => {
 test("mismatched blocks", assert => {
   assert.readError("{{#if @x}}{{/unless}}", {
     reason: "mismatch",
-    span: { start: 13, end: 19 },
+    span: span(13, 19),
   });
 });

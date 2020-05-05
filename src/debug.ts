@@ -15,36 +15,74 @@ export type Formatted =
 
 export interface RawFormattable {
   [SNAPSHOT](): Formattable;
-  [FORMAT]():
-    | { type: "json"; value: JSONValue }
-    | { type: "raw"; value: string };
+  [FORMAT](): Formatted;
 }
 
 export type Formattable = RawFormattable | string;
 
-export function snapshot(value: unknown): Formattable {
-  if (hasFormat(value)) {
+export const SOURCE_FORMAT = Symbol("SOURCE_FORMAT");
+
+export interface SourceFormattable {
+  [SOURCE_FORMAT](source: string, nesting: number | undefined): Formatted;
+  [SNAPSHOT](): SourceFormattable;
+}
+
+export function hasSourceFormat(input: unknown): input is SourceFormattable {
+  return (
+    input !== null &&
+    typeof input === "object" &&
+    SOURCE_FORMAT in (input as Dict)
+  );
+}
+
+export function snapshot(
+  value: unknown
+  // source: string,
+  // nesting: number | undefined = undefined
+): unknown {
+  if (hasFormat(value) || hasSourceFormat(value)) {
     return value[SNAPSHOT]();
   } else {
-    let clone: JSONValue = JSON.parse(JSON.stringify(value));
-    return {
-      [FORMAT]() {
-        return { type: "json", value: clone } as const;
-      },
-      [SNAPSHOT]() {
-        return this;
-      },
-    } as const;
+    return value;
+    // return formatUnknown(value, source, nesting);
   }
 }
 
-export function formatUnknown(value: unknown): string {
-  if (hasFormat(value)) {
-    let result = value[FORMAT]();
+export function formatUnknown(
+  value: unknown,
+  source: string,
+  nesting: number | undefined = undefined
+): string {
+  let nextNest = nesting !== undefined ? nesting + 2 : undefined;
 
+  if (hasSourceFormat(value)) {
+    let result = value[SOURCE_FORMAT](source, nesting);
     return formatFormatted(result);
+  } else if (hasFormat(value)) {
+    let result = value[FORMAT]();
+    return formatFormatted(result);
+  } else if (Array.isArray(value)) {
+    let lines = value.map(item => formatUnknown(item, source, nextNest));
+    return nest(`[`, lines, `]`, nesting);
+  } else if (isPOJO(value)) {
+    let lines = Object.entries(value as object).map(
+      ([k, v]) => `${k}:${formatUnknown(v, source, nextNest)}`
+    );
+    return nest(`{`, lines, `}`, nesting);
   } else {
-    return formatJSON(value);
+    return nesting === undefined
+      ? formatJSON(value)
+      : formatJSON(value, nesting);
+  }
+}
+
+function isPOJO(o: unknown): o is object {
+  if (typeof o !== "object" || o === null) {
+    return false;
+  } else if (Object.getPrototypeOf(o) === Object.prototype) {
+    return true;
+  } else {
+    return false;
   }
 }
 
@@ -70,14 +108,40 @@ export function formatFormatted(value: Formatted): string {
   }
 }
 
-function formatJSON(input: unknown): string {
+function formatJSON(input: unknown, nesting?: number | undefined): string {
+  let nextNest = nesting === undefined ? undefined : nesting + 2;
+
   if (input === null || input === undefined) {
     return JSON.stringify(input);
+  } else if (Array.isArray(input)) {
+    let lines = input.map(value => formatJSON(value, nextNest));
+    return nest(`[`, lines, `]`, nesting);
+  } else if (typeof input === "object") {
+    let lines = Object.entries(input as object).map(
+      ([key, value]) => `${key}:${formatJSON(value, nextNest)}`
+    );
+    return nest("{", lines, "}", nesting);
+  } else if (typeof input === "string") {
+    return `'${input}'`;
   } else {
-    return JSON.stringify(input)
+    return JSON.stringify(input, null, nextNest)
       .replace(/\\?"/g, `'`)
-      .replace(/'(<.*?>)'/, "$1");
+      .replace(/'(<.*?>)'/g, "$1");
   }
+}
+
+function nest(
+  first: string,
+  lines: string[],
+  last: string,
+  nesting?: number | undefined
+): string {
+  if (nesting === undefined) {
+    return `${first}${lines.join(",")}${last}`;
+  }
+
+  let body = lines.map(line => `\n${" ".repeat(nesting)}${line}`);
+  return `${first}${body}\n${" ".repeat(nesting - 2)}${last}`;
 }
 
 export type JSONValue =

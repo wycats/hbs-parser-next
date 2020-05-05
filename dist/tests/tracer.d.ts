@@ -7,9 +7,12 @@ export interface EvaluatorClass<T> {
 }
 export declare class TracedEvaluator<OriginalState> implements ops.StatefulEvaluator<OriginalState & State> {
     #private;
+    private source;
+    constructor(source: string);
     setInner(inner: ops.StatefulEvaluator<OriginalState>): void;
     get inner(): ops.StatefulEvaluator<OriginalState>;
     private parent;
+    Id<In>(state: State, input: In, op: ops.IdOperation): In;
     State(state: OriginalState & State, input: unknown, op: ops.StateOperation): OriginalState & State;
     Source<Out>(...args: [State & OriginalState, unknown, ops.SourceOperation<Out>]): Out;
     Input<In>(state: State & OriginalState, input: In, _op: ops.InputOperation<In>): In;
@@ -42,43 +45,56 @@ export declare class Tracer implements RawFormattable {
     preInvoke(name: string): void;
     postInvoke(desc: string): void;
 }
-export declare function trace(op: OpName, input: unknown, output: unknown, children?: StringTrace[]): StringTrace;
+export declare function trace(source: string, op: OpName, input: unknown, output: unknown, children?: StringTrace[]): StringTrace;
 export declare type OpName = {
     type: string;
     label?: string;
 } | string;
-export declare function formatOpName(op: OpName): OpName;
+export declare function formatOpName(op: OpName): string;
 export declare function raw(value: string): Formattable;
 export declare const STATE: Formattable;
 export declare const VOID: Formattable;
-export declare const STATE_TRACE: string;
+export declare const STATE_TRACE = "Get-State: <State>";
+export interface UnbuiltTrace {
+    opName: OpName;
+    input?: unknown;
+    output?: unknown;
+    children?: Array<UnbuiltTrace>;
+}
 export declare class TraceBuilder {
     private traces;
-    constructor(traces?: StringTrace[]);
-    addTraces(traces: StringTrace[]): this;
-    step(opName: OpName, input: unknown, output: unknown): this;
-    into(opName: OpName, input: unknown, output: unknown): this;
-    done(): StringTrace[];
+    constructor(traces?: Array<UnbuiltTrace>);
+    addTraces(traces: Array<UnbuiltTrace | string>): this;
+    merge(builder: TraceBuilder): this;
+    addRaw(trace: string): this;
+    get out(): unknown;
+    private addTrace;
+    step(opName: OpName, input?: unknown, output?: unknown): this;
+    into(opName: OpName, ...args: [unknown, unknown?]): this;
+    getTraces(): Array<UnbuiltTrace>;
+    done(context: Context): StringTrace[];
 }
-export declare function step(name: OpName, input: unknown, output: unknown): Step;
-export declare type Step = {
+export declare function step(name: OpName, input?: unknown, output?: unknown): Step;
+export declare type OutStep = [OpName, unknown, unknown] | [OpName, unknown] | [OpName];
+export declare type Step = Steps | {
     type: "step";
     name: OpName;
-    input: unknown;
-    output: unknown;
-} | [OpName, unknown, unknown] | [OpName, unknown] | {
+    input?: unknown;
+    output?: unknown;
+} | OutStep | {
     type: "multiple";
     builder: TraceBuilder;
-} | {
-    type: "traces";
-    traces: StringTrace[];
 };
 export declare type Steps = {
     type: "traces";
-    traces: StringTrace[];
+    traces: Array<UnbuiltTrace>;
 };
-export declare function steps(...steps: Step[]): {
-    type: "traces";
-    traces: StringTrace[];
-};
+export declare class Context {
+    private source;
+    constructor(source: string);
+    format(unbuilt: UnbuiltTrace | string): StringTrace;
+}
+export declare function call(input: Step[], ...out: OutStep): Steps;
+export declare function trySteps(firstStep: [string, Step], ...remaining: [string, Step][]): Steps;
+export declare function steps(...steps: Step[]): Steps;
 //# sourceMappingURL=tracer.d.ts.map

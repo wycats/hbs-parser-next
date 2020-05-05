@@ -1,6 +1,6 @@
 import { TopLevelArrow } from "./top-level";
 import { ParserArrow } from "../shape";
-import "../../read/tokens";
+import "../../read/token-enum";
 import { ExpressionArrow } from "./expression/path";
 export const HeadArrow = ExpressionArrow.label("BlockHead");
 export const BlockBodyArrow = TopLevelArrow.repeat();

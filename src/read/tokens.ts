@@ -76,7 +76,7 @@ export function comment(data: SourceSpan, span: SourceSpan): CommentToken {
 export function arg(span: SourceSpan): ArgumentToken {
   return {
     type: TokenType.Argument,
-    name: { start: span.start + 1, end: span.end },
+    name: span.withStart(span.start + 1),
     span,
   };
 }

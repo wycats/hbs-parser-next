@@ -301,7 +301,7 @@ let StatefulArrowEvaluationTest = /** @class */ (() => {
         }
         assertInvoke(arrow, input, expectedOutput, ...expectedTraceRecords) {
             let actual = this.invoke(arrow, input);
-            this.assert.deepEqual(actual, expectedOutput, `expected output to be ${formatJSON(expectedOutput)}`);
+            this.assert.deepEqual(actual, expectedOutput, `expected output to be ${expectedOutput}`);
             this.assert.deepEqual(`\n${printIndentedItems(this.tracer.records)}\n`, `\n${printIndentedItems(expectedTraceRecords)}\n`, "expected trace to match");
         }
         invoke(op, input) {

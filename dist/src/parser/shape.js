@@ -1,4 +1,4 @@
-import { FORMAT, SNAPSHOT, formatUnknown, } from "../debug";
+import { formatUnknown, SNAPSHOT, SOURCE_FORMAT, } from "../debug";
 export const ITERATOR_SOURCE = Symbol("SOURCE");
 export const EXPAND = Symbol("EXPAND");
 export const RESULT_KIND = Symbol("RESULT_KIND");
@@ -6,8 +6,11 @@ export function parseOk(value) {
     return {
         [RESULT_KIND]: "ok",
         kind: "ok",
-        [FORMAT]() {
-            return { type: "raw", value: `Ok(${value})` };
+        [SOURCE_FORMAT](source, nesting) {
+            return {
+                type: "raw",
+                value: `Ok(${formatUnknown(value, source, nesting)})`,
+            };
         },
         [SNAPSHOT]() {
             return this;
@@ -18,7 +21,7 @@ export function parseOk(value) {
 export function parseErr(token, reason) {
     return {
         [RESULT_KIND]: "err",
-        [FORMAT]() {
+        [SOURCE_FORMAT]() {
             return { type: "raw", value: `Err` };
         },
         [SNAPSHOT]() {
@@ -33,7 +36,7 @@ export function parseErr(token, reason) {
 export function fatalError(token, reason) {
     return {
         [RESULT_KIND]: "err",
-        [FORMAT]() {
+        [SOURCE_FORMAT](_source) {
             return { type: "raw", value: `Err` };
         },
         [SNAPSHOT]() {
@@ -48,8 +51,11 @@ export function fatalError(token, reason) {
 export function ok(value) {
     return {
         [RESULT_KIND]: "ok",
-        [FORMAT]() {
-            return { type: "raw", value: `Ok(${formatUnknown(value)})` };
+        [SOURCE_FORMAT](source, nesting) {
+            return {
+                type: "raw",
+                value: `Ok(${formatUnknown(value, source, nesting)})`,
+            };
         },
         [SNAPSHOT]() {
             return this;
@@ -60,8 +66,11 @@ export function ok(value) {
 export function err(reason) {
     return {
         [RESULT_KIND]: "err",
-        [FORMAT]() {
-            return { type: "raw", value: `Err` };
+        [SOURCE_FORMAT](source, nesting) {
+            return {
+                type: "raw",
+                value: `Err(${formatUnknown(reason, source, nesting)})`,
+            };
         },
         [SNAPSHOT]() {
             return this;

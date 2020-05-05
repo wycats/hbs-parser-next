@@ -7,6 +7,9 @@ export class PureEvaluatorImpl {
     Source(_state, _input, op) {
         return op.callback();
     }
+    Id(_state, input, _op) {
+        return input;
+    }
     Input(_state, input, _op) {
         return input;
     }
@@ -87,6 +90,9 @@ export class PureEvaluatorImpl {
     }
 }
 export class StatefulEvaluatorImpl extends PureEvaluatorImpl {
+    static create(delegate) {
+        return new StatefulEvaluatorImpl(delegate);
+    }
     State(state, _input, _op) {
         return state;
     }

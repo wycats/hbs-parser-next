@@ -1,4 +1,4 @@
-import "../../../read/tokens";
+import "../../../read/token-enum";
 import { source, token } from "../../shape";
 import { string } from "../../create-node";
 export const StringArrow = token("String" /* String */)

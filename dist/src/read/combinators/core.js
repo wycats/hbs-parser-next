@@ -1,0 +1,11 @@
+import Id from "../combinators/hbs/id";
+import "../token-enum";
+import { tag } from "../combinators";
+import SomeToken from "./hbs/token";
+import Wrap from "./wrap";
+import { combinator } from "../combinator";
+export const token = (c, type) => new SomeToken(c, type);
+export const ID_SNIPPET = combinator(() => new Id());
+export const ID = combinator(() => token(ID_SNIPPET, "Identifier" /* Identifier */));
+export const DOT = combinator(() => token(tag("."), "Dot" /* Dot */));
+export const wrap = (c) => new Wrap(c);

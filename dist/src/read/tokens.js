@@ -1,4 +1,5 @@
 import { range, slice } from "../span";
+import "./token-enum";
 export function leaf(type) {
     return span => ({ type, span });
 }
@@ -35,7 +36,7 @@ export function comment(data, span) {
 export function arg(span) {
     return {
         type: "Argument" /* Argument */,
-        name: { start: span.start + 1, end: span.end },
+        name: span.withStart(span.start + 1),
         span,
     };
 }

@@ -216,7 +216,7 @@ class PrintTracer {
     if (token) {
       let span = token.span;
       return truncString(
-        slice({ start: span.start, end: this.source.length }, this.source),
+        slice(span.withEnd(this.source.length), this.source),
         length
       );
     } else {

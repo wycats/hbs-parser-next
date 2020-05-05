@@ -1,5 +1,33 @@
+import { SOURCE_FORMAT, SNAPSHOT } from "./debug";
+export class SourceSpan {
+    constructor(start, end) {
+        this.start = start;
+        this.end = end;
+    }
+    withStart(start) {
+        return new SourceSpan(start, this.end);
+    }
+    withEnd(end) {
+        return new SourceSpan(this.start, end);
+    }
+    until(span) {
+        return new SourceSpan(this.start, span.end);
+    }
+    slice(source) {
+        return source.slice(this.start, this.end);
+    }
+    [SOURCE_FORMAT](source) {
+        return {
+            type: "raw",
+            value: `<span:${source.slice(this.start, this.end)}>`,
+        };
+    }
+    [SNAPSHOT]() {
+        return this;
+    }
+}
 export function span(start, end) {
-    return { start, end };
+    return new SourceSpan(start, end);
 }
 export function range(...rawSpans) {
     let spans = rawSpans.filter(s => s !== null && s !== undefined);
@@ -11,16 +39,19 @@ export function range(...rawSpans) {
     for (let s of spans) {
         last = s;
     }
-    return { start: getSpan(first).start, end: getSpan(last).end };
+    return span(getSpan(first).start, getSpan(last).end);
 }
 export function isSpan(item) {
-    return typeof item.start === "number" && typeof item.end === "number";
+    return item instanceof SourceSpan;
 }
 export function getSpan(item) {
     if (isSpan(item)) {
         return item;
     }
     else {
+        if (!isSpan(item.span)) {
+            throw new Error(`value.span isn't a span`);
+        }
         return item.span;
     }
 }

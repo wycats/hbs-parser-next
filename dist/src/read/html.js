@@ -7,9 +7,9 @@ import HTMLText from "./combinators/html/text";
 import { comment } from "./tokens";
 import { map } from "./utils";
 import HTMLEndTag from "./combinators/html/end-tag";
-export const TEXT = new HTMLText();
-export const START_TAG = new HTMLStartTag();
-export const END_TAG = new HTMLEndTag();
+export const TEXT = combinator(() => new HTMLText());
+export const START_TAG = combinator(() => new HTMLStartTag());
+export const END_TAG = combinator(() => new HTMLEndTag());
 export const COMMENT = combinator(() => map(seq("COMMENT", tag("<!--"), pattern(/^.*(?=[-][-][>])/u, "comment body"), tag("-->")), ([start, data, end]) => {
     return ok(comment(data.span, range(start, end)));
 }));

@@ -443,7 +443,7 @@ export function attr(
 
       return tokens.valuedAttr(
         { name: nameToken, value: valueToken },
-        { start, end }
+        span(start, end)
       );
     };
   }
@@ -469,7 +469,7 @@ export class TokenBuilder {
     this.output += chars;
     let start = this.pos;
     this.pos += chars.length;
-    return { start, end: this.pos };
+    return span(start, this.pos);
   }
 
   /**

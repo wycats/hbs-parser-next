@@ -1,4 +1,4 @@
-import "../../../read/tokens";
+import "../../../read/token-enum";
 import { parseOk, ParserArrow } from "../../shape";
 import { number } from "../../create-node";
 export const NumberArrow = ParserArrow.start()

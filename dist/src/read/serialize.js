@@ -1,4 +1,5 @@
 import { isInterpolateAttribute, } from "./tokens";
+import "./token-enum";
 import { slice } from "../span";
 import { unreachable } from "./utils";
 export function serializeRoot(root, source) {

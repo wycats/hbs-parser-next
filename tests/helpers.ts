@@ -61,7 +61,7 @@ export function eqError(left: Result<unknown>, right: Err): void {
 export type IndentedItemTuple = [string, IndentedItem[]];
 export type IndentedItem = string | IndentedItemTuple;
 
-const SIMPLE = true;
+const SIMPLE = false;
 const SPACE = "   ";
 const CROSS = SIMPLE ? SPACE : " ┣━";
 const CORNER = SIMPLE ? SPACE : " ┗━";

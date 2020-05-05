@@ -10,17 +10,17 @@ export declare type Formatted = {
 };
 export interface RawFormattable {
     [SNAPSHOT](): Formattable;
-    [FORMAT](): {
-        type: "json";
-        value: JSONValue;
-    } | {
-        type: "raw";
-        value: string;
-    };
+    [FORMAT](): Formatted;
 }
 export declare type Formattable = RawFormattable | string;
-export declare function snapshot(value: unknown): Formattable;
-export declare function formatUnknown(value: unknown): string;
+export declare const SOURCE_FORMAT: unique symbol;
+export interface SourceFormattable {
+    [SOURCE_FORMAT](source: string, nesting: number | undefined): Formatted;
+    [SNAPSHOT](): SourceFormattable;
+}
+export declare function hasSourceFormat(input: unknown): input is SourceFormattable;
+export declare function snapshot(value: unknown): unknown;
+export declare function formatUnknown(value: unknown, source: string, nesting?: number | undefined): string;
 export declare function formatFormattable(formattable: Formattable): string;
 export declare function formatFormatted(value: Formatted): string;
 export declare type JSONValue = string | number | null | boolean | JSONArray | JSONObject;

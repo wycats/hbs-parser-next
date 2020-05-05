@@ -221,14 +221,24 @@
         "signature": "d96fa8a56871904776165ceb8e00bd56127e1a017bb2664cae76223b5f815141",
         "affectsGlobalScope": false
       },
+      "../src/debug.d.ts": {
+        "version": "6e48600dfa40604fad1573de12ceb28a3cdf28d0fb9572c955f9da4cb34e2605",
+        "signature": "6e48600dfa40604fad1573de12ceb28a3cdf28d0fb9572c955f9da4cb34e2605",
+        "affectsGlobalScope": false
+      },
       "../src/span.d.ts": {
-        "version": "7739fdf296ef6eae867383294785b4f11a12f47a10ba8528b8d08ccf4aa2cc77",
-        "signature": "7739fdf296ef6eae867383294785b4f11a12f47a10ba8528b8d08ccf4aa2cc77",
+        "version": "d9330c26bd02682f664537f411ffa6c04be7d6d6d12a6570ad569444ec4d7199",
+        "signature": "d9330c26bd02682f664537f411ffa6c04be7d6d6d12a6570ad569444ec4d7199",
+        "affectsGlobalScope": false
+      },
+      "../src/read/token-enum.d.ts": {
+        "version": "dfa72a9a85f2b10d91983db35b12dc62c75d411d0f127bb3d21423dd12371e25",
+        "signature": "dfa72a9a85f2b10d91983db35b12dc62c75d411d0f127bb3d21423dd12371e25",
         "affectsGlobalScope": false
       },
       "../src/read/tokens.d.ts": {
-        "version": "cd47dc7b0aa077366440906b257daf532d69f60582fcd3b75d3e014092fe9f5b",
-        "signature": "cd47dc7b0aa077366440906b257daf532d69f60582fcd3b75d3e014092fe9f5b",
+        "version": "dcbd7ea510b0c4ce588064d82eedf97f15a7b52bc8668aa0eeb934ff8c7a8a9c",
+        "signature": "dcbd7ea510b0c4ce588064d82eedf97f15a7b52bc8668aa0eeb934ff8c7a8a9c",
         "affectsGlobalScope": false
       },
       "../src/parser/node.d.ts": {
@@ -276,19 +286,14 @@
         "signature": "4b0833ada5836a7d016daf680f27ee67fb011f429cc1dd6bf349205f0594fe54",
         "affectsGlobalScope": false
       },
-      "../src/debug.d.ts": {
-        "version": "a099f16e8f63e6b88d270c226a46f5f8d8fcae269e14603bb82c9d43c7d6c920",
-        "signature": "a099f16e8f63e6b88d270c226a46f5f8d8fcae269e14603bb82c9d43c7d6c920",
-        "affectsGlobalScope": false
-      },
       "../src/parser/shape.d.ts": {
-        "version": "75e68a0c80bdcefdd6a60b9197a0981f9983ff7ee1bc5a080557d42700a2efd3",
-        "signature": "75e68a0c80bdcefdd6a60b9197a0981f9983ff7ee1bc5a080557d42700a2efd3",
+        "version": "e0beec405d239052faa9717370dbf60ad3ddcbab20ff77b04e95d5225ee6e4eb",
+        "signature": "e0beec405d239052faa9717370dbf60ad3ddcbab20ff77b04e95d5225ee6e4eb",
         "affectsGlobalScope": false
       },
       "../src/parser/shapes/core-operations.d.ts": {
-        "version": "56cf8e7ece5df57ee0b90d67e0392d7aaae10f718195047a3f136bd10433594a",
-        "signature": "56cf8e7ece5df57ee0b90d67e0392d7aaae10f718195047a3f136bd10433594a",
+        "version": "1bcc551bb4e848d0fd9ff17581e1a565b86365afc3643971df19d1f00c5076de",
+        "signature": "1bcc551bb4e848d0fd9ff17581e1a565b86365afc3643971df19d1f00c5076de",
         "affectsGlobalScope": false
       },
       "../src/read/combinators/types.d.ts": {
@@ -302,8 +307,8 @@
         "affectsGlobalScope": false
       },
       "../src/snippet.d.ts": {
-        "version": "d84ec09234fecbf202d1e4451c57437cc0a6d6a2d308b2c49b70e9d37cc1f913",
-        "signature": "d84ec09234fecbf202d1e4451c57437cc0a6d6a2d308b2c49b70e9d37cc1f913",
+        "version": "e6bebc8274169e166bcc10f4cc9a653a080d1f34b13b791e1a91a0a5606c5fec",
+        "signature": "e6bebc8274169e166bcc10f4cc9a653a080d1f34b13b791e1a91a0a5606c5fec",
         "affectsGlobalScope": false
       },
       "../src/read/combinators/base.d.ts": {
@@ -387,18 +392,13 @@
         "affectsGlobalScope": false
       },
       "../src/parser/shapes/iterator-evaluator.d.ts": {
-        "version": "f672e31f2da1bf24b4b35509dc4061d2eb3601d1ba1dcfbca17d6ad1ed3474a1",
-        "signature": "f672e31f2da1bf24b4b35509dc4061d2eb3601d1ba1dcfbca17d6ad1ed3474a1",
+        "version": "7fa8032b1c5a0991eaf1361c6dbdc88e4244670560ad9ffeb3a0745ed4acd05c",
+        "signature": "7fa8032b1c5a0991eaf1361c6dbdc88e4244670560ad9ffeb3a0745ed4acd05c",
         "affectsGlobalScope": false
       },
       "../src/parser/shapes/print.d.ts": {
         "version": "a39db06d28eb8053f07c2fe4bb5714a721d86006ea74467fb9c75b953cedca90",
         "signature": "a39db06d28eb8053f07c2fe4bb5714a721d86006ea74467fb9c75b953cedca90",
-        "affectsGlobalScope": false
-      },
-      "../src/read/combinators/hbs/block.d.ts": {
-        "version": "b77e3b748fe38024f11d65c2d1fc626872afc5a79fa8b925bb513673710edcc4",
-        "signature": "b77e3b748fe38024f11d65c2d1fc626872afc5a79fa8b925bb513673710edcc4",
         "affectsGlobalScope": false
       },
       "../src/read/combinators/hbs/interpolate.d.ts": {
@@ -416,11 +416,6 @@
         "signature": "2d7746b9466301e36dbfb178a06826b438230236c1cf3c212e123e73378b10af",
         "affectsGlobalScope": false
       },
-      "../src/read/combinators/hbs/simple-path.d.ts": {
-        "version": "309fae4907d1f7cab90e3dae561f417ae37c1c6540443fe040eca431e63617d6",
-        "signature": "309fae4907d1f7cab90e3dae561f417ae37c1c6540443fe040eca431e63617d6",
-        "affectsGlobalScope": false
-      },
       "../src/read/combinators/hbs/spaced-tokens.d.ts": {
         "version": "232fdb00ba656a90160f6856581a9c9ac0d40c2efaaab1fadc36db0cb8abd80e",
         "signature": "232fdb00ba656a90160f6856581a9c9ac0d40c2efaaab1fadc36db0cb8abd80e",
@@ -431,14 +426,9 @@
         "signature": "0924000750a4ce7d5327daa0760468cb8fb491e0bec0567c8666d3646d0dd10c",
         "affectsGlobalScope": false
       },
-      "../src/read/combinators/wrap.d.ts": {
-        "version": "26e7a6208443458fa8fb0300af1452140d00ae9e3f54c9e1b3ee18c305f25c82",
-        "signature": "26e7a6208443458fa8fb0300af1452140d00ae9e3f54c9e1b3ee18c305f25c82",
-        "affectsGlobalScope": false
-      },
       "../src/read/hbs.d.ts": {
-        "version": "8ef32b818db47634112284b09036b4ba6eec8f7644b5fd1303a049001c697fb7",
-        "signature": "8ef32b818db47634112284b09036b4ba6eec8f7644b5fd1303a049001c697fb7",
+        "version": "41ec735557d3c821af80479f66f96274d4720ee7aafd3ba6286ba7f26baca0e4",
+        "signature": "41ec735557d3c821af80479f66f96274d4720ee7aafd3ba6286ba7f26baca0e4",
         "affectsGlobalScope": false
       },
       "../src/read/serialize.d.ts": {
@@ -447,8 +437,8 @@
         "affectsGlobalScope": false
       },
       "../src/index.d.ts": {
-        "version": "56afdcb9d042791a5ae4fb5403fe4184e0203b49458f2f90f04ea4988582cad3",
-        "signature": "56afdcb9d042791a5ae4fb5403fe4184e0203b49458f2f90f04ea4988582cad3",
+        "version": "9cd4fb4b6fae83d2dd302fbba0154228d725361bf8ffb5df80232a4110858383",
+        "signature": "9cd4fb4b6fae83d2dd302fbba0154228d725361bf8ffb5df80232a4110858383",
         "affectsGlobalScope": false
       },
       "../../types/qunit.d.ts": {
@@ -472,7 +462,7 @@
         "affectsGlobalScope": false
       },
       "../../tests/reader/hbs.ts": {
-        "version": "1b9b3e082c5dc2f88bd7742229003153f336586aeda6c0fc49d1a3336f1b6a7d",
+        "version": "aeb2d925155da6c9c7075490ed53a073d2a377e3d93b699baa7cd2ed1570e19d",
         "signature": "6cde7b5ec537423a8d20e9d24e37f90f7d028d0d7a554e625fbffa7875c5208f",
         "affectsGlobalScope": false
       },
@@ -492,23 +482,33 @@
         "affectsGlobalScope": false
       },
       "../../tests/shape-test.ts": {
-        "version": "5876eb1c5abdd999c8227457b5951e0f1d863c5b1730347eef8d12e32bc1190d",
+        "version": "78d804bbcdb5903a2caddd7bcb5c4b3247043a0400ad05ba3aa1b63ab77e6fd4",
         "signature": "bc780e3cb74cf2ae46db2aab5efbd684827e0cd6acc5d50d9175d50f48487858",
         "affectsGlobalScope": false
       },
       "../../tests/tracer.ts": {
-        "version": "78ad77ce2e2c6c535b1c7128d69423fb3637079619b64d1c6b030441a2804476",
-        "signature": "90d98458ad619df08fd6ec26ef6f32b4f72b623007bc7aa32c71f85a48dc592a",
+        "version": "17673133305d0d7fe67147cb69560e7012f70df707e567138acab89dfc01fc8c",
+        "signature": "8059d9e796556c55eff6a2d6909be07cac973c811fe79e93ef3581a0b9855938",
         "affectsGlobalScope": false
       },
-      "../../tests/parser-shape-test.ts": {
-        "version": "7c0955528a39a83340f8d20cf1e9bf6867c91e24213d8931adb8498ff679aa52",
-        "signature": "0ab85f86e21795a6403c4dcb5a2092e8fdf996da68941acfbd64a1f272d64a01",
+      "../../tests/parser-scenario/tokens.ts": {
+        "version": "5e28c1fa384525a32798b2e65e9282a9f8712eeb786955855283fdaf762f98b2",
+        "signature": "e784057652527dbcc5023e3eeeab1259dcbef0621af95adadcf8e9a69c347e68",
+        "affectsGlobalScope": false
+      },
+      "../../tests/parser-scenario/math-test.ts": {
+        "version": "6194aa92c04385a993b36e7e7490235cb0b18b93fa950e0e7415026bef6a7c01",
+        "signature": "3cccd3c23b3a0d1deb999514a74e651efc8c056c199f499b79760fbf2f422d9e",
+        "affectsGlobalScope": false
+      },
+      "../../tests/parser-scenario/index.ts": {
+        "version": "4c091da00da86477cd7b92fe161278dd876f6a7b586b6a765cef876050f5a39e",
+        "signature": "26215d411a1b5186042db2bbbcd2be29951f73ae2a50f5ad802cdc7c0c4e6403",
         "affectsGlobalScope": false
       },
       "../../tests/index.ts": {
-        "version": "3a85965d572f3db554dde38271dfd65d47891b3cac98b4e2acb9bb8f1144ec50",
-        "signature": "072f2b7bfb74b9f424b96b424474ec3a7969177ab3c645d91b3f990a2aeea9a9",
+        "version": "bd5cca7040d633e870f362f24c308c943fed431c121741c1dedf3c31788b28b0",
+        "signature": "8065d6b59ac5da29d643342b9452288da28b8773350934a05b190315b59aafee",
         "affectsGlobalScope": false
       },
       "../../node_modules/@types/color-name/index.d.ts": {
@@ -852,6 +852,7 @@
         "../src/read/read.d.ts",
         "../src/read/serialize.d.ts",
         "../src/read/token-builder.d.ts",
+        "../src/read/token-enum.d.ts",
         "../src/read/tokens.d.ts",
         "../src/read/utils.d.ts",
         "../src/snippet.d.ts",
@@ -941,6 +942,7 @@
         "../../node_modules/@types/node/util.d.ts",
         "../src/debug.d.ts",
         "../src/parser/tokens-iterator.d.ts",
+        "../src/read/token-enum.d.ts",
         "../src/read/tokens.d.ts"
       ],
       "../src/parser/shapes/core-operations.d.ts": [
@@ -1011,15 +1013,6 @@
         "../src/read/logger.d.ts",
         "../src/snippet.d.ts"
       ],
-      "../src/read/combinators/hbs/block.d.ts": [
-        "../../node_modules/@types/node/fs.d.ts",
-        "../../node_modules/@types/node/ts3.2/fs.d.ts",
-        "../../node_modules/@types/node/ts3.2/util.d.ts",
-        "../../node_modules/@types/node/util.d.ts",
-        "../src/read/combinators/base.d.ts",
-        "../src/read/tokens.d.ts",
-        "../src/snippet.d.ts"
-      ],
       "../src/read/combinators/hbs/interpolate.d.ts": [
         "../../node_modules/@types/node/fs.d.ts",
         "../../node_modules/@types/node/ts3.2/fs.d.ts",
@@ -1044,16 +1037,6 @@
         "../../node_modules/@types/node/ts3.2/util.d.ts",
         "../../node_modules/@types/node/util.d.ts",
         "../src/read/combinators/base.d.ts",
-        "../src/read/tokens.d.ts",
-        "../src/snippet.d.ts"
-      ],
-      "../src/read/combinators/hbs/simple-path.d.ts": [
-        "../../node_modules/@types/node/fs.d.ts",
-        "../../node_modules/@types/node/ts3.2/fs.d.ts",
-        "../../node_modules/@types/node/ts3.2/util.d.ts",
-        "../../node_modules/@types/node/util.d.ts",
-        "../src/read/combinators/base.d.ts",
-        "../src/read/combinators/types.d.ts",
         "../src/read/tokens.d.ts",
         "../src/snippet.d.ts"
       ],
@@ -1147,16 +1130,6 @@
         "../src/read/logger.d.ts",
         "../src/snippet.d.ts"
       ],
-      "../src/read/combinators/wrap.d.ts": [
-        "../../node_modules/@types/node/fs.d.ts",
-        "../../node_modules/@types/node/ts3.2/fs.d.ts",
-        "../../node_modules/@types/node/ts3.2/util.d.ts",
-        "../../node_modules/@types/node/util.d.ts",
-        "../src/read/combinators/base.d.ts",
-        "../src/read/combinators/types.d.ts",
-        "../src/read/logger.d.ts",
-        "../src/snippet.d.ts"
-      ],
       "../src/read/debug.d.ts": [
         "../../node_modules/@types/node/fs.d.ts",
         "../../node_modules/@types/node/ts3.2/fs.d.ts",
@@ -1173,19 +1146,14 @@
         "../../node_modules/@types/node/ts3.2/util.d.ts",
         "../../node_modules/@types/node/util.d.ts",
         "../src/read/combinators/any.d.ts",
-        "../src/read/combinators/hbs/block.d.ts",
         "../src/read/combinators/hbs/interpolate.d.ts",
         "../src/read/combinators/hbs/number.d.ts",
         "../src/read/combinators/hbs/sexp.d.ts",
-        "../src/read/combinators/hbs/simple-path.d.ts",
         "../src/read/combinators/hbs/spaced-tokens.d.ts",
         "../src/read/combinators/hbs/string.d.ts",
         "../src/read/combinators/seq.d.ts",
         "../src/read/combinators/types.d.ts",
-        "../src/read/combinators/wrap.d.ts",
-        "../src/read/logger.d.ts",
-        "../src/read/tokens.d.ts",
-        "../src/snippet.d.ts"
+        "../src/read/tokens.d.ts"
       ],
       "../src/read/logger.d.ts": [
         "../../node_modules/@types/node/fs.d.ts",
@@ -1230,11 +1198,18 @@
         "../src/read/tokens.d.ts",
         "../src/span.d.ts"
       ],
+      "../src/read/token-enum.d.ts": [
+        "../../node_modules/@types/node/fs.d.ts",
+        "../../node_modules/@types/node/ts3.2/fs.d.ts",
+        "../../node_modules/@types/node/ts3.2/util.d.ts",
+        "../../node_modules/@types/node/util.d.ts"
+      ],
       "../src/read/tokens.d.ts": [
         "../../node_modules/@types/node/fs.d.ts",
         "../../node_modules/@types/node/ts3.2/fs.d.ts",
         "../../node_modules/@types/node/ts3.2/util.d.ts",
         "../../node_modules/@types/node/util.d.ts",
+        "../src/read/token-enum.d.ts",
         "../src/span.d.ts"
       ],
       "../src/read/utils.d.ts": [
@@ -1259,7 +1234,8 @@
         "../../node_modules/@types/node/fs.d.ts",
         "../../node_modules/@types/node/ts3.2/fs.d.ts",
         "../../node_modules/@types/node/ts3.2/util.d.ts",
-        "../../node_modules/@types/node/util.d.ts"
+        "../../node_modules/@types/node/util.d.ts",
+        "../src/debug.d.ts"
       ],
       "../src/utils.d.ts": [
         "../../node_modules/@types/node/fs.d.ts",
@@ -1989,7 +1965,7 @@
         "../../node_modules/@types/node/util.d.ts",
         "../../tests/combinators-test.ts",
         "../../tests/multi-test.ts",
-        "../../tests/parser-shape-test.ts",
+        "../../tests/parser-scenario/index.ts",
         "../../tests/reader/index.ts",
         "../../tests/shape-test.ts",
         "../../types/qunit.d.ts"
@@ -2003,14 +1979,30 @@
         "../../types/qunit.d.ts",
         "../src/index.d.ts"
       ],
-      "../../tests/parser-shape-test.ts": [
+      "../../tests/parser-scenario/index.ts": [
+        "../../node_modules/@types/node/fs.d.ts",
+        "../../node_modules/@types/node/ts3.2/fs.d.ts",
+        "../../node_modules/@types/node/ts3.2/util.d.ts",
+        "../../node_modules/@types/node/util.d.ts",
+        "../../tests/parser-scenario/math-test.ts"
+      ],
+      "../../tests/parser-scenario/math-test.ts": [
         "../../node_modules/@types/node/fs.d.ts",
         "../../node_modules/@types/node/ts3.2/fs.d.ts",
         "../../node_modules/@types/node/ts3.2/util.d.ts",
         "../../node_modules/@types/node/util.d.ts",
         "../../tests/helpers.ts",
+        "../../tests/parser-scenario/tokens.ts",
         "../../tests/tracer.ts",
         "../../types/qunit.d.ts",
+        "../src/index.d.ts"
+      ],
+      "../../tests/parser-scenario/tokens.ts": [
+        "../../node_modules/@types/node/fs.d.ts",
+        "../../node_modules/@types/node/ts3.2/fs.d.ts",
+        "../../node_modules/@types/node/ts3.2/util.d.ts",
+        "../../node_modules/@types/node/util.d.ts",
+        "../../tests/tracer.ts",
         "../src/index.d.ts"
       ],
       "../../tests/reader/hbs.ts": [
@@ -2070,6 +2062,12 @@
       ]
     },
     "exportedModulesMap": {
+      "../src/debug.d.ts": [
+        "../../node_modules/@types/node/fs.d.ts",
+        "../../node_modules/@types/node/ts3.2/fs.d.ts",
+        "../../node_modules/@types/node/ts3.2/util.d.ts",
+        "../../node_modules/@types/node/util.d.ts"
+      ],
       "../src/index.d.ts": [
         "../../node_modules/@types/node/fs.d.ts",
         "../../node_modules/@types/node/ts3.2/fs.d.ts",
@@ -2091,6 +2089,7 @@
         "../src/read/read.d.ts",
         "../src/read/serialize.d.ts",
         "../src/read/token-builder.d.ts",
+        "../src/read/token-enum.d.ts",
         "../src/read/tokens.d.ts",
         "../src/read/utils.d.ts",
         "../src/snippet.d.ts",
@@ -2176,6 +2175,7 @@
         "../../node_modules/@types/node/util.d.ts",
         "../src/debug.d.ts",
         "../src/parser/tokens-iterator.d.ts",
+        "../src/read/token-enum.d.ts",
         "../src/read/tokens.d.ts"
       ],
       "../src/parser/shapes/core-operations.d.ts": [
@@ -2234,11 +2234,6 @@
         "../src/read/logger.d.ts",
         "../src/snippet.d.ts"
       ],
-      "../src/read/combinators/hbs/block.d.ts": [
-        "../src/read/combinators/base.d.ts",
-        "../src/read/tokens.d.ts",
-        "../src/snippet.d.ts"
-      ],
       "../src/read/combinators/hbs/interpolate.d.ts": [
         "../src/read/combinators/base.d.ts",
         "../src/read/tokens.d.ts",
@@ -2251,12 +2246,6 @@
       ],
       "../src/read/combinators/hbs/sexp.d.ts": [
         "../src/read/combinators/base.d.ts",
-        "../src/read/tokens.d.ts",
-        "../src/snippet.d.ts"
-      ],
-      "../src/read/combinators/hbs/simple-path.d.ts": [
-        "../src/read/combinators/base.d.ts",
-        "../src/read/combinators/types.d.ts",
         "../src/read/tokens.d.ts",
         "../src/snippet.d.ts"
       ],
@@ -2314,12 +2303,6 @@
         "../src/read/logger.d.ts",
         "../src/snippet.d.ts"
       ],
-      "../src/read/combinators/wrap.d.ts": [
-        "../src/read/combinators/base.d.ts",
-        "../src/read/combinators/types.d.ts",
-        "../src/read/logger.d.ts",
-        "../src/snippet.d.ts"
-      ],
       "../src/read/debug.d.ts": [
         "../../node_modules/@types/node/fs.d.ts",
         "../../node_modules/@types/node/ts3.2/fs.d.ts",
@@ -2336,19 +2319,14 @@
         "../../node_modules/@types/node/ts3.2/util.d.ts",
         "../../node_modules/@types/node/util.d.ts",
         "../src/read/combinators/any.d.ts",
-        "../src/read/combinators/hbs/block.d.ts",
         "../src/read/combinators/hbs/interpolate.d.ts",
         "../src/read/combinators/hbs/number.d.ts",
         "../src/read/combinators/hbs/sexp.d.ts",
-        "../src/read/combinators/hbs/simple-path.d.ts",
         "../src/read/combinators/hbs/spaced-tokens.d.ts",
         "../src/read/combinators/hbs/string.d.ts",
         "../src/read/combinators/seq.d.ts",
         "../src/read/combinators/types.d.ts",
-        "../src/read/combinators/wrap.d.ts",
-        "../src/read/logger.d.ts",
-        "../src/read/tokens.d.ts",
-        "../src/snippet.d.ts"
+        "../src/read/tokens.d.ts"
       ],
       "../src/read/logger.d.ts": [
         "../../node_modules/@types/node/fs.d.ts",
@@ -2377,11 +2355,18 @@
         "../src/read/tokens.d.ts",
         "../src/span.d.ts"
       ],
+      "../src/read/token-enum.d.ts": [
+        "../../node_modules/@types/node/fs.d.ts",
+        "../../node_modules/@types/node/ts3.2/fs.d.ts",
+        "../../node_modules/@types/node/ts3.2/util.d.ts",
+        "../../node_modules/@types/node/util.d.ts"
+      ],
       "../src/read/tokens.d.ts": [
         "../../node_modules/@types/node/fs.d.ts",
         "../../node_modules/@types/node/ts3.2/fs.d.ts",
         "../../node_modules/@types/node/ts3.2/util.d.ts",
         "../../node_modules/@types/node/util.d.ts",
+        "../src/read/token-enum.d.ts",
         "../src/span.d.ts"
       ],
       "../src/read/utils.d.ts": [
@@ -2394,9 +2379,20 @@
         "../src/snippet.d.ts"
       ],
       "../src/snippet.d.ts": [
+        "../../node_modules/@types/node/fs.d.ts",
+        "../../node_modules/@types/node/ts3.2/fs.d.ts",
+        "../../node_modules/@types/node/ts3.2/util.d.ts",
+        "../../node_modules/@types/node/util.d.ts",
         "../src/read/combinators/types.d.ts",
         "../src/read/logger.d.ts",
         "../src/span.d.ts"
+      ],
+      "../src/span.d.ts": [
+        "../../node_modules/@types/node/fs.d.ts",
+        "../../node_modules/@types/node/ts3.2/fs.d.ts",
+        "../../node_modules/@types/node/ts3.2/util.d.ts",
+        "../../node_modules/@types/node/util.d.ts",
+        "../src/debug.d.ts"
       ],
       "../src/utils.d.ts": [
         "../../node_modules/@types/node/fs.d.ts",
@@ -2844,12 +2840,19 @@
       "../../tests/index.ts": [
         "../../tests/combinators-test.ts",
         "../../tests/multi-test.ts",
-        "../../tests/parser-shape-test.ts",
+        "../../tests/parser-scenario/index.ts",
         "../../tests/reader/index.ts",
         "../../tests/shape-test.ts"
       ],
-      "../../tests/parser-shape-test.ts": [
-        "../../types/qunit.d.ts",
+      "../../tests/parser-scenario/index.ts": [
+        "../../tests/parser-scenario/math-test.ts"
+      ],
+      "../../tests/parser-scenario/math-test.ts": [
+        "../../tests/parser-scenario/tokens.ts",
+        "../../types/qunit.d.ts"
+      ],
+      "../../tests/parser-scenario/tokens.ts": [
+        "../../tests/tracer.ts",
         "../src/index.d.ts"
       ],
       "../../tests/reader/hbs.ts": [
@@ -2894,11 +2897,9 @@
       "../src/read/combinators.d.ts",
       "../src/read/combinators/any.d.ts",
       "../src/read/combinators/base.d.ts",
-      "../src/read/combinators/hbs/block.d.ts",
       "../src/read/combinators/hbs/interpolate.d.ts",
       "../src/read/combinators/hbs/number.d.ts",
       "../src/read/combinators/hbs/sexp.d.ts",
-      "../src/read/combinators/hbs/simple-path.d.ts",
       "../src/read/combinators/hbs/spaced-tokens.d.ts",
       "../src/read/combinators/hbs/string.d.ts",
       "../src/read/combinators/maybe.d.ts",
@@ -2909,7 +2910,6 @@
       "../src/read/combinators/take-until.d.ts",
       "../src/read/combinators/take-while.d.ts",
       "../src/read/combinators/types.d.ts",
-      "../src/read/combinators/wrap.d.ts",
       "../src/read/debug.d.ts",
       "../src/read/hbs.d.ts",
       "../src/read/logger.d.ts",
@@ -2917,6 +2917,7 @@
       "../src/read/read.d.ts",
       "../src/read/serialize.d.ts",
       "../src/read/token-builder.d.ts",
+      "../src/read/token-enum.d.ts",
       "../src/read/tokens.d.ts",
       "../src/read/utils.d.ts",
       "../src/snippet.d.ts",
@@ -3026,7 +3027,9 @@
       "../../tests/helpers.ts",
       "../../tests/index.ts",
       "../../tests/multi-test.ts",
-      "../../tests/parser-shape-test.ts",
+      "../../tests/parser-scenario/index.ts",
+      "../../tests/parser-scenario/math-test.ts",
+      "../../tests/parser-scenario/tokens.ts",
       "../../tests/reader/hbs.ts",
       "../../tests/reader/html.ts",
       "../../tests/reader/hybrid.ts",

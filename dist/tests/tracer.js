@@ -1,6 +1,7 @@
-import { FORMAT, formatFormattable, formatUnknown, snapshot, SNAPSHOT, } from "hbs-parser-next";
+import { FORMAT, formatUnknown, snapshot, SNAPSHOT, } from "hbs-parser-next";
 export class TracedEvaluator {
-    constructor() {
+    constructor(source) {
+        this.source = source;
         this.#inner = undefined;
     }
     #inner;
@@ -17,37 +18,42 @@ export class TracedEvaluator {
         state.tracer.preInvoke(op.type);
         let clonedInput = snapshot(input);
         let out = callback();
-        state.tracer.postInvoke(formatOp(clonedInput, op, out));
+        state.tracer.postInvoke(formatOp(clonedInput, op, out, this.source));
         return out;
+    }
+    Id(state, input, op) {
+        state.tracer.pushLeaf(`${formatOpName(op)}`);
+        return input;
     }
     State(state, input, op) {
         let out = this.inner.State(state, input, op);
         if (op.label) {
-            state.tracer.pushLeaf(`State: ${formatUnknown(out)} (${op.label})`);
+            state.tracer.pushLeaf(`Get-State: ${formatUnknown(out, this.source)} (${op.label})`);
         }
         else {
-            state.tracer.pushLeaf(`State: ${formatUnknown(out)}`);
+            state.tracer.pushLeaf(`Get-State: ${formatUnknown(out, this.source)}`);
         }
         return out;
     }
     Source(...args) {
         let out = this.inner.Source(...args);
         if (args[2].label) {
-            args[0].tracer.pushLeaf(`Source: ${formatUnknown(out)} (${args[2].label})`);
+            args[0].tracer.pushLeaf(`Source: ${formatUnknown(out, this.source)} (${args[2].label})`);
         }
         else {
-            args[0].tracer.pushLeaf(`Source: ${formatUnknown(out)}`);
+            args[0].tracer.pushLeaf(`Source: ${formatUnknown(out, this.source)}`);
         }
         return out;
     }
     Input(state, input, _op) {
-        state.tracer.pushLeaf(`Input: ${formatUnknown(input)}`);
+        state.tracer.pushLeaf(`Input: ${formatUnknown(input, this.source)}`);
         return input;
     }
     Pure(state, ...args) {
+        debugger;
         let input = snapshot(args[0]);
         let out = this.inner.Pure(state, ...args);
-        state.tracer.pushLeaf(formatOp2(formatFormattable(input), args[1], out));
+        state.tracer.pushLeaf(formatOp2(formatUnknown(input, this.source), args[1], out, this.source));
         return out;
     }
     Zip(...args) {
@@ -130,13 +136,13 @@ export class Tracer {
         last[0] = desc;
     }
 }
-export function trace(op, input, output, children) {
+export function trace(source, op, input, output, children) {
     let name = formatOpName(op);
     if (children) {
-        return [formatOp(input, name, output), children];
+        return [formatOp(input, name, output, source), children];
     }
     else {
-        return formatOp(input, name, output);
+        return formatOp(input, name, output, source);
     }
 }
 export function formatOpName(op) {
@@ -147,15 +153,13 @@ export function formatOpName(op) {
         }
         let leftName = parsedName[1];
         let inParen = parsedName[2];
-        return inParen ? { type: inParen, label: leftName } : { type: leftName };
+        return inParen ? `${leftName}(${inParen})` : `${leftName}`;
     }
     else {
         return op.label ? `${op.label}(${op.type})` : op.type;
     }
 }
-function formatOp(input, op, out) {
-    let formattedInput = formatUnknown(input);
-    let formattedOutput = formatUnknown(out);
+function formatOp(input, op, out, source) {
     let formattedOp;
     if (typeof op === "string") {
         formattedOp = op;
@@ -166,10 +170,23 @@ function formatOp(input, op, out) {
     else {
         formattedOp = formatOpName(op);
     }
-    return `${formattedOp}: ${formattedInput} -> ${formattedOutput}`;
+    let formattedInput = input === undefined ? undefined : formatUnknown(input, source);
+    let formattedOutput = out === undefined ? undefined : formatUnknown(out, source);
+    if (formattedInput !== undefined && formattedOutput !== undefined) {
+        return `${formattedOp}: ${formattedInput} -> ${formattedOutput}`;
+    }
+    else if (formattedInput) {
+        return `${formattedOp}: ${formattedInput}`;
+    }
+    else if (formattedOutput) {
+        return `${formattedOp}: VOID -> ${formattedOutput}`;
+    }
+    else {
+        return formattedOp;
+    }
 }
-function formatOp2(formattedInput, op, out) {
-    let formattedOutput = formatUnknown(out);
+function formatOp2(formattedInput, op, out, source) {
+    let formattedOutput = formatUnknown(out, source);
     let formattedOp;
     if (typeof op === "string") {
         formattedOp = op;
@@ -193,25 +210,54 @@ export function raw(value) {
 }
 export const STATE = raw("<State>");
 export const VOID = raw("<void>");
-export const STATE_TRACE = `State: ${formatUnknown(STATE)}`;
+export const STATE_TRACE = `Get-State: <State>`;
 export class TraceBuilder {
     constructor(traces = []) {
         this.traces = traces;
     }
     addTraces(traces) {
-        this.traces.push(...traces);
+        this.traces.push(...traces.map(trace => typeof trace === "string" ? { opName: trace } : trace));
         return this;
+    }
+    merge(builder) {
+        this.traces.push(...builder.traces);
+        return this;
+    }
+    addRaw(trace) {
+        this.traces.push({ opName: trace });
+        return this;
+    }
+    get out() {
+        if (this.traces.length) {
+            return this.traces[this.traces.length - 1].output;
+        }
+        else {
+            throw new Error(`can't get output from an empty builder`);
+        }
+    }
+    addTrace(opName, input, output, children) {
+        this.traces.push({
+            opName,
+            input,
+            output,
+            children,
+        });
     }
     step(opName, input, output) {
-        this.traces.push(trace(opName, input, output));
+        this.addTrace(opName, input, output);
         return this;
     }
-    into(opName, input, output) {
-        this.traces = [trace(opName, input, output, this.traces)];
+    into(opName, ...args) {
+        let input = args.length === 2 ? args[0] : VOID;
+        let output = args.length === 2 ? args[1] : args[0];
+        this.traces = [{ opName, input, output, children: this.traces }];
         return this;
     }
-    done() {
+    getTraces() {
         return this.traces;
+    }
+    done(context) {
+        return this.traces.map(trace => context.format(trace));
     }
 }
 export function step(name, input, output) {
@@ -221,6 +267,62 @@ export function step(name, input, output) {
         input,
         output,
     };
+}
+// | { type: "context"; value: (context: Context) => StringTrace[] };
+function getOutput(step) {
+    if (Array.isArray(step)) {
+        if (step.length === 3) {
+            return step[2];
+        }
+        else if (step.length === 2) {
+            return step[1];
+        }
+        else {
+            return VOID;
+        }
+    }
+    else {
+        switch (step.type) {
+            case "step":
+                return step.output;
+            case "traces":
+                return step.traces[step.traces.length - 1].output;
+            case "multiple":
+                return step.builder.out;
+            default:
+                assertNever(step);
+        }
+    }
+}
+export class Context {
+    constructor(source) {
+        this.source = source;
+    }
+    format(unbuilt) {
+        if (typeof unbuilt === "string") {
+            return unbuilt;
+        }
+        else {
+            return trace(this.source, unbuilt.opName, unbuilt.input, unbuilt.output, unbuilt.children?.map(child => this.format(child)));
+        }
+    }
+}
+export function call(input, ...out) {
+    return steps(...input, out);
+}
+export function trySteps(
+// the final step is an ok step
+firstStep, ...remaining) {
+    let builder = new TraceBuilder();
+    let ok = remaining.length === 0 ? firstStep : remaining.pop();
+    let allSteps = [firstStep, ...remaining];
+    for (let [key, value] of allSteps) {
+        let out = getOutput(value);
+        builder.addTraces(steps(value, [key, out]).traces);
+    }
+    builder.addTraces(steps(ok[1]).traces);
+    builder.into(formatOpName({ type: "FirstOk", label: ok[0] }), getOutput(ok[1]));
+    return { type: "traces", traces: builder.getTraces() };
 }
 export function steps(...steps) {
     let builder = new TraceBuilder();
@@ -238,14 +340,19 @@ export function steps(...steps) {
                 case "step":
                     builder = builder.step(step.name, step.input, step.output);
                     break;
-                case "multiple":
-                    builder = builder.addTraces(step.builder.done());
-                    break;
                 case "traces":
                     builder = builder.addTraces(step.traces);
                     break;
+                case "multiple":
+                    builder = builder.merge(step.builder);
+                    break;
+                default:
+                    assertNever(step);
             }
         }
     }
-    return { type: "traces", traces: builder.done() };
+    return { type: "traces", traces: builder.getTraces() };
+}
+function assertNever(_v) {
+    throw new Error(`unreachable`);
 }

@@ -14,15 +14,17 @@ const GLIMMER = [
   "service",
 ];
 
+const TS_VERSION = "4.0.0-dev.20200505";
+
 function readPackage(pkg, context) {
   // context.log(pkg.name);
   for (let dep of DEPS) {
     if (pkg[dep].typescript) {
-      pkg[dep].typescript = "^3.9.1-rc";
+      pkg[dep].typescript = TS_VERSION;
     }
 
     if (pkg.peerDependenciesMeta && pkg.peerDependenciesMeta.typescript) {
-      pkg.peerDependencies.typescript = "^3.9.1-rc";
+      pkg.peerDependencies.typescript = TS_VERSION;
     }
 
     if (pkg[dep]["@glimmerx/*"]) {

@@ -1,11 +1,36 @@
 import { ok } from "../../../snippet";
+import { range } from "../../../span";
 import { combinator } from "../../combinator";
-import { DOT, ID } from "../../hbs";
+import { seq, tag, any } from "../../combinators";
+import { arg, } from "../../tokens";
+import { map } from "../../utils";
 import { AbstractCombinator } from "../base";
-import Head from "./head";
+import { DOT, ID, ID_SNIPPET } from "../core";
+import "../../token-enum";
+import SomeToken from "./token";
+import Id from "./id";
 // export const SIMPLE_HEAD = combinator(() => any("HEAD", ARG, ID));
 // TODO: Allow `[]` or string members
 export const MEMBER = combinator(() => ID);
+export const ARG = map(seq("@id", tag("@"), ID_SNIPPET), ([at, id]) => ok(arg(range(at, id))));
+export class Head extends AbstractCombinator {
+    constructor(disallowedKeywords) {
+        super();
+        this.disallowedKeywords = disallowedKeywords;
+        this.id = new SomeToken(new Id(disallowedKeywords), "Identifier" /* Identifier */);
+    }
+    get name() {
+        if (this.disallowedKeywords) {
+            return `HEAD • not ${JSON.stringify(this.disallowedKeywords)}`;
+        }
+        else {
+            return "HEAD";
+        }
+    }
+    invoke(input) {
+        return input.invoke(any("HEAD", ARG, this.id));
+    }
+}
 export default class SimplePath extends AbstractCombinator {
     constructor(disallowedKeywords) {
         super();
@@ -47,3 +72,4 @@ export default class SimplePath extends AbstractCombinator {
         }
     }
 }
+export const SIMPLE_PATH = new SimplePath();

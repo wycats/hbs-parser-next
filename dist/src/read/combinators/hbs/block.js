@@ -1,12 +1,18 @@
 import { fatalError, ok } from "../../../snippet";
 import { range } from "../../../span";
 import { any, maybe, seq, tag } from "../../combinators";
-import { ID, SIMPLE_PATH, WS } from "../../hbs";
+// eslint-disable-next-line import/no-cycle
+import { WS } from "../../hbs";
 import { many } from "../../multi";
-import { TOP_LEVEL } from "../../read";
 import { block, blockParams, closeBlock, equalPath, openBlock, } from "../../tokens";
 import { AbstractCombinator } from "../base";
+// eslint-disable-next-line import/no-cycle
+import { TOP_LEVEL } from "../../read";
+import { SIMPLE_PATH } from "./simple-path";
+// eslint-disable-next-line import/no-cycle
 import SpacedTokens from "./spaced-tokens";
+import { ID } from "../core";
+import { combinator } from "../../combinator";
 export default class Block extends AbstractCombinator {
     constructor() {
         super(...arguments);
@@ -21,6 +27,7 @@ export default class Block extends AbstractCombinator {
         }));
     }
 }
+export const BLOCK = combinator(() => new Block());
 const BLOCK_SPACED_TOKENS = new SpacedTokens(["as"]);
 // tslint:disable-next-line:max-classes-per-file
 export class OpenBlock extends AbstractCombinator {
@@ -35,7 +42,7 @@ export class OpenBlock extends AbstractCombinator {
         }, range(open, close)))));
     }
 }
-const OPEN_BLOCK = new OpenBlock();
+const OPEN_BLOCK = combinator(() => new OpenBlock());
 // tslint:disable-next-line:max-classes-per-file
 class BlockParams extends AbstractCombinator {
     constructor() {
@@ -46,8 +53,7 @@ class BlockParams extends AbstractCombinator {
         return input.invoke(seq("BLOCK_PARAMS", tag("as |"), many(any("block param", ID, WS)), tag("|")).map(([open, params, close]) => ok(blockParams(params, range(open, close)))));
     }
 }
-const BLOCK_PARAMS = new BlockParams();
-// tslint:disable-next-line:max-classes-per-file
+const BLOCK_PARAMS = combinator(() => new BlockParams());
 export class CloseBlock extends AbstractCombinator {
     constructor() {
         super(...arguments);

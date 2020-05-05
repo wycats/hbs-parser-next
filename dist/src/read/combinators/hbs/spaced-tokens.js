@@ -1,8 +1,10 @@
-import { SEXP, wrap, NUMBER, NAMED, WS, STRING } from "../../hbs";
+// eslint-disable-next-line import/no-cycle
+import { SEXP, NUMBER, NAMED, WS, STRING } from "../../hbs";
 import { any } from "../../combinators";
 import { AbstractCombinator } from "../base";
 import { ok } from "../../../snippet";
 import SimplePath from "./simple-path";
+import { wrap } from "../core";
 export default class SpacedTokens extends AbstractCombinator {
     constructor(disallowedKeywords) {
         super();

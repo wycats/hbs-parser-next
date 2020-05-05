@@ -1,3 +1,4 @@
+import { span } from "./span";
 export class Snippet {
     constructor(source, offset, length, logger) {
         this.source = source;
@@ -50,10 +51,7 @@ export class Snippet {
         return new Snippet(this.source, this.offset, this.length + count, this.logger);
     }
     get span() {
-        return {
-            start: this.offset,
-            end: this.offset + this.length,
-        };
+        return span(this.offset, this.offset + this.length);
     }
     get fragment() {
         return this.source.slice(this.offset, this.offset + this.length);

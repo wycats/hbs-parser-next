@@ -1,10 +1,38 @@
-export interface SourceSpan {
-  start: number;
-  end: number;
+import { SOURCE_FORMAT, SourceFormattable, Formatted, SNAPSHOT } from "./debug";
+
+export class SourceSpan implements SourceFormattable {
+  constructor(readonly start: number, readonly end: number) {}
+
+  withStart(start: number): SourceSpan {
+    return new SourceSpan(start, this.end);
+  }
+
+  withEnd(end: number): SourceSpan {
+    return new SourceSpan(this.start, end);
+  }
+
+  until(span: SourceSpan): SourceSpan {
+    return new SourceSpan(this.start, span.end);
+  }
+
+  slice(source: string): string {
+    return source.slice(this.start, this.end);
+  }
+
+  [SOURCE_FORMAT](source: string): Formatted {
+    return {
+      type: "raw",
+      value: `<span:${source.slice(this.start, this.end)}>`,
+    };
+  }
+
+  [SNAPSHOT](): SourceFormattable {
+    return this;
+  }
 }
 
 export function span(start: number, end: number): SourceSpan {
-  return { start, end };
+  return new SourceSpan(start, end);
 }
 
 export type HasSpan = SourceSpan | { span: SourceSpan };
@@ -25,19 +53,22 @@ export function range(
     last = s;
   }
 
-  return { start: getSpan(first).start, end: getSpan(last).end };
+  return span(getSpan(first).start, getSpan(last).end);
 }
 
 export function isSpan(
   item: HasSpan & Partial<SourceSpan>
 ): item is SourceSpan {
-  return typeof item.start === "number" && typeof item.end === "number";
+  return item instanceof SourceSpan;
 }
 
 export function getSpan(item: HasSpan & Partial<SourceSpan>): SourceSpan {
   if (isSpan(item)) {
     return item;
   } else {
+    if (!isSpan(item.span)) {
+      throw new Error(`value.span isn't a span`);
+    }
     return item.span;
   }
 }

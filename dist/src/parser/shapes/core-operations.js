@@ -28,6 +28,12 @@ export class DelayedArrow {
         return evaluate(this.operation, state, input, evaluator);
     }
 }
+export function id(label) {
+    return new Arrow({
+        type: "Id",
+        label,
+    });
+}
 export function source(callback, label) {
     return new Arrow({
         type: "Source",

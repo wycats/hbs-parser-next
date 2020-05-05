@@ -1,6 +1,6 @@
 import * as qunit from "qunit";
 import { config, module, test, todo } from "qunit";
-import { read, serializeRoot, r, a, parse, } from "hbs-parser-next";
+import { read, serializeRoot, r, a, parse, span, } from "hbs-parser-next";
 module("[READER] interpolation");
 qunit.assert.tree = function (source, expectedRead, expectedAst) {
     let readStep = `read: ${source || "(empty)"}` || "(empty)";
@@ -309,6 +309,6 @@ test("blocks with block params", assert => {
 test("mismatched blocks", assert => {
     assert.readError("{{#if @x}}{{/unless}}", {
         reason: "mismatch",
-        span: { start: 13, end: 19 },
+        span: span(13, 19),
     });
 });

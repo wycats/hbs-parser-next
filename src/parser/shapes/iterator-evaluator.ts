@@ -28,6 +28,10 @@ export abstract class PureEvaluatorImpl<State>
 
   abstract State(state: State, _input: void, _op: ops.StateOperation): State;
 
+  Id<In>(_state: State, input: In, _op: ops.IdOperation): In {
+    return input;
+  }
+
   Input<In>(_state: State, input: In, _op: ops.InputOperation<In>): In {
     return input;
   }
@@ -179,6 +183,12 @@ export abstract class PureEvaluatorImpl<State>
 
 export class StatefulEvaluatorImpl<State> extends PureEvaluatorImpl<State>
   implements SimpleEvaluator<State> {
+  static create<State>(
+    delegate?: ops.StatefulEvaluator<State>
+  ): StatefulEvaluatorImpl<State> {
+    return new StatefulEvaluatorImpl(delegate);
+  }
+
   State(state: State, _input: void, _op: ops.StateOperation): State {
     return state;
   }

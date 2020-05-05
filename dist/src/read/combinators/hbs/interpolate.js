@@ -1,6 +1,7 @@
 import { ok } from "../../../snippet";
 import { range } from "../../../span";
 import { seq, tag } from "../../combinators";
+// eslint-disable-next-line import/no-cycle
 import { SPACED_TOKENS } from "../../hbs";
 import { interpolate } from "../../tokens";
 import { AbstractCombinator } from "../base";

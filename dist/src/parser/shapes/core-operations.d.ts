@@ -20,6 +20,16 @@ export interface OperationMap {
 export interface BaseOperation {
     label?: string;
 }
+export interface IdOperation extends BaseOperation {
+    type: "Id";
+}
+export interface SimpleEvaluator<State> {
+    Id<T>(state: State, input: T, op: IdOperation): T;
+}
+export interface OperationMap {
+    Id: IdOperation;
+}
+export declare function id<Out>(label?: string): Arrow<unknown, Out>;
 export interface SourceOperation<Out> extends BaseOperation {
     type: "Source";
     callback: () => Out;

@@ -5,7 +5,7 @@ import "./combinators-test";
 import "./multi-test";
 import "./reader/index";
 import "./shape-test";
-import "./parser-shape-test";
+import "./parser-scenario/index";
 config.autostart = true;
 config.urlConfig.push({
     id: "logging",

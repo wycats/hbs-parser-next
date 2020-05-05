@@ -5,6 +5,7 @@ export default class Block extends AbstractCombinator<BlockToken> {
     readonly name = "BLOCK";
     invoke(input: Snippet): Result<[Snippet, BlockToken]>;
 }
+export declare const BLOCK: Block;
 export declare class OpenBlock extends AbstractCombinator<OpenBlockToken> {
     readonly name = "OPEN_BLOCK";
     invoke(input: Snippet): Result<[Snippet, OpenBlockToken]>;

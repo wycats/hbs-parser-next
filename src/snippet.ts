@@ -1,5 +1,5 @@
 import type { Debuggable, Logger } from "./read/logger";
-import type { SourceSpan } from "./span";
+import { SourceSpan, span } from "./span";
 import type { CombinatorType } from "./read/combinators/types";
 
 export class Snippet {
@@ -93,10 +93,7 @@ export class Snippet {
   }
 
   get span(): SourceSpan {
-    return {
-      start: this.offset,
-      end: this.offset + this.length,
-    };
+    return span(this.offset, this.offset + this.length);
   }
 
   get fragment(): string {

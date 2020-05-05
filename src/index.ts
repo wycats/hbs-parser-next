@@ -5,6 +5,7 @@ import * as combinators from "./read/combinators";
 import * as multi from "./read/multi";
 import * as r from "./read/token-builder";
 import * as tokens from "./read/tokens";
+import * as tokenTypes from "./read/token-enum";
 import * as utils from "./read/utils";
 export * from "./debug";
 export { default as parse } from "./parser/parse";
@@ -17,11 +18,16 @@ export {
   parseErr,
   parseOk,
 } from "./parser/shape";
-export type { Result as BaseResult } from "./parser/shape";
+export type {
+  Result as BaseResult,
+  Err as BaseErr,
+  Ok as BaseOk,
+} from "./parser/shape";
 export * from "./parser/shapes/iterator-evaluator";
 export * from "./parser/shapes/print";
 export { trunc, formatDebuggable } from "./read/debug";
 export type { StateRow as ReadTrace } from "./read/debug";
+export type { Token } from "./read/tokens";
 export * from "./read/hbs";
 export { Logger } from "./read/logger";
 export type { Debuggable } from "./read/logger";
@@ -31,7 +37,7 @@ export * from "./snippet";
 export * from "./span";
 export { combinators };
 export { multi };
-export { tokens };
+export { tokens, tokenTypes };
 export { ast };
 export { r };
 export { a };

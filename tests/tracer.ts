@@ -1,7 +1,6 @@
 import {
   BaseResult as Result,
   FORMAT,
-  formatFormattable,
   Formattable,
   Formatted,
   formatUnknown,
@@ -19,6 +18,8 @@ export interface EvaluatorClass<T> {
 export class TracedEvaluator<OriginalState>
   implements ops.StatefulEvaluator<OriginalState & State> {
   #inner: ops.StatefulEvaluator<OriginalState> | undefined = undefined;
+
+  constructor(private source: string) {}
 
   setInner(inner: ops.StatefulEvaluator<OriginalState>): void {
     this.#inner = inner;
@@ -41,8 +42,13 @@ export class TracedEvaluator<OriginalState>
     state.tracer.preInvoke(op.type);
     let clonedInput = snapshot(input);
     let out = callback();
-    state.tracer.postInvoke(formatOp(clonedInput, op, out));
+    state.tracer.postInvoke(formatOp(clonedInput, op, out, this.source));
     return out;
+  }
+
+  Id<In>(state: State, input: In, op: ops.IdOperation): In {
+    state.tracer.pushLeaf(`${formatOpName(op)}`);
+    return input;
   }
 
   State(
@@ -53,9 +59,11 @@ export class TracedEvaluator<OriginalState>
     let out = this.inner.State(state, input, op) as OriginalState & State;
 
     if (op.label) {
-      state.tracer.pushLeaf(`State: ${formatUnknown(out)} (${op.label})`);
+      state.tracer.pushLeaf(
+        `Get-State: ${formatUnknown(out, this.source)} (${op.label})`
+      );
     } else {
-      state.tracer.pushLeaf(`State: ${formatUnknown(out)}`);
+      state.tracer.pushLeaf(`Get-State: ${formatUnknown(out, this.source)}`);
     }
     return out;
   }
@@ -67,10 +75,10 @@ export class TracedEvaluator<OriginalState>
 
     if (args[2].label) {
       args[0].tracer.pushLeaf(
-        `Source: ${formatUnknown(out)} (${args[2].label})`
+        `Source: ${formatUnknown(out, this.source)} (${args[2].label})`
       );
     } else {
-      args[0].tracer.pushLeaf(`Source: ${formatUnknown(out)}`);
+      args[0].tracer.pushLeaf(`Source: ${formatUnknown(out, this.source)}`);
     }
     return out;
   }
@@ -80,7 +88,7 @@ export class TracedEvaluator<OriginalState>
     input: In,
     _op: ops.InputOperation<In>
   ): In {
-    state.tracer.pushLeaf(`Input: ${formatUnknown(input)}`);
+    state.tracer.pushLeaf(`Input: ${formatUnknown(input, this.source)}`);
     return input;
   }
 
@@ -90,7 +98,9 @@ export class TracedEvaluator<OriginalState>
   ): Out {
     let input = snapshot(args[0]);
     let out = this.inner.Pure(state, ...args);
-    state.tracer.pushLeaf(formatOp2(formatFormattable(input), args[1], out));
+    state.tracer.pushLeaf(
+      formatOp2(formatUnknown(input, this.source), args[1], out, this.source)
+    );
     return out;
   }
 
@@ -257,6 +267,7 @@ export class Tracer implements RawFormattable {
 }
 
 export function trace(
+  source: string,
   op: OpName,
   input: unknown,
   output: unknown,
@@ -265,15 +276,23 @@ export function trace(
   let name = formatOpName(op);
 
   if (children) {
-    return [formatOp(input, name, output), children];
+    return [formatOp(input, name, output, source), children];
   } else {
-    return formatOp(input, name, output);
+    return formatOp(input, name, output, source);
   }
 }
 
 export type OpName = { type: string; label?: string } | string;
 
-export function formatOpName(op: OpName): OpName {
+export function getOpType(name: OpName): string {
+  if (typeof name === "string") {
+    return name;
+  } else {
+    return name.type;
+  }
+}
+
+export function formatOpName(op: OpName): string {
   if (typeof op === "string") {
     let parsedName = op.match(/^([^(]*)(?:\((.*)\))?$/);
 
@@ -284,7 +303,7 @@ export function formatOpName(op: OpName): OpName {
     let leftName = parsedName[1];
     let inParen = parsedName[2];
 
-    return inParen ? { type: inParen, label: leftName } : { type: leftName };
+    return inParen ? `${leftName}(${inParen})` : `${leftName}`;
   } else {
     return op.label ? `${op.label}(${op.type})` : op.type;
   }
@@ -298,30 +317,48 @@ interface FormattedOp {
 function formatOp(
   input: unknown,
   op: FormattedOp | [string, string] | Formatted | string,
-  out: unknown
+  out: unknown,
+  source: string
 ): string {
-  let formattedInput = formatUnknown(input);
-  let formattedOutput = formatUnknown(out);
-
-  let formattedOp;
+  let formattedOp: string;
+  let opType: string;
 
   if (typeof op === "string") {
     formattedOp = op;
+    opType = op;
   } else if (Array.isArray(op)) {
     formattedOp = formatOpName({ type: op[0], label: op[1] });
+    opType = op[0];
   } else {
     formattedOp = formatOpName(op);
+    opType = op.type;
   }
 
-  return `${formattedOp}: ${formattedInput} -> ${formattedOutput}`;
+  let formattedInput =
+    input === undefined ? undefined : formatUnknown(input, source);
+  let formattedOutput =
+    out === undefined ? undefined : formatUnknown(out, source);
+
+  if (opType === "Get-State") {
+    return `${formattedOp}: ${formattedOutput}`;
+  } else if (formattedInput !== undefined && formattedOutput !== undefined) {
+    return `${formattedOp}: ${formattedInput} -> ${formattedOutput}`;
+  } else if (formattedInput) {
+    return `${formattedOp}: ${formattedInput}`;
+  } else if (formattedOutput) {
+    return `${formattedOp}: VOID -> ${formattedOutput}`;
+  } else {
+    return formattedOp;
+  }
 }
 
 function formatOp2(
   formattedInput: string,
   op: { type: string; label?: string } | [string, string] | Formatted | string,
-  out: unknown
+  out: unknown,
+  source: string
 ): string {
-  let formattedOutput = formatUnknown(out);
+  let formattedOutput = formatUnknown(out, source);
 
   let formattedOp;
 
@@ -349,61 +386,231 @@ export function raw(value: string): Formattable {
 
 export const STATE = raw("<State>");
 export const VOID = raw("<void>");
-export const STATE_TRACE = `State: ${formatUnknown(STATE)}`;
+export const STATE_TRACE = `Get-State: <State>`;
 
-export class TraceBuilder {
-  constructor(private traces: StringTrace[] = []) {}
+export interface UnbuiltTrace {
+  opName: OpName;
+  input?: unknown;
+  output?: unknown;
+  children?: Array<UnbuiltTrace>;
+}
 
-  addTraces(traces: StringTrace[]): this {
-    this.traces.push(...traces);
+export class TraceBuilder<Output = unknown> {
+  constructor(private traces: Array<UnbuiltTrace> = []) {}
+
+  addTraces(traces: Array<UnbuiltTrace | string>): this {
+    this.traces.push(
+      ...traces.map(trace =>
+        typeof trace === "string" ? { opName: trace } : trace
+      )
+    );
     return this;
   }
 
-  step(opName: OpName, input: unknown, output: unknown): this {
-    this.traces.push(trace(opName, input, output));
+  merge(builder: TraceBuilder): this {
+    this.traces.push(...builder.traces);
+    return this;
+  }
 
+  addRaw(trace: string): this {
+    this.traces.push({ opName: trace });
+    return this;
+  }
+
+  get out(): Output {
+    if (this.traces.length) {
+      return this.traces[this.traces.length - 1].output as Output;
+    } else {
+      throw new Error(`can't get output from an empty builder`);
+    }
+  }
+
+  step(opName: OpName, input: unknown, output: unknown): this {
+    this.traces.push({ opName, input, output });
     return this;
   }
 
   into(opName: OpName, input: unknown, output: unknown): this {
-    this.traces = [trace(opName, input, output, this.traces)];
+    this.traces = [{ opName, input, output, children: this.traces }];
     return this;
   }
 
-  done(): StringTrace[] {
+  getTraces(): Array<UnbuiltTrace> {
     return this.traces;
+  }
+
+  done(context: Context): StringTrace[] {
+    return this.traces.map(trace => context.format(trace));
   }
 }
 
-export function step(name: OpName, input: unknown, output: unknown): Step {
+export function step<O>(name: OpName, output: O): Step<O>;
+export function step<O>(name: OpName, input: unknown, output: O): Step<O>;
+export function step(name: OpName, ...args: [unknown, unknown?]): Step {
+  let type = stepType(name);
+
+  console.log(JSON.stringify(name), type);
+
+  if (type === "state") {
+    let output = args[0];
+
+    return {
+      type,
+      name,
+      input: undefined,
+      output,
+    };
+  } else {
+    let input = args.length === 2 ? args[0] : VOID;
+    let output = args.length === 2 ? args[1] : args[0];
+
+    return {
+      type,
+      name,
+      input,
+      output,
+    };
+  }
+}
+
+function stepType(name: OpName): "step" | "state" | "id" {
+  switch (getOpType(name)) {
+    case "Get-State":
+      return "state";
+    case "Id":
+      return "id";
+    default:
+      return "step";
+  }
+}
+
+export function into(name: OpName, ...args: [unknown, unknown?]): Step {
+  let input = args.length === 2 ? args[0] : VOID;
+  let output = args.length === 2 ? args[1] : args[0];
+
   return {
-    type: "step",
+    type: "into",
     name,
     input,
     output,
   };
 }
 
-export type Step =
+export type OutStep<Output = unknown> =
+  | [OpName, unknown, Output]
+  | [OpName, Output]
+  | [OpName];
+
+export type Step<Output = unknown> =
+  | Steps
   | {
       type: "step";
       name: OpName;
-      input: unknown;
-      output: unknown;
+      input?: unknown;
+      output?: Output;
     }
-  | [OpName, unknown, unknown]
-  | [OpName, unknown] // VOID input
+  | {
+      type: "state";
+      name: OpName;
+      input?: unknown;
+      output?: Output;
+    }
+  | {
+      type: "id";
+      name: OpName;
+      input?: unknown;
+      output?: Output;
+    }
+  | {
+      type: "into";
+      name: OpName;
+      input?: unknown;
+      output?: Output;
+    }
+  | OutStep
   | {
       type: "multiple";
       builder: TraceBuilder;
+    };
+// | { type: "context"; value: (context: Context) => StringTrace[] };
+
+export function getOutput<T>(step: Step<T>): T {
+  if (Array.isArray(step)) {
+    if (step.length === 3) {
+      return step[2] as T;
+    } else if (step.length === 2) {
+      return step[1] as T;
+    } else {
+      return (VOID as unknown) as T;
     }
-  | { type: "traces"; traces: StringTrace[] };
+  } else {
+    switch (step.type) {
+      case "step":
+      case "into":
+      case "state":
+      case "id":
+        return step.output as T;
+      case "traces":
+        return step.traces[step.traces.length - 1].output as T;
+      case "multiple":
+        return step.builder.out as T;
+      default:
+        assertNever(step);
+    }
+  }
+}
 
-export type Steps = { type: "traces"; traces: StringTrace[] };
+export type Steps = { type: "traces"; traces: Array<UnbuiltTrace> };
 
-export function steps(
-  ...steps: Step[]
-): { type: "traces"; traces: StringTrace[] } {
+export class Context {
+  constructor(private source: string) {}
+
+  format(unbuilt: UnbuiltTrace | string): StringTrace {
+    if (typeof unbuilt === "string") {
+      return unbuilt;
+    } else {
+      return trace(
+        this.source,
+        unbuilt.opName,
+        unbuilt.input,
+        unbuilt.output,
+        unbuilt.children?.map(child => this.format(child))
+      );
+    }
+  }
+}
+
+export function call(input: Step[], ...out: OutStep): Steps {
+  return steps(...input, out);
+}
+
+export function trySteps(
+  // the final step is an ok step
+  firstStep: [string, Step],
+  ...remaining: [string, Step][]
+): Steps {
+  let builder = new TraceBuilder();
+
+  let ok =
+    remaining.length === 0 ? firstStep : (remaining.pop() as [string, Step]);
+  let allSteps = [firstStep, ...remaining];
+
+  for (let [key, value] of allSteps) {
+    let out = getOutput(value);
+    builder.addTraces(steps(value, [key, out]).traces);
+  }
+
+  builder.addTraces(steps(ok[1]).traces);
+  builder.into(
+    formatOpName({ type: "FirstOk", label: ok[0] }),
+    VOID,
+    getOutput(ok[1])
+  );
+
+  return { type: "traces", traces: builder.getTraces() };
+}
+
+export function steps(...steps: Step[]): Steps {
   let builder = new TraceBuilder();
 
   for (let step of steps) {
@@ -418,15 +625,30 @@ export function steps(
         case "step":
           builder = builder.step(step.name, step.input, step.output);
           break;
-        case "multiple":
-          builder = builder.addTraces(step.builder.done());
+        case "state":
+          builder = builder.step(step.name, undefined, step.output);
+          break;
+        case "id":
+          builder = builder.step(step.name, undefined, undefined);
+          break;
+        case "into":
+          builder = builder.into(step.name, step.input, step.output);
           break;
         case "traces":
           builder = builder.addTraces(step.traces);
           break;
+        case "multiple":
+          builder = builder.merge(step.builder);
+          break;
+        default:
+          assertNever(step);
       }
     }
   }
 
-  return { type: "traces", traces: builder.done() };
+  return { type: "traces", traces: builder.getTraces() };
+}
+
+function assertNever(_v: never): never {
+  throw new Error(`unreachable`);
 }

@@ -1,4 +1,4 @@
-import "../../read/tokens";
+import "../../read/token-enum";
 import { interpolate } from "../create-node";
 import { ParserArrow, recurse } from "../shape";
 import { CallBodyArrow } from "./expression/path";

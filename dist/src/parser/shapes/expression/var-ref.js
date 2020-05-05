@@ -1,4 +1,4 @@
-import "../../../read/tokens";
+import "../../../read/token-enum";
 import { slice } from "../../../span";
 import { parseErr, parseOk, ParserArrow } from "../../shape";
 import { thisReference, varReference } from "../../create-node";

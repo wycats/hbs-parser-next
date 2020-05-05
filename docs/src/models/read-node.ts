@@ -1,9 +1,9 @@
-import type { SourceSpan, tokens } from "hbs-parser-next";
+import type { SourceSpan, tokenTypes, Token } from "hbs-parser-next";
 
 export default class ReadNodeModel {
-  constructor(private node: tokens.Token) {}
+  constructor(private node: Token) {}
 
-  get kind(): tokens.TokenType {
+  get kind(): tokenTypes.TokenType {
     return this.node.type;
   }
 
