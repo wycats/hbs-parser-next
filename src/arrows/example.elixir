@@ -1,0 +1,106 @@
+def top_level
+
+end
+
+def token(type)
+  token = STATE -> PURE ~s( type => state => state.token(type) )
+end
+
+def text {
+  -> token("Text")? -> PURE " token => text(token) "
+end
+
+def interpolate {
+
+end
+
+def head
+
+end
+
+def call_body {
+  args = {
+    before: -> maybeWS
+    head: -> head?
+    positional: -> positional | NULL
+    named: -> named | NULL
+    after: -> maybeWS
+  }
+
+  args -> PURE """
+    ({ before, head, positional, named, after }) =>
+      callBody(
+        { head, positional, named },
+        {
+          span: range(head, positional, named),
+          before,
+          after,
+        }
+      )
+  """
+end
+
+def child_tokens(tokenType)
+  STATE -> PURE ~s(
+    tokenType => state => state.parent(tokenType)
+  )
+end
+
+def pos
+  STATE -> PURE ~s( state => state.pos )
+end
+
+def sexp
+  child = child_tokens(TokenType.Sexp)
+  pre = STATE -> pos
+  result = child? ~> call_body
+  post = STATE -> pos
+
+  result -> PURE ~s( tokens => call(tokens, { span: range(pre, post) }) )
+end
+
+def path_member
+  args = ATOMIC {
+    dot: -> token("Dot")?
+    id: -> token("Id")?
+  }
+
+  args -> PURE ~s( args => member(dot, id.span) )
+end
+
+def path_head
+  sexp | arg_ref | var_ref
+end
+
+def arg_ref
+  token("Argument")? -> PURE ~s( ref => argReference(ref) )
+end
+
+
+def var_ref
+  ATOMIC do
+    produce! -> token("Id")?
+
+    if lookahead -> eof | lookahead -> token_neq("Eq")
+      fail! reason: "lookahead" expected: "Eq" actual: next
+    end
+  end
+end
+
+# State Extraction
+
+def lookahead
+  STATE -> PURE ~s( state => state.lookahead() )
+end
+
+def eof
+  INPUT -> PURE ~s( token => token === undefined )
+end
+
+def token_eq(value)
+  INPUT -> PURE ~s( value => token => token.type === value ? ok(null) : err("mismatch") )
+end
+
+def token_neq(value)
+  INPUT -> PURE ~s( value => token => token.type !== value ? ok(null) : err("mismatch") )
+end

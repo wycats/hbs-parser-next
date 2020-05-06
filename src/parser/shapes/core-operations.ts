@@ -1,5 +1,11 @@
 import type { Err, Result } from "../shape";
 
+/**
+ * An Arrow corresponds to a computation with a particular input and output.
+ *
+ * You can build up arrows into more sophisticated computations using the
+ * core operations in this file.
+ */
 export class Arrow<In, Out> {
   static delay<A extends Arrow<unknown, unknown>>(callback: () => A): A {
     return (new DelayedArrow(() => {
@@ -9,6 +15,15 @@ export class Arrow<In, Out> {
 
   constructor(readonly operation: Operation) {}
 
+  /**
+   * The invoke method takes a `State` and input value, producing the
+   * output value, and possibly changing the `State`.
+   *
+   * @param state The computation's persistent state
+   * @param evaluator An evaluator
+   * @param input The input of this computation
+   * @returns The invoke method returns the computation's output
+   */
   invoke<State>(
     state: State,
     evaluator: StatefulEvaluator<State>,
@@ -23,6 +38,11 @@ export class Arrow<In, Out> {
   }
 }
 
+/**
+ * `DelayedArrow<In, Out>` implements `Arrow<In, Out>`, but invokes a thunk for its
+ * internal operation lazily, the first time it's invoked. This makes it possible to
+ * build recursive arrows.
+ */
 export class DelayedArrow<In, Out> implements Arrow<In, Out> {
   #delayed: () => Operation;
   #operation: Operation | undefined = undefined;
@@ -53,8 +73,8 @@ export class DelayedArrow<In, Out> implements Arrow<In, Out> {
   }
 }
 
-// PureEvaluator includes methods that can plausibly work
-// in the absence of unknown state.
+// SimpleEvaluator includes methods that can plausibly work
+// in the absence of state.
 export interface SimpleEvaluator<State> {}
 
 // StatefulEvaluator includes methods that can only work by
@@ -69,16 +89,26 @@ export interface BaseOperation {
   label?: string;
 }
 
-/// ID ///
-
-// This doesn't technically need a special operation, but it helps
-// with optimization. It's equivalent to `pure(v => v)`
+/**
+ * Id
+ * type parameters: T
+ * Arrow<T, T>
+ *
+ * parameters: None
+ *
+ * The IdOperation is a special operation that is equivalent to
+ * pure(v => v). It technically doesn't need to exist, but helps
+ * with optimization.
+ */
 
 export interface IdOperation extends BaseOperation {
   type: "Id";
 }
 
 export interface SimpleEvaluator<State> {
+  /**
+   * The Id operation is evaluated by returning the input value
+   */
   Id<T>(state: State, input: T, op: IdOperation): T;
 }
 
@@ -93,14 +123,28 @@ export function id<Out>(label?: string): Arrow<unknown, Out> {
   });
 }
 
-/// SOURCE ///
+/**
+ * Source
+ * type Parameters: Out
+ * Arrow<VOID, Out>
+ *
+ * parameters: () => Out
+ *
+ * The SourceOperation produces a new arrow from a value. The value
+ * is provided as a thunk, since an arrow may be composed multiple
+ * times, and this means we don't need to worry about clonability.
+ */
 
 export interface SourceOperation<Out> extends BaseOperation {
   type: "Source";
-  callback: () => Out;
+  value: () => Out;
 }
 
 export interface SimpleEvaluator<State> {
+  /**
+   * The Source operation is evaluated by returning its value and ignoring
+   * the input.
+   */
   Source<Out>(state: State, input: unknown, op: SourceOperation<Out>): Out;
 }
 
@@ -109,20 +153,30 @@ export interface OperationMap {
 }
 
 export function source<Out>(
-  callback: () => Out,
+  value: () => Out,
   label?: string
 ): Arrow<unknown, Out> {
   return new Arrow({
     type: "Source",
-    callback,
+    value,
     label,
   });
 }
 
-/// INPUT ///
-
 /**
- * This is a placeholder operation for the input of an arrow
+ * Input
+ * type parameters: In
+ * Arrow<In, In>
+ *
+ * parameters: None
+ *
+ * This is a placeholder operation that represents the input in a combined
+ * computation. For example, it makes it possible to build up a computation
+ * that produced a new value from source and merges it with the input of
+ * the composed operation.
+ *
+ * TODO: This doesn't seem necessary. Try to eliminate this operation in
+ * `iterate` in `shape-test`.
  */
 
 export interface InputOperation<In> extends BaseOperation {
@@ -132,6 +186,9 @@ export interface InputOperation<In> extends BaseOperation {
 }
 
 export interface SimpleEvaluator<State> {
+  /**
+   * The Input operation is evaluated by returning the input value
+   */
   Input<In>(state: State, input: In, op: InputOperation<In>): In;
 }
 
@@ -146,7 +203,17 @@ export function input<In>(label?: string): Arrow<In, In> {
   });
 }
 
-/// PURE ///
+/**
+ * Pure
+ * type parameters: In, Out
+ * Arrow<In, Out>
+ *
+ * parameters: (input: In) => Out;
+ *
+ * This is the most basic operation for creating an arrow. It lifts a
+ * function from `In` to `Out` into an Arrow from `In` to `Out`. The
+ * function must be pure with respect to State.
+ */
 
 export interface PureOperation<In, Out> extends BaseOperation {
   type: "Pure";
@@ -154,6 +221,10 @@ export interface PureOperation<In, Out> extends BaseOperation {
 }
 
 export interface SimpleEvaluator<State> {
+  /**
+   * The Pure operation is evaluated by calling its function with the
+   * input value, returning the output value.
+   */
   Pure<In, Out>(state: State, input: In, op: PureOperation<In, Out>): Out;
 }
 
@@ -172,7 +243,15 @@ export function pure<In, Out>(
   });
 }
 
-/// ZIP ///
+/**
+ * Zip
+ * type parameters: In1, Out1, In2, Out2
+ * Arrow<[In1, In2], [Out1, Out2]>
+ *
+ * parameters:
+ * - Arrow<In1, Out1>
+ * - Arrow<In2, Out2>
+ */
 
 export interface ZipOperation<In1, Out1, In2, Out2> extends BaseOperation {
   type: "Zip";
@@ -200,7 +279,15 @@ export function zip<In1, Out1, In2, Out2>(
   return new Arrow({ type: "Zip", label, left, right });
 }
 
-/// PIPELINE ///
+/**
+ * Pipeline
+ * type parameters: LeftIn, Middle, RightOut
+ * Arrow<LeftIn, RightOut>
+ *
+ * parameters:
+ * - Arrow<LeftIn, Middle>
+ * - Arrow<Middle, RightOut>
+ */
 
 export interface PipelineOperation<LeftIn, Middle, RightOut>
   extends BaseOperation {
@@ -210,6 +297,13 @@ export interface PipelineOperation<LeftIn, Middle, RightOut>
 }
 
 export interface SimpleEvaluator<State> {
+  /**
+   * The Pipeline operation is evaluated by:
+   *
+   * 1. evaluate the left arrow with `input`, producing `middle`
+   * 2. evaluate the right arrow with `middle`, producing `output`
+   * 3. return `output`
+   */
   Pipeline<LeftIn, Middle, RightOut>(
     state: State,
     input: LeftIn,
@@ -229,7 +323,16 @@ export function pipeline<LeftIn, Middle, RightOut>(
   return new Arrow({ type: "Pipeline", label, left, right });
 }
 
-/// MAP RESULT ///
+/**
+ * MapResult
+ * type parameters: LeftIn, Middle, IfOkOut, IfErrOut
+ * Arrow<LeftIn, IfOkOut | IfErrOut>
+ *
+ * parameters:
+ * - Arrow<LeftIn, Result<Middle>>
+ * - ifOk: Arrow<Middle, IfOkOut>
+ * - ifErr: Arrow<Err, IfErrOut>
+ */
 
 export interface MapResultOperation<LeftIn, ResultInner, IfOkOut, IfErrOut>
   extends BaseOperation {
@@ -240,6 +343,17 @@ export interface MapResultOperation<LeftIn, ResultInner, IfOkOut, IfErrOut>
 }
 
 export interface SimpleEvaluator<State> {
+  /**
+   * The MapResult operation is evaluated by:
+   *
+   * 1. evaluate the left arrow with `input`, producing `middle`
+   * 2. if `middle` is Ok(`value`)
+   *   a. evaluate the ifOk arrow with `value`, producing `output`
+   *   b. return `output`
+   * 3. if `middle` is Err
+   *   a. evaluate the ifErr arrow with the error, producing `output`
+   *   b. return `output`
+   */
   MapResult<LeftIn, ResultInner, IfOkOut, IfErrOut>(
     state: State,
     input: LeftIn,
@@ -260,7 +374,15 @@ export function mapResult<LeftIn, ResultInner, IfOkOut, IfErrOut>(
   return new Arrow({ type: "MapResult", label, left, ifOk, ifErr });
 }
 
-/// BOTH OK ///
+/**
+ * BothOk
+ * type parameters: In, LeftOut, RightOut
+ * Arrow<In, Result<[LeftOut, RightOut]>>
+ *
+ * parameters:
+ * - Arrow<In, Result<LeftOut>>
+ * - Arrow<In, Result<RightOut>>
+ */
 
 export interface BothOkOperation<In, LeftOut, RightOut> extends BaseOperation {
   type: "BothOk";

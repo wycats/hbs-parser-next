@@ -327,8 +327,8 @@
         "affectsGlobalScope": false
       },
       "../../src/parser/shapes/core-operations.ts": {
-        "version": "93e4d2417f1c427940caac8d4e02ccd150285c7106f0cf1ac38f5fc42d34baf8",
-        "signature": "1bcc551bb4e848d0fd9ff17581e1a565b86365afc3643971df19d1f00c5076de",
+        "version": "ecc68307655cb67cc89122bc04e69f3f177143889bca4137b0a703699890fa20",
+        "signature": "c39c20f582e552a6c4ce7e372a0a7514008cc261a56a67e69713e6ac64feb3de",
         "affectsGlobalScope": false
       },
       "../../src/read/combinators/base.ts": {

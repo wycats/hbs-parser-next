@@ -6,6 +6,7 @@ import "./multi-test";
 import "./reader/index";
 import "./shape-test";
 import "./parser-scenario/index";
+import "./arrow-scenario";
 
 config.autostart = true;
 config.urlConfig.push({

@@ -14,7 +14,7 @@ const GLIMMER = [
   "service",
 ];
 
-const TS_VERSION = "4.0.0-dev.20200505";
+const TS_VERSION = "3.9.1-rc";
 
 function readPackage(pkg, context) {
   // context.log(pkg.name);

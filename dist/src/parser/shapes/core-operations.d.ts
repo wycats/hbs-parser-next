@@ -1,10 +1,30 @@
 import type { Err, Result } from "../shape";
+/**
+ * An Arrow corresponds to a computation with a particular input and output.
+ *
+ * You can build up arrows into more sophisticated computations using the
+ * core operations in this file.
+ */
 export declare class Arrow<In, Out> {
     readonly operation: Operation;
     static delay<A extends Arrow<unknown, unknown>>(callback: () => A): A;
     constructor(operation: Operation);
+    /**
+     * The invoke method takes a `State` and input value, producing the
+     * output value, and possibly changing the `State`.
+     *
+     * @param state The computation's persistent state
+     * @param evaluator An evaluator
+     * @param input The input of this computation
+     * @returns The invoke method returns the computation's output
+     */
     invoke<State>(state: State, evaluator: StatefulEvaluator<State>, input: In): Out;
 }
+/**
+ * `DelayedArrow<In, Out>` implements `Arrow<In, Out>`, but invokes a thunk for its
+ * internal operation lazily, the first time it's invoked. This makes it possible to
+ * build recursive arrows.
+ */
 export declare class DelayedArrow<In, Out> implements Arrow<In, Out> {
     #private;
     constructor(operation: () => Operation);
@@ -20,6 +40,16 @@ export interface OperationMap {
 export interface BaseOperation {
     label?: string;
 }
+/**
+ * ID
+ * for <T> Arrow<T, T>
+ *
+ * parameters: none
+ *
+ * The IdOperation is a special operation that is equivalent to
+ * pure(v => v). It technically doesn't need to exist, but helps
+ * with optimization.
+ */
 export interface IdOperation extends BaseOperation {
     type: "Id";
 }
@@ -30,6 +60,12 @@ export interface OperationMap {
     Id: IdOperation;
 }
 export declare function id<Out>(label?: string): Arrow<unknown, Out>;
+/**
+ * SOURCE
+ * for <Out> Arrow<VOID, Out>
+ *
+ * parameters: for <Out> () => Out
+ */
 export interface SourceOperation<Out> extends BaseOperation {
     type: "Source";
     callback: () => Out;

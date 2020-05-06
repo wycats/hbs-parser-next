@@ -1,3 +1,9 @@
+/**
+ * An Arrow corresponds to a computation with a particular input and output.
+ *
+ * You can build up arrows into more sophisticated computations using the
+ * core operations in this file.
+ */
 export class Arrow {
     constructor(operation) {
         this.operation = operation;
@@ -7,10 +13,24 @@ export class Arrow {
             return callback().operation;
         });
     }
+    /**
+     * The invoke method takes a `State` and input value, producing the
+     * output value, and possibly changing the `State`.
+     *
+     * @param state The computation's persistent state
+     * @param evaluator An evaluator
+     * @param input The input of this computation
+     * @returns The invoke method returns the computation's output
+     */
     invoke(state, evaluator, input) {
         return evaluate(this.operation, state, input, evaluator);
     }
 }
+/**
+ * `DelayedArrow<In, Out>` implements `Arrow<In, Out>`, but invokes a thunk for its
+ * internal operation lazily, the first time it's invoked. This makes it possible to
+ * build recursive arrows.
+ */
 export class DelayedArrow {
     constructor(operation) {
         this.#operation = undefined;

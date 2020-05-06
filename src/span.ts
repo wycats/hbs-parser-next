@@ -1,7 +1,78 @@
 import { SOURCE_FORMAT, SourceFormattable, Formatted, SNAPSHOT } from "./debug";
+import { invariant, InvariantViolation } from "./arrows";
+
+/**
+ * `Source` is a wrapper around a source text. It can slice out of the source text, and it
+ * can produce a valid EOF source span.
+ */
+export class Source {
+  #source: string;
+
+  constructor(source: string) {
+    this.#source = source;
+  }
+
+  /**
+   * Slice a string out of the source text.
+   *
+   * If a span is passed, and the span is EOF, `slice` returns null.
+   *
+   * If `start` and `end` are passed, and they are both the EOF position,
+   * `slice` returns null.
+   *
+   * Invariants:
+   *
+   * - start >= 0
+   * - end is undefined | end <= EOF position
+   * - end is undefined | start <= end
+   */
+  slice(span: SourceSpan): string | null;
+  slice(start: number, end?: number): string | null;
+  slice(start: number | SourceSpan, end?: number): string | null {
+    if (start instanceof SourceSpan) {
+      if (start.isEOF) {
+        return null;
+      } else {
+        return start.slice(this.#source);
+      }
+    } else {
+      invariant(start >= 0, InvariantViolation.SpanRangeError);
+      invariant(
+        end === undefined || end <= this.eofPosition,
+        InvariantViolation.SpanRangeError
+      );
+      invariant(
+        end === undefined || start <= end,
+        InvariantViolation.SpanRangeError
+      );
+
+      if (start === this.eofPosition && end === this.eofPosition) {
+        return null;
+      } else {
+        return this.#source.slice(start, end);
+      }
+    }
+  }
+
+  get EOF(): SourceSpan {
+    return new SourceSpan(this.eofPosition, this.eofPosition, true);
+  }
+
+  private get eofPosition(): number {
+    return this.#source.length;
+  }
+}
 
 export class SourceSpan implements SourceFormattable {
-  constructor(readonly start: number, readonly end: number) {}
+  readonly #isEOF: boolean;
+
+  constructor(readonly start: number, readonly end: number, isEOF = false) {
+    this.#isEOF = isEOF;
+  }
+
+  get isEOF(): boolean {
+    return this.#isEOF;
+  }
 
   withStart(start: number): SourceSpan {
     return new SourceSpan(start, this.end);

@@ -1,56 +1,27 @@
 // A simplistic parser built on top of the arrow library
 
-import {
-  baseOk as ok,
-  formatUnknown,
-  ops,
-  baseErr as err,
-} from "hbs-parser-next";
+import { baseOk as ok, formatUnknown, ops } from "hbs-parser-next";
 import type {
-  SourceFormattable,
   Formattable,
   JSONValue,
+  SourceFormattable,
 } from "hbs-parser-next";
 import type * as qunit from "qunit";
 import { module, printIndentedItems, test } from "../helpers";
+import { Context, Step, steps, Tracer, VOID } from "../tracer";
+import { nestedExprTrace, takeSum } from "./parser";
 import {
-  steps,
-  Tracer,
-  VOID,
-  UnbuiltTrace,
-  Context,
-  Steps,
-  step,
-  into,
-  Step,
-} from "../tracer";
-import {
-  Parser,
-  State,
-  parserEvaluator,
-  SpanBuilder,
-  okToken,
+  ArrowResult,
+  build,
+  chars,
   nested,
   NULL,
-  LeafToken,
-  build,
+  Parser,
+  parserEvaluator,
+  SpanBuilder,
+  State,
   tok,
-  chars,
-  ArrowResult,
 } from "./tokens";
-import {
-  sumTrace,
-  intTrace,
-  keywordTrace,
-  stateTrace,
-  takeSum,
-  exprTrace,
-  fromStateTrace,
-  maybeWsTrace,
-  plusTrace,
-  parensTrace,
-  nestedExprTrace,
-} from "./parser";
 
 @module("math reader")
 export class MathParserTest {
